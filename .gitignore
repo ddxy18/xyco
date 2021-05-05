@@ -1,0 +1,9 @@
+# build
+build
+tools/target
+
+# clangd
+.cache
+
+# vscode
+.vscode/launch.json

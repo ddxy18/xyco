@@ -1,0 +1,64 @@
+name: xywebserver ci
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+      - 'build/*'
+
+jobs:
+  rust-tool:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          default: true
+          components: clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --manifest-path tools/Cargo.toml --all-targets -- -D warnings
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --manifest-path ./tools/Cargo.toml
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            tools/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+  cpp-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          default: true
+      - name: install cpp toolchain
+        run: |
+          sudo apt update
+          sudo apt install -y clang cmake clang-tidy
+      - name: build
+        run: |
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=/bin/clang -DCMAKE_CXX_COMPILER:FILEPATH=/bin/clang++ -S . -B ./build -G "Unix Makefiles"
+          cmake --build ./build --config Release --target xywebserver
+          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy -s src -b build
+
+  cpp-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install toolchain
+        run: |
+          sudo apt update
+          sudo apt install -y clang cmake
+      - name: test
+        run: |
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=/bin/clang -DCMAKE_CXX_COMPILER:FILEPATH=/bin/clang++ -S . -B ./build -G "Unix Makefiles"
+          cmake --build ./build --config Debug --target xywebserver_test
