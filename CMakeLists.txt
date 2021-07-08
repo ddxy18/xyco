@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16.0)
+
 project(
   xywebserver
   VERSION 0.1.0
@@ -9,7 +10,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
-set(CMAKE_CXX_FLAGS "-std=c++20 -stdlib=libc++  -pthread")
+set(CMAKE_CXX_FLAGS "-std=c++20 -stdlib=libc++ -pthread")
 include(CPack)
 
 enable_testing()
@@ -23,9 +24,9 @@ FetchContent_MakeAvailable(GSL)
 FetchContent_Declare(
   fmt GIT_REPOSITORY "https://gitee.com/mirrors_trending/fmt.git")
 FetchContent_MakeAvailable(fmt)
-FetchContent_Declare(spdlog
-                     GIT_REPOSITORY "https://gitee.com/haygon/spdlog.git")
-FetchContent_MakeAvailable(spdlog)
+# FetchContent_Declare(spdlog
+                    #  GIT_REPOSITORY "https://gitee.com/haygon/spdlog.git")
+# FetchContent_MakeAvailable(spdlog)
 
 include_directories(src)
 
