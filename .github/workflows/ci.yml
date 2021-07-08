@@ -27,38 +27,70 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            tools/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            tools/target/
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
 
   cpp-build:
     runs-on: ubuntu-latest
+    container:
+      image: ubuntu:hirsute
     steps:
+      - name: install essential packages
+        run: |
+          ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+          apt update && apt install -y build-essential git wget cmake clang-tidy
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           default: true
-      - name: install cpp toolchain
-        run: |
-          sudo apt update
-          sudo apt install -y clang cmake clang-tidy
+      - uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "12"
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
       - name: build
         run: |
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=/bin/clang -DCMAKE_CXX_COMPILER:FILEPATH=/bin/clang++ -S . -B ./build -G "Unix Makefiles"
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
           cmake --build ./build --config Release --target xywebserver
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy -s src -b build
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            tools/target/
+          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ./llvm
+          key: ${{ runner.os }}-llvm-12
 
   cpp-test:
     runs-on: ubuntu-latest
+    container:
+      image: ubuntu:hirsute
     steps:
-      - uses: actions/checkout@v2
-      - name: install toolchain
+      - name: install essential packages
         run: |
-          sudo apt update
-          sudo apt install -y clang cmake
+          ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+          apt update && apt install -y build-essential git cmake
+      - uses: actions/checkout@v2
+      - uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "12"
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
       - name: test
         run: |
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_C_COMPILER:FILEPATH=/bin/clang -DCMAKE_CXX_COMPILER:FILEPATH=/bin/clang++ -S . -B ./build -G "Unix Makefiles"
-          cmake --build ./build --config Debug --target xywebserver_test
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
+          cmake --build ./build --config Release --target xywebserver_test
+          cd build && ctest -C Release -T test --output-on-failure
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ./llvm
+          key: ${{ runner.os }}-llvm-12
