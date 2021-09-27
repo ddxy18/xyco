@@ -204,7 +204,7 @@ impl<'a> Header<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
+    use std::{assert_matches::assert_matches, io::Write};
 
     use super::*;
 

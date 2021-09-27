@@ -14,35 +14,39 @@ concept AllNonVoid = (!std::is_void<T>::value && !std::is_void<E>::value);
 class Void {};
 
 template <typename T, typename E>
-requires AllNonVoid<T, E> class Result;
+requires AllNonVoid<T, E>
+class Result;
 
 template <typename T>
 concept Printable = requires(T val) {
-  fmt::print("{}", val);
+  fmt::print(fmt::runtime("{}"), val);
 };
 
 template <typename T, typename E>
-auto Ok(T inner) -> Result<T, E> requires AllNonVoid<T, E>;
+auto Ok(T inner) -> Result<T, E>
+requires AllNonVoid<T, E>;
 
 template <typename T, typename E>
-auto Ok()
-    -> Result<T, E> requires(std::is_same<T, Void>::value&& AllNonVoid<T, E>);
+auto Ok() -> Result<T, E>
+requires(std::is_same<T, Void>::value&& AllNonVoid<T, E>);
 
 template <typename T, typename E>
-auto Err(E inner) -> Result<T, E> requires AllNonVoid<T, E>;
+auto Err(E inner) -> Result<T, E>
+requires AllNonVoid<T, E>;
 
 template <typename T, typename E>
-auto Err()
-    -> Result<T, E> requires(std::is_same<E, Void>::value&& AllNonVoid<T, E>);
+auto Err() -> Result<T, E>
+requires(std::is_same<E, Void>::value&& AllNonVoid<T, E>);
 
 template <typename T, typename E>
-requires AllNonVoid<T, E> class Result {
-  friend auto Ok<T, E>(T inner) -> Result<T, E> requires AllNonVoid<T, E>;
-  friend auto Err<T, E>(E inner) -> Result<T, E> requires AllNonVoid<T, E>;
+requires AllNonVoid<T, E>
+class Result {
+  friend auto Ok<T, E>(T inner) -> Result<T, E>
+  requires AllNonVoid<T, E>;
+  friend auto Err<T, E>(E inner) -> Result<T, E>
+  requires AllNonVoid<T, E>;
 
- public:
-  Result() = default;
-
+ public : Result() = default;
   auto unwrap() -> T requires Printable<T> {
     if (ok_.has_value()) {
       return std::move(*ok_);
@@ -68,8 +72,8 @@ requires AllNonVoid<T, E> class Result {
   }
 
   template <typename MapT>
-  [[nodiscard]] auto map(const std::function<MapT(T)>& f)
-      -> Result<MapT, E> requires(!std::is_void<MapT>::value) {
+  [[nodiscard]] auto map(const std::function<MapT(T)>& f) -> Result<MapT, E>
+  requires(!std::is_void<MapT>::value) {
     if (ok_.has_value()) {
       return Ok<MapT, E>(f(ok_.value()));
     }
@@ -77,8 +81,8 @@ requires AllNonVoid<T, E> class Result {
   }
 
   template <typename MapE>
-  [[nodiscard]] auto map_err(const std::function<MapE(E)>& f)
-      -> Result<T, MapE> requires(!std::is_void<MapE>::value) {
+  [[nodiscard]] auto map_err(const std::function<MapE(E)>& f) -> Result<T, MapE>
+  requires(!std::is_void<MapE>::value) {
     if (err_.has_value()) {
       return Err<T, MapE>(f(err_.value()));
     }
@@ -98,24 +102,22 @@ requires AllNonVoid<T, E> class Result {
 };
 
 template <typename T, typename E>
-auto Ok(T inner) -> Result<T, E> requires AllNonVoid<T, E> {
-  return Result<T, E>({std::move(inner)}, {});
-}
+auto Ok(T inner) -> Result<T, E>
+requires AllNonVoid<T, E> { return Result<T, E>({std::move(inner)}, {}); }
 
 template <typename T, typename E>
-auto Ok()
-    -> Result<T, E> requires(std::is_same<T, Void>::value&& AllNonVoid<T, E>) {
+auto Ok() -> Result<T, E>
+requires(std::is_same<T, Void>::value&& AllNonVoid<T, E>) {
   return Ok<T, E>(Void{});
 }
 
 template <typename T, typename E>
-auto Err(E inner) -> Result<T, E> requires AllNonVoid<T, E> {
-  return Result<T, E>({}, {inner});
-}
+auto Err(E inner) -> Result<T, E>
+requires AllNonVoid<T, E> { return Result<T, E>({}, {inner}); }
 
 template <typename T, typename E>
-auto Err()
-    -> Result<T, E> requires(std::is_same<E, Void>::value&& AllNonVoid<T, E>) {
+auto Err() -> Result<T, E>
+requires(std::is_same<E, Void>::value&& AllNonVoid<T, E>) {
   return Err<T, E>(Void{});
 }
 

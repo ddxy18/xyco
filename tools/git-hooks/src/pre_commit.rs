@@ -239,7 +239,7 @@ impl std::fmt::Display for FileDiffError {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
+    use std::{assert_matches::assert_matches, fs::File};
 
     use super::*;
 
