@@ -54,7 +54,7 @@ class Driver {
   explicit Driver(uintptr_t blocking_num)
       : net_poll_(std::make_unique<net::Epoll>()),
         blocking_poll_(std::make_unique<BlockingPoll>(blocking_num)),
-        events_(net::Epoll::MAX_EVENTS) {}
+        events_(net::Epoll::MAX_EVENTS, nullptr) {}
 
   auto poll() -> void;
 
