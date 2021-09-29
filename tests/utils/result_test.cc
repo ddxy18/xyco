@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-
 TEST(ResultTest, IsOk) {
   auto result = Ok<int, int>(1);
   ASSERT_TRUE(result.is_ok());
