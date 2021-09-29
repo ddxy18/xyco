@@ -1,11 +1,8 @@
 #ifndef XYWEBSERVER_EVENT_IO_WRITE_H_
 #define XYWEBSERVER_EVENT_IO_WRITE_H_
 
-#include <cstdint>
-
 #include "event/io/utils.h"
 #include "event/runtime/future.h"
-#include "utils/result.h"
 
 class WriteTrait {
   template <typename T>

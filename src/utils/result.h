@@ -1,8 +1,6 @@
 #ifndef XYWEBSERVER_UTILS_RESULT_H_
 #define XYWEBSERVER_UTILS_RESULT_H_
 
-#include <concepts>
-#include <functional>
 #include <optional>
 
 #include "fmt/core.h"
@@ -121,6 +119,7 @@ requires(std::is_same<E, Void>::value&& AllNonVoid<T, E>) {
   return Err<T, E>(Void{});
 }
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TRY(result)          \
   ({                         \
     if ((result).is_err()) { \
@@ -129,6 +128,7 @@ requires(std::is_same<E, Void>::value&& AllNonVoid<T, E>) {
     (result).unwrap();       \
   })
 
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ASYNC_TRY(result)    \
   ({                         \
     if ((result).is_err()) { \

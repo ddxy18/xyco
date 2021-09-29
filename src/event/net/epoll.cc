@@ -2,16 +2,8 @@
 
 #include <sys/epoll.h>
 
-#include <array>
-#include <functional>
 #include <gsl/gsl>
 #include <vector>
-
-#include "event/io/utils.h"
-#include "event/runtime/poll.h"
-#include "fmt/core.h"
-#include "utils/panic.h"
-#include "utils/result.h"
 
 auto to_sys(reactor::Interest interest) -> int {
   switch (interest) {
@@ -86,7 +78,7 @@ auto net::Epoll::select(reactor::Events *events, int timeout)
   while (ready_len-- > 0) {
     auto *ready_ev = static_cast<gsl::owner<reactor::Event *>>(
         epoll_events.at(ready_len).data.ptr);
-    events->at(ready_len) = ready_ev;
+    events->push_back(ready_ev);
   }
   return Ok<Void, IoError>(Void());
 }

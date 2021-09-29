@@ -1,6 +1,5 @@
 #include "blocking.h"
 
-#include <algorithm>
 #include <thread>
 
 auto blocking::Task::operator()() -> void { inner_(); }

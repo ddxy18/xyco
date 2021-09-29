@@ -1,17 +1,7 @@
 #ifndef XYWEBSERVER_EVENT_RUNTIME_RUNTIME_H_
 #define XYWEBSERVER_EVENT_RUNTIME_RUNTIME_H_
 
-#include <cstdint>
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <thread>
-#include <vector>
-
 #include "driver.h"
-#include "event/io/mod.h"
-#include "event/net/epoll.h"
-#include "event/runtime/async.h"
 #include "future.h"
 #include "runtime_base.h"
 
@@ -32,6 +22,8 @@ class Worker {
 class Runtime : public RuntimeBase {
   friend class Worker;
   friend class Builder;
+
+  class Privater {};
 
  public:
   template <typename T>
@@ -56,19 +48,15 @@ class Runtime : public RuntimeBase {
     this->handles_.emplace(handles_.begin(), future->get_handle(), future);
   }
 
-  auto io_handle() -> IoHandle * override { return driver_.net_handle(); }
+  auto io_handle() -> IoHandle * override { return driver_->net_handle(); }
 
   auto blocking_handle() -> IoHandle * override {
-    return driver_.blocking_handle();
+    return driver_->blocking_handle();
   }
 
   auto run() -> void;
 
-  Runtime(uintptr_t worker_num, uintptr_t blocking_num)
-      : workers_(worker_num, Worker(this)),
-        handles_(),
-        mutex_(),
-        driver_(blocking_num) {}
+  Runtime(Privater priv) {}
 
  private:
   std::vector<Worker> workers_;
@@ -76,12 +64,12 @@ class Runtime : public RuntimeBase {
   // (handle, future) -> co_await on a future object
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
   std::mutex mutex_;
-  Driver driver_;
+  std::unique_ptr<Driver> driver_;
 };
 
 class Builder {
  public:
-  static auto new_multi_thread() -> Builder { return Builder(); }
+  static auto new_multi_thread() -> Builder { return {}; }
 
   auto worker_threads(uintptr_t val) -> Builder & {
     worker_num_ = val;
