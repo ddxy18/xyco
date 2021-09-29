@@ -2,9 +2,6 @@
 #define XYWEBSERVER_EVENT_RUNTIME_FUTURE_H_
 
 #include <experimental/coroutine>
-#include <thread>
-#include <variant>
-#include <vector>
 
 namespace runtime {
 class RuntimeBase;
@@ -12,9 +9,17 @@ class RuntimeBase;
 template <typename T>
 using Handle = std::experimental::coroutine_handle<T>;
 
-// 'runtime!=nullptr' if the thread runs in the context of a runtime.It ensures
-// that only coroutines spawned to a runtime will be actually executed.
-extern thread_local RuntimeBase *runtime;
+class RuntimeCtx {
+ public:
+  static auto is_in_ctx() -> bool { return runtime_ != nullptr; }
+
+  static auto set_ctx(RuntimeBase *runtime) -> void { runtime_ = runtime; }
+
+  static auto get_ctx() -> RuntimeBase * { return runtime_; }
+
+ private:
+  thread_local static RuntimeBase *runtime_;
+};
 
 class Pending {};
 
@@ -42,9 +47,32 @@ class FutureBase {
   virtual auto get_handle() -> Handle<void> = 0;
 };
 
-class InitFuture : public std::experimental::suspend_always {
+class InitFuture {
  public:
-  static auto await_ready() -> bool { return runtime != nullptr; }
+  // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+  auto await_ready() -> bool { return RuntimeCtx::is_in_ctx(); }
+
+  void await_suspend(Handle<void> h) const {}
+
+  void await_resume() const {}
+};
+
+class FinalAwaitable {
+ public:
+  FinalAwaitable(Handle<void> waiting_coroutine)
+      : waiting_(waiting_coroutine), ready_(false) {}
+
+  [[nodiscard]] auto await_ready() const noexcept -> bool { return ready_; }
+
+  auto await_suspend(Handle<void> waiting_coroutine) noexcept {
+    return waiting_ ? waiting_ : std::experimental::noop_coroutine();
+  }
+
+  auto await_resume() noexcept -> void {}
+
+ private:
+  Handle<void> waiting_;
+  const bool ready_;
 };
 
 // Future<Output> can be used in 2 different mode:
@@ -74,14 +102,9 @@ class Future : public FutureBase {
       return Future(Handle<promise_type>::from_promise(*this));
     }
 
-    auto initial_suspend() noexcept -> InitFuture { return InitFuture(); }
+    auto initial_suspend() noexcept -> InitFuture { return {}; }
 
-    auto final_suspend() noexcept -> std::experimental::suspend_never {
-      if (waiting_) {
-        waiting_.resume();
-      }
-      return std::experimental::suspend_never();
-    }
+    auto final_suspend() noexcept -> FinalAwaitable { return {waiting_}; }
 
     auto unhandled_exception() -> void {}
 
@@ -139,7 +162,7 @@ class Future : public FutureBase {
   };
 
   // co_await Future object should pass nullptr
-  explicit Future(Handle<promise_type> self) : self_(self) {}
+  explicit Future(Handle<promise_type> self) : self_(self), return_() {}
 
   auto operator co_await() -> Awaitable { return Awaitable{*this}; }
 
@@ -181,16 +204,10 @@ class Future<void> : public FutureBase {
       return Future(Handle<promise_type>::from_promise(*this));
     }
 
-    static auto initial_suspend() noexcept -> InitFuture {
-      return InitFuture();
-    }
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    auto initial_suspend() noexcept -> InitFuture { return {}; }
 
-    auto final_suspend() noexcept -> std::experimental::suspend_never {
-      if (waiting_) {
-        waiting_.resume();
-      }
-      return std::experimental::suspend_never();
-    }
+    auto final_suspend() noexcept -> FinalAwaitable { return {waiting_}; }
 
     auto unhandled_exception() -> void {}
 

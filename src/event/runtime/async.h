@@ -1,13 +1,11 @@
 #ifndef XYWEBSERVER_EVENT_RUNTIME_ASYNC_H_
 #define XYWEBSERVER_EVENT_RUNTIME_ASYNC_H_
 
-#include <functional>
 #include <gsl/pointers>
 
-#include "event/runtime/future.h"
-#include "event/runtime/poll.h"
+#include "future.h"
+#include "poll.h"
 #include "runtime_base.h"
-#include "utils/result.h"
 
 namespace runtime {
 template <typename Output>
@@ -31,8 +29,8 @@ class AsyncFuture : public runtime::Future<Output> {
       -> runtime::Poll<Output> override {
     if (!ready_) {
       ready_ = true;
-      auto res =
-          runtime::runtime->blocking_handle()->registry()->Register(&event_);
+      auto res = RuntimeCtx::get_ctx()->blocking_handle()->registry()->Register(
+          &event_);
       return Pending();
     }
     return Ready<Output>{*static_cast<Output *>(event_.after_extra_)};

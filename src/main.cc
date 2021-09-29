@@ -1,14 +1,7 @@
-#include <chrono>
-#include <vector>
+#include <thread>
 
-#include "event/io/utils.h"
 #include "event/net/listener.h"
-#include "event/net/socket.h"
-#include "event/runtime/future.h"
 #include "event/runtime/runtime.h"
-#include "fmt/core.h"
-#include "fmt/format.h"
-#include "utils/result.h"
 
 using runtime::Future;
 
@@ -26,7 +19,7 @@ auto start_server() -> Future<void> {
   while (true) {
     auto [connection, addr] = (co_await listener.accept()).unwrap();
     auto buf = std::vector<char>({'a', 'b', 'c'});
-    auto nbytes = (co_await connection.write(buf)).unwrap();
+    (co_await connection.write(buf)).unwrap();
     fmt::print("success send \"{}\" to {}\n", fmt::join(buf, ""),
                connection.socket_.into_c_fd());
   }
@@ -34,6 +27,8 @@ auto start_server() -> Future<void> {
 }
 
 auto start_client() -> Future<void> {
+  constexpr int max_buf_size = 10;
+
   auto connection = (co_await net::TcpStream::connect(
       SocketAddr::new_v4(Ipv4Addr::New("127.0.0.1"), SERVER_PORT)));
   while (connection.is_err()) {
@@ -42,8 +37,8 @@ auto start_client() -> Future<void> {
         SocketAddr::new_v4(Ipv4Addr::New("127.0.0.1"), SERVER_PORT)));
   }
   auto c = connection.unwrap();
-  auto buf = std::vector<char>(10);
-  auto nbytes = (co_await c.read(&buf)).unwrap();
+  auto buf = std::vector<char>(max_buf_size);
+  (co_await c.read(&buf)).unwrap();
   fmt::print("success read \"{}\"\n", fmt::join(buf, ""));
 }
 
@@ -57,12 +52,8 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
   rt->spawn(start_server());
   rt->spawn(start_client());
   rt->spawn(start_client());
+  rt->spawn(start_client());
   while (true) {
   }
-  /* rt->spawn_blocking(std::function<int()>([]() {
-    fmt::print("spawn blocing!");
-    return 0;
-  })); */
-  while (true) {
-  }
+  return 0;
 }

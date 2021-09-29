@@ -2,17 +2,8 @@
 #define XYWEBSERVER_EVENT_NET_SOCKET_H_
 
 #include <netinet/in.h>
-#include <sys/socket.h>
 
 #include <variant>
-
-class SocketAddr;
-class SocketAddrV4;
-class SocketAddrV6;
-class Ipv4Addr;
-class Ipv6Addr;
-
-class Socket;
 
 class SocketAddrV4 {
   friend class SocketAddr;
@@ -41,11 +32,6 @@ class Ipv4Addr {
 class Ipv6Addr {
   friend class SocketAddr;
 
- public:
-  static constexpr auto New(uint16_t a, uint16_t b, uint16_t c, uint16_t d,
-                            uint16_t e, uint16_t f, uint16_t g, uint16_t h)
-      -> Ipv6Addr;
-
  private:
   in6_addr inner_;
 };
@@ -56,8 +42,7 @@ class SocketAddr {
  public:
   static auto new_v4(Ipv4Addr ip, uint16_t port) -> SocketAddr;
 
-  static auto new_v6(Ipv6Addr ip, uint16_t port, uint32_t flowinfo,
-                     uint32_t scope_id) -> SocketAddr;
+  static auto new_v6(Ipv6Addr ip, uint16_t port) -> SocketAddr;
 
   auto into_c_addr() -> sockaddr *;
 

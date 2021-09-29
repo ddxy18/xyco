@@ -2,8 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include <functional>
-#include <string>
 
 TEST(ResultTest, IsOk) {
   auto result = Ok<int, int>(1);

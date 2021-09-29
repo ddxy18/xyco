@@ -1,7 +1,9 @@
 #ifndef XYWEBSERVER_EVENT_RUNTIME_RUNTIME_BASE_H_
 #define XYWEBSERVER_EVENT_RUNTIME_RUNTIME_BASE_H_
 
-#include "event/runtime/poll.h"
+namespace reactor {
+class Poll;
+}
 
 namespace runtime {
 class FutureBase;

@@ -2,10 +2,12 @@
 #define XYWEBSERVER_EVENT_NET_LISTENER_H_
 
 #include "event/io/mod.h"
-#include "event/net/epoll.h"
 #include "event/net/socket.h"
 #include "event/runtime/future.h"
-#include "utils/result.h"
+
+namespace reactor {
+class Poll;
+}
 
 namespace net {
 enum class Shutdown { Read, Write, All };
@@ -29,7 +31,8 @@ class TcpStream : public ReadTrait, WriteTrait {
 
   auto flush() -> Future<IoResult<Void>> override;
 
-  auto shutdown(Shutdown shutdown) -> Future<IoResult<Void>>;
+  [[nodiscard]] auto shutdown(Shutdown shutdown) const
+      -> Future<IoResult<Void>>;
 
   Socket socket_;
 

@@ -1,15 +1,11 @@
 #ifndef XYWEBSERVER_EVENT_RUNTIME_POLL_H_
 #define XYWEBSERVER_EVENT_RUNTIME_POLL_H_
 
-#include <sys/epoll.h>
-
-#include <memory>
-#include <vector>
-
 #include "event/io/utils.h"
-#include "event/runtime/future.h"
-#include "fmt/core.h"
-#include "utils/result.h"
+
+namespace runtime {
+class FutureBase;
+}
 
 namespace reactor {
 class Poll;
@@ -39,6 +35,16 @@ class Registry {
 
   [[nodiscard]] virtual auto select(Events *events, int timeout)
       -> IoResult<Void> = 0;
+
+  Registry() = default;
+
+  Registry(Registry &) = default;
+
+  Registry(Registry &&) = default;
+
+  auto operator=(const Registry &) -> Registry & = default;
+
+  auto operator=(Registry &&) -> Registry & = default;
 
   virtual ~Registry() = default;
 };

@@ -1,18 +1,14 @@
 #include "runtime.h"
 
-#include <memory>
+#include <thread>
 
-#include "event/io/utils.h"
-#include "event/runtime/driver.h"
-#include "event/runtime/future.h"
-#include "utils/result.h"
-
-thread_local runtime::RuntimeBase *runtime::runtime = nullptr;
+thread_local runtime::RuntimeBase *runtime::RuntimeCtx::runtime_ = nullptr;
 
 runtime::Worker::Worker(Runtime *runtime) : runtime_(runtime) {}
 
 auto runtime::Worker::run() -> void {
-  runtime::runtime = runtime_;
+  // runtime::runtime = runtime_;
+  RuntimeCtx::set_ctx(runtime_);
   while (true) {
     while (!runtime_->handles_.empty()) {
       runtime_->mutex_.lock();
@@ -23,7 +19,7 @@ auto runtime::Worker::run() -> void {
         handle.resume();
       }
     }
-    runtime_->driver_.poll();
+    runtime_->driver_->poll();
   }
 }
 
@@ -35,6 +31,9 @@ auto runtime::Runtime::run() -> void {
 }
 
 auto runtime::Builder::build() const -> IoResult<std::unique_ptr<Runtime>> {
-  return Ok<std::unique_ptr<Runtime>, IoError>(
-      std::make_unique<Runtime>(worker_num_, blocking_num_));
+  auto r = std::make_unique<Runtime>(Runtime::Privater());
+  r->workers_ = std::vector<Worker>(worker_num_, Worker(r.get()));
+  r->driver_ = std::make_unique<Driver>(blocking_num_);
+
+  return Ok<std::unique_ptr<Runtime>, IoError>(std::move(r));
 }
