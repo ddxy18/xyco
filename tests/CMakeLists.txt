@@ -1,6 +1,6 @@
 include(GoogleTest)
 
-file(GLOB xywebserver_test_src "*.cc" "utils/*.cc")
+file(GLOB xywebserver_test_src "*.cc" "utils/*.cc" "event/*.cc")
 file(GLOB xywebserver_src_lib "../src/event/net/*.cc"
      "../src/event/runtime/*.cc" "../src/event/io/*.cc" "../src/utils/*.cc")
 
