@@ -2,6 +2,7 @@
 #define XYWEBSERVER_EVENT_RUNTIME_FUTURE_H_
 
 #include <experimental/coroutine>
+#include <variant>
 
 namespace runtime {
 class RuntimeBase;
@@ -52,9 +53,9 @@ class InitFuture {
   // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
   auto await_ready() -> bool { return RuntimeCtx::is_in_ctx(); }
 
-  void await_suspend(Handle<void> h) const {}
+  auto await_suspend(Handle<void> h) const -> void {}
 
-  void await_resume() const {}
+  auto await_resume() const -> void {}
 };
 
 class FinalAwaitable {

@@ -15,8 +15,7 @@ class AsyncFuture : public runtime::Future<Output> {
       : Future<Output>(nullptr),
         f_(std::function<void()>([&]() {
           auto res = f();
-          event_.after_extra_ =
-              static_cast<gsl::owner<Output *>>(new Output(res));
+          event_.after_extra_ = gsl::owner<Output *>((new Output(res)));
           return;
         })),
         ready_(false),

@@ -76,8 +76,8 @@ auto net::Epoll::select(reactor::Events *events, int timeout)
     return Void();
   })));
   while (ready_len-- > 0) {
-    auto *ready_ev = static_cast<gsl::owner<reactor::Event *>>(
-        epoll_events.at(ready_len).data.ptr);
+    auto *ready_ev =
+        gsl::owner<reactor::Event *>((epoll_events.at(ready_len).data.ptr));
     events->push_back(ready_ev);
   }
   return Ok<Void, IoError>(Void());
