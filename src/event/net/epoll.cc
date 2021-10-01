@@ -26,36 +26,39 @@ auto net::Epoll::Register(reactor::Event *event) -> IoResult<Void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(event->interest_))};
   epoll_event.data.ptr = event;
 
-  return into_sys_result(
-             epoll_ctl(epfd_, EPOLL_CTL_ADD, event->fd_, &epoll_event))
-      .map(std::function<Void(int)>([&](auto n) {
-        fmt::print("register fd:{}\n", event->fd_, epoll_event.data.ptr);
-        return Void();
-      }));
+  auto result =
+      into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_ADD, event->fd_, &epoll_event))
+          .map(std::function<Void(int)>([&](auto n) { return Void(); }));
+  TRY(result);
+  TRACE("register fd:{}\n", event->fd_, epoll_event.data.ptr);
+
+  return result;
 }
 
 auto net::Epoll::reregister(reactor::Event *event) -> IoResult<Void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(event->interest_))};
   epoll_event.data.ptr = event;
 
-  return into_sys_result(
-             epoll_ctl(epfd_, EPOLL_CTL_MOD, event->fd_, &epoll_event))
-      .map(std::function<Void(int)>([&](auto n) {
-        fmt::print("reregister fd:{}\n", event->fd_, epoll_event.data.ptr);
-        return Void();
-      }));
+  auto result =
+      into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_MOD, event->fd_, &epoll_event))
+          .map(std::function<Void(int)>([&](auto n) { return Void(); }));
+  TRY(result);
+  TRACE("reregister fd:{}\n", event->fd_, epoll_event.data.ptr);
+
+  return result;
 }
 
 auto net::Epoll::deregister(reactor::Event *event) -> IoResult<Void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(event->interest_))};
   epoll_event.data.ptr = event;
 
-  return into_sys_result(
-             epoll_ctl(epfd_, EPOLL_CTL_DEL, event->fd_, &epoll_event))
-      .map(std::function<Void(int)>([&](auto n) {
-        fmt::print("deregister fd:{}\n", event->fd_, epoll_event.data.ptr);
-        return Void();
-      }));
+  auto result =
+      into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_DEL, event->fd_, &epoll_event))
+          .map(std::function<Void(int)>([&](auto n) { return Void(); }));
+  TRY(result);
+  TRACE("deregister fd:{}\n", event->fd_, epoll_event.data.ptr);
+
+  return result;
 }
 
 auto net::Epoll::select(reactor::Events *events, int timeout)
@@ -70,11 +73,11 @@ auto net::Epoll::select(reactor::Events *events, int timeout)
 
   auto ready_len =
       epoll_wait(epfd_, epoll_events.data(), final_max_events, final_timeout);
+  auto result = into_sys_result(ready_len).map(
+      std::function<Void(int)>([](auto n) { return Void(); }));
+  TRY(result);
+  TRACE("epoll_wait:{}\n", ready_len);
 
-  TRY(into_sys_result(ready_len).map(std::function<Void(int)>([](auto n) {
-    fmt::print("epoll_wait:{}\n", n);
-    return Void();
-  })));
   while (ready_len-- > 0) {
     auto *ready_ev =
         gsl::owner<reactor::Event *>((epoll_events.at(ready_len).data.ptr));

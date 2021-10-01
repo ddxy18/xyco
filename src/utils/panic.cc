@@ -1,8 +1,8 @@
 #include "panic.h"
 
-#include "fmt/core.h"
+#include "logger.h"
 
 auto panic() -> void {
-  fmt::print("panic!\n");
+  TRACE("panic!\n");
   throw std::runtime_error("panic");
 }

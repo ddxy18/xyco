@@ -12,7 +12,7 @@ auto start_server() -> Future<void> {
       SocketAddr::new_v4(Ipv4Addr::New("127.0.0.1"), SERVER_PORT));
   if (res.is_err()) {
     auto err = res.unwrap_err();
-    fmt::print("bind error:{}\n", err);
+    ERROR("bind error:{}\n", err);
     co_return;
   }
   auto listener = res.unwrap();
@@ -20,8 +20,7 @@ auto start_server() -> Future<void> {
     auto [connection, addr] = (co_await listener.accept()).unwrap();
     auto buf = std::vector<char>({'a', 'b', 'c'});
     (co_await connection.write(buf)).unwrap();
-    fmt::print("success send \"{}\" to {}\n", fmt::join(buf, ""),
-               connection.socket_.into_c_fd());
+    INFO("success send \"{}\" to {}\n", fmt::join(buf, ""), connection.socket_);
   }
   co_return;
 }
@@ -39,7 +38,7 @@ auto start_client() -> Future<void> {
   auto c = connection.unwrap();
   auto buf = std::vector<char>(max_buf_size);
   (co_await c.read(&buf)).unwrap();
-  fmt::print("success read \"{}\"\n", fmt::join(buf, ""));
+  INFO("success read \"{}\" from {}\n", fmt::join(buf, ""), c.socket_);
 }
 
 auto main(int /*unused*/, char** /*unused*/) -> int {
