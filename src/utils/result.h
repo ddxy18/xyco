@@ -3,8 +3,9 @@
 
 #include <optional>
 
-#include "fmt/core.h"
 #include "panic.h"
+#include "spdlog/fmt/bundled/format.h"
+#include "utils/logger.h"
 
 template <typename T, typename E>
 concept AllNonVoid = (!std::is_void<T>::value && !std::is_void<E>::value);
@@ -45,11 +46,11 @@ class Result {
   requires AllNonVoid<T, E>;
 
  public : Result() = default;
-  auto unwrap() -> T requires Printable<T> {
+  auto unwrap() -> T requires Printable<E> {
     if (ok_.has_value()) {
       return std::move(*ok_);
     }
-    fmt::print("unwrap err:{}\n", *err_);
+    TRACE("unwrap err:{}\n", *err_);
     panic();
     return std::move(*ok_);  // unreachable
   }

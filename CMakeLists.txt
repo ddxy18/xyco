@@ -21,12 +21,10 @@ FetchContent_Declare(googletest
 FetchContent_MakeAvailable(googletest)
 FetchContent_Declare(GSL GIT_REPOSITORY "https://gitee.com/mirrors/GSL")
 FetchContent_MakeAvailable(GSL)
-FetchContent_Declare(
-  fmt GIT_REPOSITORY "https://gitee.com/mirrors_trending/fmt.git")
-FetchContent_MakeAvailable(fmt)
-# FetchContent_Declare(spdlog
-                    #  GIT_REPOSITORY "https://gitee.com/haygon/spdlog.git")
-# FetchContent_MakeAvailable(spdlog)
+FetchContent_Declare(spdlog
+                     GIT_REPOSITORY "https://gitee.com/ywh_welcom/spdlog.git"
+                     GIT_TAG v1.x)
+FetchContent_MakeAvailable(spdlog)
 
 include_directories(src)
 

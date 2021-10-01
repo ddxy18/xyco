@@ -3,7 +3,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include <array>
 #include <clocale>
 
 #include "event/runtime/async.h"
@@ -44,7 +43,7 @@ auto net::TcpStream::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
             ready_ = true;
             return runtime::Pending();
           }
-          fmt::print("connect fail fd:{}", sock_.into_c_fd());
+          WARN("{} connect fail", sock_);
           return runtime::Ready<CoOutput>{
               into_sys_result(c).map(std::function<TcpStream(int)>(
                   [](auto n) { return TcpStream(Socket()); }))};
@@ -57,7 +56,7 @@ auto net::TcpStream::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
         return runtime::Ready<CoOutput>{Err<TcpStream, IoError>(
             IoError{ret, strerror_l(ret, uselocale(nullptr))})};
       }
-      fmt::print("{} connect to\n", sock_.into_c_fd());
+      INFO("{} connect to {}\n", sock_, addr_);
       return runtime::Ready<CoOutput>{Ok<TcpStream, IoError>(TcpStream{sock_})};
     }
 
@@ -125,7 +124,7 @@ auto net::TcpStream::read(std::vector<char> *buf)
       auto nbytes =
           into_sys_result(static_cast<int>(n))
               .map(std::function<uintptr_t(int)>([](auto n) { return n; }));
-      fmt::print("read {} bytes\n", n);
+      INFO("read {} bytes from {}\n", n, self_->socket_);
       return runtime::Ready<CoOutput>{nbytes};
     }
 
@@ -183,7 +182,7 @@ auto net::TcpStream::write(I begin, I end) -> Future<IoResult<uintptr_t>> {
       auto n = ::write(self_->socket_.into_c_fd(), &*begin_, end_ - begin_);
       auto nbytes = into_sys_result(n).map(std::function<uintptr_t(int)>(
           [](auto n) { return static_cast<uintptr_t>(n); }));
-      fmt::print("write {} bytes\n", n);
+      INFO("write {} bytes to {}\n", n, self_->socket_);
       return runtime::Ready<CoOutput>{nbytes};
     }
 
@@ -232,15 +231,21 @@ auto net::TcpStream::write_all(const std::vector<char> &buf)
 }
 
 auto net::TcpStream::flush() -> Future<IoResult<Void>> {
+  // TODO(dongxiaoyu): impl it
   co_return Ok<Void, IoError>(Void());
 }
 
 auto net::TcpStream::shutdown(Shutdown shutdown) const
     -> Future<IoResult<Void>> {
-  auto res = into_sys_result(
-      ::shutdown(socket_.into_c_fd(),
-                 static_cast<std::underlying_type_t<Shutdown>>(shutdown)));
-  co_return res.map(std::function<Void(int)>([](auto n) { return Void(); }));
+  auto res =
+      into_sys_result(co_await runtime::AsyncFuture(std::function<int()>([&]() {
+        return ::shutdown(
+            socket_.into_c_fd(),
+            static_cast<std::underlying_type_t<Shutdown>>(shutdown));
+      }))).map(std::function<Void(int)>([](auto n) { return Void(); }));
+  ASYNC_TRY(res);
+  INFO("shutdown {}\n", socket_);
+  co_return Ok<Void, IoError>(Void());
 }
 
 auto net::TcpListener::bind(SocketAddr addr) -> Future<IoResult<TcpListener>> {
@@ -260,14 +265,14 @@ auto net::TcpListener::bind(SocketAddr addr) -> Future<IoResult<TcpListener>> {
   auto res = into_sys_result(bind).map(
       std::function<TcpListener(int)>([=](auto n) { return listener; }));
   ASYNC_TRY(res);
-  fmt::print("bind fd:{}\n", listener.socket_.into_c_fd());
+  INFO("{} bind to {}\n", listener.socket_, addr);
   auto listen = co_await runtime::AsyncFuture(std::function<int()>([&]() {
     return ::listen(listener.socket_.into_c_fd(), max_pending_connection);
   }));
   res = into_sys_result(listen).map(
       std::function<TcpListener(int)>([=](auto n) { return listener; }));
   ASYNC_TRY(res);
-  fmt::print("listen fd:{}\n", listener.socket_.into_c_fd());
+  INFO("{} listening\n", listener.socket_);
   co_return Ok<TcpListener, IoError>(listener);
 }
 
@@ -324,14 +329,14 @@ auto net::TcpListener::accept()
             }))};
       }
       auto fd = res.unwrap();
-      std::array<char, INET_ADDRSTRLEN> ip{};
-      ip[INET_ADDRSTRLEN - 1] = 0;
+      std::string ip(INET_ADDRSTRLEN, 0);
       auto sock_addr = SocketAddr::new_v4(
           Ipv4Addr::New(inet_ntop(addr_in.sin_family, &addr_in.sin_addr,
                                   ip.data(), ip.size())),
           addr_in.sin_port);
       auto socket = Socket::New(fd);
-      fmt::print("accept {}\n", socket.into_c_fd());
+      INFO("accept from {} new connect={{{}, addr:{}}}\n", self_->socket_,
+           socket, sock_addr);
       return runtime::Ready<CoOutput>{
           Ok<std::pair<TcpStream, SocketAddr>, IoError>(
               {TcpStream(socket), sock_addr})};
