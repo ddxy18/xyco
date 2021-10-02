@@ -26,7 +26,7 @@ FetchContent_Declare(spdlog
                      GIT_TAG v1.x)
 FetchContent_MakeAvailable(spdlog)
 
-include_directories(src)
+include_directories(src tests)
 
 add_subdirectory(src)
 
