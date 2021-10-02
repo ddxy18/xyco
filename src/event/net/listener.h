@@ -10,7 +10,35 @@ class Poll;
 }
 
 namespace net {
+class TcpStream;
+class TcpListener;
+
 enum class Shutdown { Read, Write, All };
+
+class TcpSocket {
+  template <typename T>
+  using Future = runtime::Future<T>;
+
+ public:
+  auto bind(SocketAddr addr) -> Future<IoResult<Void>>;
+
+  auto connect(SocketAddr addr) -> Future<IoResult<TcpStream>>;
+
+  auto listen(int backlog) -> Future<IoResult<TcpListener>>;
+
+  auto set_reuseaddr(bool reuseaddr) -> IoResult<Void>;
+
+  auto set_reuseport(bool reuseport) -> IoResult<Void>;
+
+  static auto new_v4() -> IoResult<TcpSocket>;
+
+  static auto new_v6() -> IoResult<TcpSocket>;
+
+ private:
+  TcpSocket(int fd);
+
+  Socket socket_;
+};
 
 class TcpStream : public ReadTrait, WriteTrait {
   template <typename T>
@@ -42,6 +70,8 @@ class TcpStream : public ReadTrait, WriteTrait {
 };
 
 class TcpListener {
+  friend class TcpSocket;
+
   template <typename T>
   using Future = runtime::Future<T>;
 
@@ -51,6 +81,8 @@ class TcpListener {
   auto accept() -> Future<IoResult<std::pair<TcpStream, SocketAddr>>>;
 
  private:
+  TcpListener(int fd);
+
   Socket socket_;
   reactor::Poll *poll_;
 };

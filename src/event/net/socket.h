@@ -46,13 +46,14 @@ class Ipv6Addr {
 };
 
 class SocketAddr {
-  friend class Socket;
   friend struct fmt::formatter<SocketAddr>;
 
  public:
   static auto new_v4(Ipv4Addr ip, uint16_t port) -> SocketAddr;
 
   static auto new_v6(Ipv6Addr ip, uint16_t port) -> SocketAddr;
+
+  auto is_v4() -> bool;
 
   [[nodiscard]] auto into_c_addr() const -> const sockaddr*;
 
@@ -64,11 +65,7 @@ class Socket {
   friend struct fmt::formatter<Socket>;
 
  public:
-  static auto New(SocketAddr addr, int type) -> Socket;
-
-  static auto New(int fd) -> Socket;
-
-  static auto new_nonblocking(SocketAddr addr, int type) -> Socket;
+  Socket(int fd);
 
   [[nodiscard]] auto into_c_fd() const -> int;
 
