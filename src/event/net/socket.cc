@@ -28,6 +28,8 @@ auto SocketAddr::new_v6(Ipv6Addr ip, uint16_t port) -> SocketAddr {
   return addr;
 }
 
+auto SocketAddr::is_v4() -> bool { return addr_.index() == 0; }
+
 auto SocketAddr::into_c_addr() const -> const sockaddr* {
   const void* ptr = nullptr;
   if (addr_.index() == 0) {
@@ -39,20 +41,6 @@ auto SocketAddr::into_c_addr() const -> const sockaddr* {
   return static_cast<const sockaddr*>(ptr);
 }
 
-auto Socket::New(SocketAddr addr, int type) -> Socket {
-  auto sock = Socket{};
-  sock.fd_ = socket(addr.into_c_addr()->sa_family, type, 0);
-  return sock;
-}
-
-auto Socket::New(int fd) -> Socket {
-  auto sock = Socket{};
-  sock.fd_ = fd;
-  return sock;
-}
-
-auto Socket::new_nonblocking(SocketAddr addr, int type) -> Socket {
-  return New(addr, type | SOCK_NONBLOCK);
-}
+Socket::Socket(int fd) : fd_(fd) {}
 
 auto Socket::into_c_fd() const -> int { return fd_; }
