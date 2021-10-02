@@ -9,7 +9,7 @@ const int SERVER_PORT = 8080;
 
 auto start_server() -> Future<void> {
   auto res = co_await net::TcpListener::bind(
-      SocketAddr::new_v4(Ipv4Addr::New("127.0.0.1"), SERVER_PORT));
+      SocketAddr::new_v4(Ipv4Addr("127.0.0.1"), SERVER_PORT));
   if (res.is_err()) {
     auto err = res.unwrap_err();
     ERROR("bind error:{}\n", err);
@@ -29,11 +29,11 @@ auto start_client() -> Future<void> {
   constexpr int max_buf_size = 10;
 
   auto connection = (co_await net::TcpStream::connect(
-      SocketAddr::new_v4(Ipv4Addr::New("127.0.0.1"), SERVER_PORT)));
+      SocketAddr::new_v4(Ipv4Addr("127.0.0.1"), SERVER_PORT)));
   while (connection.is_err()) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     connection = (co_await net::TcpStream::connect(
-        SocketAddr::new_v4(Ipv4Addr::New("127.0.0.1"), SERVER_PORT)));
+        SocketAddr::new_v4(Ipv4Addr("127.0.0.1"), SERVER_PORT)));
   }
   auto c = connection.unwrap();
   auto buf = std::vector<char>(max_buf_size);

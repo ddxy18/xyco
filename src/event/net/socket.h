@@ -3,9 +3,6 @@
 
 #include <arpa/inet.h>
 
-#include <string>
-#include <variant>
-
 #include "spdlog/fmt/fmt.h"
 
 class SocketAddrV4 {
@@ -32,7 +29,7 @@ class Ipv4Addr {
   friend class SocketAddr;
 
  public:
-  static auto New(const char* s) -> Ipv4Addr;
+  Ipv4Addr(const char* s);
 
  private:
   in_addr inner_;
@@ -40,6 +37,9 @@ class Ipv4Addr {
 
 class Ipv6Addr {
   friend class SocketAddr;
+
+ public:
+  Ipv6Addr(const char* s);
 
  private:
   in6_addr inner_;
