@@ -1,9 +1,9 @@
 #include "socket.h"
 
-auto Ipv4Addr::New(const char* s) -> Ipv4Addr {
-  auto addr = Ipv4Addr{};
-  addr.inner_.s_addr = inet_addr(s);
-  return addr;
+Ipv4Addr::Ipv4Addr(const char* s) : inner_() { inet_pton(AF_INET, s, &inner_); }
+
+Ipv6Addr::Ipv6Addr(const char* s) : inner_() {
+  inet_pton(AF_INET6, s, &inner_);
 }
 
 auto SocketAddr::new_v4(Ipv4Addr ip, uint16_t port) -> SocketAddr {

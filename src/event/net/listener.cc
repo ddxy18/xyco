@@ -369,8 +369,8 @@ auto net::TcpListener::accept()
       auto fd = res.unwrap();
       std::string ip(INET_ADDRSTRLEN, 0);
       auto sock_addr = SocketAddr::new_v4(
-          Ipv4Addr::New(inet_ntop(addr_in.sin_family, &addr_in.sin_addr,
-                                  ip.data(), ip.size())),
+          Ipv4Addr(inet_ntop(addr_in.sin_family, &addr_in.sin_addr, ip.data(),
+                             ip.size())),
           addr_in.sin_port);
       auto socket = Socket(fd);
       INFO("accept from {} new connect={{{}, addr:{}}}\n", self_->socket_,
