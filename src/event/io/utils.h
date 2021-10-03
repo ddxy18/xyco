@@ -18,23 +18,10 @@ class IoError {
 };
 
 template <>
-struct fmt::formatter<IoError> {
-  static constexpr auto parse(format_parse_context& ctx)
-      -> decltype(ctx.begin()) {
-    const auto* it = ctx.begin();
-    const auto* end = ctx.end();
-    if (it != end && *it != '}') {
-      throw format_error("invalid format");
-    }
-
-    return it;
-  }
-
+struct fmt::formatter<IoError> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const IoError& err, FormatContext& ctx) -> decltype(ctx.out()) {
-    return format_to(ctx.out(), "{{errno={}, info={}}}", err.errno_,
-                     fmt::join(err.info_, ""));
-  }
+  auto format(const IoError& err, FormatContext& ctx) const
+      -> decltype(ctx.out());
 };
 
 auto into_sys_result(int return_value) -> IoResult<int>;

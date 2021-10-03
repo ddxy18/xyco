@@ -44,3 +44,38 @@ auto SocketAddr::into_c_addr() const -> const sockaddr* {
 Socket::Socket(int fd) : fd_(fd) {}
 
 auto Socket::into_c_fd() const -> int { return fd_; }
+
+template <typename FormatContext>
+auto fmt::formatter<SocketAddr>::format(const SocketAddr& addr,
+                                        FormatContext& ctx) const
+    -> decltype(ctx.out()) {
+  const auto* sock_addr = addr.into_c_addr();
+  std::string ip(INET_ADDRSTRLEN, 0);
+  inet_ntop(sock_addr->sa_family, static_cast<const char*>(sock_addr->sa_data),
+            ip.data(), ip.size());
+  uint16_t port = 0;
+  if (std::holds_alternative<SocketAddrV4>(addr.addr_)) {
+    port = std::get<SocketAddrV4>(addr.addr_).get_port();
+  } else {
+    port = std::get<SocketAddrV6>(addr.addr_).get_port();
+  }
+
+  return format_to(ctx.out(), "{}:{}", ip, port);
+}
+
+template <typename FormatContext>
+auto fmt::formatter<Socket>::format(const Socket& socket,
+                                    FormatContext& ctx) const
+    -> decltype(ctx.out()) {
+  return format_to(ctx.out(), "Socket{{fd={}}}", socket.fd_);
+}
+
+template auto fmt::formatter<SocketAddr>::format(
+    const SocketAddr& addr,
+    fmt::basic_format_context<fmt::appender, char>& ctx) const
+    -> decltype(ctx.out());
+
+template auto fmt::formatter<Socket>::format(
+    const Socket& socket,
+    fmt::basic_format_context<fmt::appender, char>& ctx) const
+    -> decltype(ctx.out());

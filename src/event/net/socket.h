@@ -76,55 +76,17 @@ class Socket {
 };
 
 template <>
-struct fmt::formatter<SocketAddr> {
-  static constexpr auto parse(format_parse_context& ctx)
-      -> decltype(ctx.begin()) {
-    const auto* it = ctx.begin();
-    const auto* end = ctx.end();
-    if (it != end && *it != '}') {
-      throw format_error("invalid format");
-    }
-
-    return it;
-  }
-
+struct fmt::formatter<SocketAddr> : public fmt::formatter<bool> {
   template <typename FormatContext>
   auto format(const SocketAddr& addr, FormatContext& ctx) const
-      -> decltype(ctx.out()) {
-    const auto* sock_addr = addr.into_c_addr();
-    std::string ip(INET_ADDRSTRLEN, 0);
-    inet_ntop(sock_addr->sa_family,
-              static_cast<const char*>(sock_addr->sa_data), ip.data(),
-              ip.size());
-    uint16_t port = 0;
-    if (std::holds_alternative<SocketAddrV4>(addr.addr_)) {
-      port = std::get<SocketAddrV4>(addr.addr_).get_port();
-    } else {
-      port = std::get<SocketAddrV6>(addr.addr_).get_port();
-    }
-
-    return format_to(ctx.out(), "{}:{}", ip, port);
-  }
+      -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<Socket> {
-  static constexpr auto parse(format_parse_context& ctx)
-      -> decltype(ctx.begin()) {
-    const auto* it = ctx.begin();
-    const auto* end = ctx.end();
-    if (it != end && *it != '}') {
-      throw format_error("invalid format");
-    }
-
-    return it;
-  }
-
+struct fmt::formatter<Socket> : public fmt::formatter<bool> {
   template <typename FormatContext>
   auto format(const Socket& socket, FormatContext& ctx) const
-      -> decltype(ctx.out()) {
-    return format_to(ctx.out(), "Socket{{fd={}}}", socket.fd_);
-  }
+      -> decltype(ctx.out());
 };
 
 #endif  // XYWEBSERVER_EVENT_NET_SOCKET_H_

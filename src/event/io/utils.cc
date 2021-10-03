@@ -15,3 +15,16 @@ auto into_sys_result(int return_value) -> IoResult<int> {
   }
   return Ok<int, IoError>(return_value);
 }
+
+template <typename FormatContext>
+auto fmt::formatter<IoError>::format(const IoError& err,
+                                     FormatContext& ctx) const
+    -> decltype(ctx.out()) {
+  return format_to(ctx.out(), "{{errno={}, info={}}}", err.errno_,
+                   fmt::join(err.info_, ""));
+}
+
+template auto fmt::formatter<IoError>::format(
+    const IoError& err,
+    fmt::basic_format_context<fmt::appender, char>& ctx) const
+    -> decltype(ctx.out());
