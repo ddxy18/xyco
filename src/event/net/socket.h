@@ -3,6 +3,8 @@
 
 #include <arpa/inet.h>
 
+#include <variant>
+
 #include "spdlog/fmt/fmt.h"
 
 class SocketAddrV4 {
