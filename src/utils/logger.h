@@ -15,6 +15,7 @@
 #undef WARN
 #undef ERROR
 
+#ifndef XYWEBSERVER_TEST
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TRACE(...) \
   SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::trace, __VA_ARGS__)
@@ -30,6 +31,13 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ERROR(...) \
   SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::err, __VA_ARGS__)
+#else
+#define TRACE(...) (void)0
+#define DEBUG(...) (void)0
+#define INFO(...) (void)0
+#define WARN(...) (void)0
+#define ERROR(...) (void)0
+#endif
 
 class LoggerCtx {
  public:
