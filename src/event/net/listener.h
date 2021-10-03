@@ -45,7 +45,7 @@ class TcpStream : public ReadTrait, WriteTrait {
   using Future = runtime::Future<T>;
 
  public:
-  explicit TcpStream(Socket socket) : socket_(socket) {}
+  explicit TcpStream(Socket socket);
 
   static auto connect(SocketAddr addr) -> Future<IoResult<TcpStream>>;
 

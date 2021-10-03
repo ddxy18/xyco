@@ -120,6 +120,8 @@ auto net::TcpSocket::new_v6() -> IoResult<TcpSocket> {
 
 net::TcpSocket::TcpSocket(int fd) : socket_(fd) {}
 
+net::TcpStream::TcpStream(Socket socket) : socket_(socket) {}
+
 auto net::TcpStream::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
   auto socket = addr.is_v4() ? TcpSocket::new_v4() : TcpSocket::new_v6();
   if (socket.is_err()) {

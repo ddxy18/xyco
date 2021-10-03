@@ -1,5 +1,9 @@
 #include "socket.h"
 
+auto SocketAddrV4::get_port() const -> uint16_t { return inner_.sin_port; }
+
+auto SocketAddrV6::get_port() const -> uint16_t { return inner_.sin6_port; }
+
 Ipv4Addr::Ipv4Addr(const char* s) : inner_() { inet_pton(AF_INET, s, &inner_); }
 
 Ipv6Addr::Ipv6Addr(const char* s) : inner_() {

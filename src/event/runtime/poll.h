@@ -51,10 +51,9 @@ class Registry {
 
 class Poll {
  public:
-  explicit Poll(std::unique_ptr<Registry> registry)
-      : registry_(std::move(registry)) {}
+  explicit Poll(std::unique_ptr<Registry> registry);
 
-  auto registry() -> Registry * { return registry_.get(); }
+  auto registry() -> Registry *;
 
   auto poll(Events *events, int timeout) -> IoResult<Void>;
 

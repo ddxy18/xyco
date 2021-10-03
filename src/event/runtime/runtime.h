@@ -8,6 +8,7 @@
 namespace runtime {
 class Runtime;
 class Builder;
+class Driver;
 
 class Worker {
  public:
@@ -44,19 +45,15 @@ class Runtime : public RuntimeBase {
     })());
   }
 
-  auto register_future(FutureBase *future) -> void override {
-    this->handles_.emplace(handles_.begin(), future->get_handle(), future);
-  }
+  auto register_future(FutureBase *future) -> void override;
 
-  auto io_handle() -> IoHandle * override { return driver_->net_handle(); }
+  auto io_handle() -> IoHandle * override;
 
-  auto blocking_handle() -> IoHandle * override {
-    return driver_->blocking_handle();
-  }
+  auto blocking_handle() -> IoHandle * override;
 
   auto run() -> void;
 
-  Runtime(Privater priv) {}
+  Runtime(Privater priv);
 
  private:
   std::vector<Worker> workers_;
@@ -69,17 +66,11 @@ class Runtime : public RuntimeBase {
 
 class Builder {
  public:
-  static auto new_multi_thread() -> Builder { return {}; }
+  static auto new_multi_thread() -> Builder;
 
-  auto worker_threads(uintptr_t val) -> Builder & {
-    worker_num_ = val;
-    return *this;
-  }
+  auto worker_threads(uintptr_t val) -> Builder &;
 
-  auto max_blocking_threads(uintptr_t val) -> Builder & {
-    blocking_num_ = val;
-    return *this;
-  }
+  auto max_blocking_threads(uintptr_t val) -> Builder &;
 
   auto enable_io() -> Builder &;
 
