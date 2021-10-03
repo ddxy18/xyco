@@ -11,7 +11,7 @@ class Epoll;
 namespace runtime {
 class BlockingPoll : public reactor::Registry {
  public:
-  explicit BlockingPoll(int woker_num) : pool_(woker_num) { pool_.run(); }
+  explicit BlockingPoll(int woker_num);
 
   [[nodiscard]] auto Register(reactor::Event* ev) -> IoResult<Void> override;
 
@@ -31,9 +31,9 @@ class Driver {
  public:
   auto poll() -> void;
 
-  auto net_handle() -> reactor::Poll* { return &net_poll_; }
+  auto net_handle() -> reactor::Poll*;
 
-  auto blocking_handle() -> reactor::Poll* { return &blocking_poll_; }
+  auto blocking_handle() -> reactor::Poll*;
 
   explicit Driver(uintptr_t blocking_num);
 

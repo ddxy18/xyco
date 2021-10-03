@@ -3,6 +3,11 @@
 #include "future.h"
 #include "runtime_base.h"
 
+reactor::Poll::Poll(std::unique_ptr<Registry> registry)
+    : registry_(std::move(registry)) {}
+
+auto reactor::Poll::registry() -> Registry * { return registry_.get(); }
+
 auto reactor::Poll::poll(Events *events, int timeout) -> IoResult<Void> {
   auto res = registry_->select(events, timeout);
   for (auto &ev : *events) {

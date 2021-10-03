@@ -2,6 +2,10 @@
 
 #include <thread>
 
+blocking::Task::Task(const std::function<void()> &task) : inner_(task) {}
+
+blocking::BlockingPool::BlockingPool(int worker_num) : workers_(worker_num) {}
+
 auto blocking::Task::operator()() -> void { inner_(); }
 
 auto blocking::Worker::run() -> void {

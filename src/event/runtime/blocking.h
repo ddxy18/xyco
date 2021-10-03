@@ -7,7 +7,7 @@
 namespace blocking {
 class Task {
  public:
-  explicit Task(const std::function<void()> &task) : inner_(task) {}
+  explicit Task(const std::function<void()> &task);
 
   auto operator()() -> void;
 
@@ -30,8 +30,10 @@ class Worker {
 
 class BlockingPool {
  public:
-  explicit BlockingPool(int worker_num) : workers_(worker_num) {}
+  explicit BlockingPool(int worker_num);
+
   auto run() -> void;
+
   auto spawn(Task task) -> void;
 
  private:

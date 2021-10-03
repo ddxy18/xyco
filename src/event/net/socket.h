@@ -11,7 +11,7 @@ class SocketAddrV4 {
   friend class SocketAddr;
 
  public:
-  [[nodiscard]] auto get_port() const -> uint16_t { return inner_.sin_port; }
+  [[nodiscard]] auto get_port() const -> uint16_t;
 
  private:
   sockaddr_in inner_;
@@ -21,7 +21,7 @@ class SocketAddrV6 {
   friend class SocketAddr;
 
  public:
-  [[nodiscard]] auto get_port() const -> uint16_t { return inner_.sin6_port; }
+  [[nodiscard]] auto get_port() const -> uint16_t;
 
  private:
   sockaddr_in6 inner_;

@@ -203,7 +203,6 @@ class Future<void> : public FutureBase {
    public:
     auto get_return_object() -> Future<void>;
 
-    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     auto initial_suspend() noexcept -> InitFuture;
 
     auto final_suspend() noexcept -> FinalAwaitable;
