@@ -201,18 +201,16 @@ class Future<void> : public FutureBase {
     friend class Future::Awaitable;
 
    public:
-    auto get_return_object() -> Future<void> {
-      return Future(Handle<promise_type>::from_promise(*this));
-    }
+    auto get_return_object() -> Future<void>;
 
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-    auto initial_suspend() noexcept -> InitFuture { return {}; }
+    auto initial_suspend() noexcept -> InitFuture;
 
-    auto final_suspend() noexcept -> FinalAwaitable { return {waiting_}; }
+    auto final_suspend() noexcept -> FinalAwaitable;
 
-    auto unhandled_exception() -> void {}
+    auto unhandled_exception() -> void;
 
-    auto return_void() -> void {}
+    auto return_void() -> void;
 
    private:
     Handle<void> waiting_;
@@ -220,44 +218,25 @@ class Future<void> : public FutureBase {
 
   class Awaitable {
    public:
-    explicit Awaitable(Future<void> &future) noexcept : future_(future) {}
+    explicit Awaitable(Future<void> &future) noexcept;
 
-    [[nodiscard]] auto await_ready() const noexcept -> bool {
-      if (future_.self_) {
-        return future_.self_.done();
-      }
-      return false;
-    }
+    [[nodiscard]] auto await_ready() const noexcept -> bool;
 
-    auto await_suspend(Handle<void> waiting_coroutine) noexcept -> bool {
-      future_.waiting_ = waiting_coroutine;
-      // async function's return type
-      if (future_.self_) {
-        future_.self_.promise().waiting_ = waiting_coroutine;
-        return true;
-      }
-      // Future object
-      auto res = future_.poll(waiting_coroutine);
-      return std::holds_alternative<Pending>(res);
-    }
+    auto await_suspend(Handle<void> waiting_coroutine) noexcept -> bool;
 
-    auto await_resume() -> void {}
+    auto await_resume() -> void;
 
    private:
     Future<void> &future_;
   };
 
-  explicit Future(Handle<promise_type> self) : self_(self) {}
+  explicit Future(Handle<promise_type> self);
 
-  auto operator co_await() -> Awaitable { return Awaitable{*this}; }
+  auto operator co_await() -> Awaitable;
 
-  [[nodiscard]] virtual auto poll(Handle<void> self) -> Poll<void> {
-    return Pending();
-  }
+  [[nodiscard]] virtual auto poll(Handle<void> self) -> Poll<void>;
 
-  [[nodiscard]] auto poll_wrapper() -> bool override {
-    return !std::holds_alternative<Pending>(poll(waiting_));
-  }
+  [[nodiscard]] auto poll_wrapper() -> bool override;
 
   inline auto get_handle() -> Handle<void> override {
     return self_ == nullptr ? waiting_ : self_;
