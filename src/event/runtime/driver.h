@@ -13,14 +13,14 @@ class BlockingPoll : public reactor::Registry {
  public:
   explicit BlockingPoll(int woker_num);
 
-  [[nodiscard]] auto Register(reactor::Event* ev) -> IoResult<Void> override;
+  [[nodiscard]] auto Register(reactor::Event* ev) -> IoResult<void> override;
 
-  [[nodiscard]] auto reregister(reactor::Event* ev) -> IoResult<Void> override;
+  [[nodiscard]] auto reregister(reactor::Event* ev) -> IoResult<void> override;
 
-  [[nodiscard]] auto deregister(reactor::Event* ev) -> IoResult<Void> override;
+  [[nodiscard]] auto deregister(reactor::Event* ev) -> IoResult<void> override;
 
   [[nodiscard]] auto select(reactor::Events* events, int timeout)
-      -> IoResult<Void> override;
+      -> IoResult<void> override;
 
  private:
   reactor::Events events_;

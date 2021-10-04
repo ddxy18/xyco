@@ -15,8 +15,6 @@
     f();                                       \
   })
 
-class Void;
-
 class TestRuntimeCtxGuard {
  public:
   TestRuntimeCtxGuard(

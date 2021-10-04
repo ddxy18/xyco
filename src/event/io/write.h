@@ -13,9 +13,9 @@ class WriteTrait {
       -> Future<IoResult<uintptr_t>> = 0;
 
   virtual auto write_all(const std::vector<char> &buf)
-      -> Future<IoResult<Void>> = 0;
+      -> Future<IoResult<void>> = 0;
 
-  virtual auto flush() -> Future<IoResult<Void>> = 0;
+  virtual auto flush() -> Future<IoResult<void>> = 0;
 };
 
 #endif  // XYWEBSERVER_EVENT_IO_WRITE_H_
