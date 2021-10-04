@@ -127,15 +127,17 @@ TEST_F(ListenerTest, TcpListener_accept) {
         const char *ip = "127.0.0.1";
         const uint16_t port = 8086;
 
-        auto listener =
+        auto server =
             (co_await net::TcpListener::bind(SocketAddr::new_v4(ip, port)))
                 .unwrap();
-        auto [stream, addr] = (co_await listener.accept()).unwrap();
+        auto client = (co_await net::TcpSocket::new_v4().unwrap().connect(
+                           SocketAddr::new_v4(ip, port)))
+                          .unwrap();
+        auto [stream, addr] = (co_await server.accept()).unwrap();
         const auto *raw_addr = static_cast<const sockaddr_in *>(
             static_cast<const void *>(addr.into_c_addr()));
 
         CO_ASSERT_EQ(raw_addr->sin_addr.s_addr, inet_addr(ip));
-        CO_ASSERT_EQ(raw_addr->sin_port, port);
       }});
   delete p;
 }
