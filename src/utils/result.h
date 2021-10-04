@@ -62,8 +62,14 @@ class Result {
     // return std::get<1>(inner_);  // unreachable
   }
 
-  template <typename MapT>
-  [[nodiscard]] auto map(const std::function<MapT(T)>& f) -> Result<MapT, E> {
+  template <typename Fn>
+  [[nodiscard]] auto map(const Fn& f)
+      -> Result<decltype(f(std::get<0>(std::variant<T, E, bool>{
+                    std::in_place_index<2>, true}))),
+                E>
+  requires std::is_invocable_v<Fn, T> {
+    using MapT = decltype(f(std::get<0>(this->inner_)));
+
     if constexpr (std::is_same_v<MapT, void>) {
       if (inner_.index() == 0) {
         return Ok<E>();
@@ -77,9 +83,13 @@ class Result {
     }
   }
 
-  template <typename MapE>
-  [[nodiscard]] auto map_err(const std::function<MapE(E)>& f)
-      -> Result<T, MapE> {
+  template <typename Fn>
+  [[nodiscard]] auto map_err(const Fn& f)
+      -> Result<T, decltype(f(std::get<1>(std::variant<T, E, bool>{
+                       std::in_place_index<2>, true})))>
+  requires std::is_invocable_v<Fn, E> {
+    using MapE = decltype(f(std::get<1>(this->inner_)));
+
     if constexpr (std::is_same_v<MapE, void>) {
       if (inner_.index() == 1) {
         return Err<T>();
@@ -127,20 +137,22 @@ class Result<void, void> {
     }
   }
 
-  template <typename MapT>
-  [[nodiscard]] auto map(const std::function<MapT(void)>& f)
-      -> Result<MapT, void>
-  requires(!std::is_void<MapT>::value) {
+  template <typename Fn>
+  [[nodiscard]] auto map(const Fn& f) -> Result<decltype(f()), void>
+  requires(!std::is_void<decltype(f())>::value && std::is_invocable_v<Fn>) {
+    using MapT = decltype(f());
+
     if (inner_.index() == 0) {
       return Ok<MapT, void>(f());
     }
     return Err<MapT>();
   }
 
-  template <typename MapE>
-  [[nodiscard]] auto map_err(const std::function<MapE(void)>& f)
-      -> Result<void, MapE>
-  requires(!std::is_void<MapE>::value) {
+  template <typename Fn>
+  [[nodiscard]] auto map_err(const Fn& f) -> Result<void, decltype(f())>
+  requires(!std::is_void<decltype(f())>::value && std::is_invocable_v<Fn>) {
+    using MapE = decltype(f());
+
     if (inner_.index() == 1) {
       return Err<void, MapE>(f());
     }
@@ -184,9 +196,14 @@ requires(!std::is_same_v<T, void>) class Result<T, void> {
     }
   }
 
-  template <typename MapT>
-  [[nodiscard]] auto map(const std::function<MapT(T)>& f)
-      -> Result<MapT, void> {
+  template <typename Fn>
+  [[nodiscard]] auto map(const Fn& f)
+      -> Result<decltype(f(std::get<0>(
+                    std::variant<T, bool>(std::in_place_index<1>, true)))),
+                void>
+  requires(std::is_invocable_v<Fn, T>) {
+    using MapT = decltype(f(std::get<0>(this->inner_)));
+
     if constexpr (std::is_same_v<MapT, void>) {
       if (inner_.index() == 0) {
         return Ok<void>();
@@ -200,10 +217,11 @@ requires(!std::is_same_v<T, void>) class Result<T, void> {
     }
   }
 
-  template <typename MapE>
-  [[nodiscard]] auto map_err(const std::function<MapE(void)>& f)
-      -> Result<T, MapE>
-  requires(!std::is_void<MapE>::value) {
+  template <typename Fn>
+  [[nodiscard]] auto map_err(const Fn& f) -> Result<T, decltype(f())>
+  requires(!std::is_void<decltype(f())>::value && std::is_invocable_v<Fn>) {
+    using MapE = decltype(f());
+
     if (inner_.index() == 1) {
       return Err<T, MapE>(f());
     }
@@ -245,18 +263,24 @@ class Result<void, E> {
     return std::get<1>(inner_);
   }
 
-  template <typename MapT>
-  [[nodiscard]] auto map(const std::function<MapT(void)>& f) -> Result<MapT, E>
-  requires(!std::is_void<MapT>::value) {
+  template <typename Fn>
+  [[nodiscard]] auto map(const Fn& f) -> Result<decltype(f()), E>
+  requires(!std::is_void<decltype(f())>::value && std::is_invocable_v<Fn>) {
+    using MapT = decltype(f());
+
     if (inner_.index() == 1) {
       return Err<MapT, E>(std::get<1>(inner_));
     }
     return Ok<MapT, E>(f());
   }
 
-  template <typename MapE>
-  [[nodiscard]] auto map_err(const std::function<MapE(E)>& f)
-      -> Result<void, MapE> {
+  template <typename Fn>
+  [[nodiscard]] auto map_err(const Fn& f)
+      -> Result<void, decltype(f(std::get<1>(std::variant<bool, E>(
+                          std::in_place_index<0>, true))))>
+  requires std::is_invocable_v<Fn, E> {
+    using MapE = decltype(f(std::get<1>(std::variant<bool, E>())));
+
     if constexpr (std::is_same_v<MapE, void>) {
       if (inner_.index() == 1) {
         return Err<void>();
