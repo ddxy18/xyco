@@ -41,8 +41,8 @@ auto net::TcpSocket::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
             ::connect(sock_.into_c_fd(), addr_.into_c_addr(), sizeof(sockaddr));
         if (c == -1) {
           if (errno == EINPROGRESS || errno == EAGAIN) {
-            event_ = reactor::Event{reactor::Interest::Read, sock_.into_c_fd(),
-                                    this};
+            event_ =
+                reactor::Event{reactor::Interest::All, sock_.into_c_fd(), this};
             auto res = runtime::RuntimeCtx::get_ctx()
                            ->io_handle()
                            ->registry()
