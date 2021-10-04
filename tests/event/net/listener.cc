@@ -9,7 +9,7 @@ class ListenerTest : public ::testing::Test {
   void SetUp() override {}
 };
 
-//TODO(dongxiaoyu): add failure cases
+// TODO(dongxiaoyu): add failure cases
 
 TEST_F(ListenerTest, bind_same_addr) {
   gsl::owner<std::function<runtime::Future<void>()> *> p =

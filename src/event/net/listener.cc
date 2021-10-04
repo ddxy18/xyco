@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <clocale>
+#include <cstdint>
 
 #include "event/runtime/async.h"
 
@@ -14,8 +15,7 @@ auto net::TcpSocket::bind(SocketAddr addr) -> Future<IoResult<void>> {
   auto bind = co_await runtime::AsyncFuture(std::function<int()>([&]() {
     return ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr));
   }));
-  auto res =
-      into_sys_result(bind).map(std::function<void(int)>([=](auto n) {}));
+  auto res = into_sys_result(bind).map([](auto n) {});
   ASYNC_TRY(res);
   INFO("{} bind to {}\n", socket_, addr);
 
@@ -97,25 +97,23 @@ auto net::TcpSocket::listen(int backlog) -> Future<IoResult<TcpListener>> {
 auto net::TcpSocket::set_reuseaddr(bool reuseaddr) -> IoResult<void> {
   return into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
                                       SO_REUSEADDR, &reuseaddr, sizeof(bool)))
-      .map(std::function<void(int)>([=](auto n) {}));
+      .map([](auto n) {});
 }
 
 auto net::TcpSocket::set_reuseport(bool reuseport) -> IoResult<void> {
   return into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
                                       SO_REUSEADDR, &reuseport, sizeof(bool)))
-      .map(std::function<void(int)>([=](auto n) {}));
+      .map([](auto n) {});
 }
 
 auto net::TcpSocket::new_v4() -> IoResult<TcpSocket> {
   return into_sys_result(::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0))
-      .map(
-          std::function<TcpSocket(int)>([](auto fd) { return TcpSocket(fd); }));
+      .map([](auto fd) { return TcpSocket(fd); });
 }
 
 auto net::TcpSocket::new_v6() -> IoResult<TcpSocket> {
   return into_sys_result(::socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, 0))
-      .map(
-          std::function<TcpSocket(int)>([](auto fd) { return TcpSocket(fd); }));
+      .map([](auto fd) { return TcpSocket(fd); });
 }
 
 net::TcpSocket::TcpSocket(int fd) : socket_(fd) {}
@@ -153,14 +151,14 @@ auto net::TcpStream::read(std::vector<char> *buf)
                        ->io_handle()
                        ->registry()
                        ->Register(&event_)
-                       .map(std::function<uintptr_t(void)>([]() { return 0; }));
+                       .map([]() -> uintptr_t { return 0; });
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()
                       ->io_handle()
                       ->registry()
                       ->reregister(&event_)
-                      .map(std::function<uintptr_t(void)>([]() { return 0; }));
+                      .map([]() -> uintptr_t { return 0; });
           }
           if (res.is_err()) {
             return runtime::Ready<CoOutput>{res};
@@ -174,12 +172,13 @@ auto net::TcpStream::read(std::vector<char> *buf)
                        ->io_handle()
                        ->registry()
                        ->reregister(&event_)
-                       .map(std::function<uintptr_t(void)>([]() { return 0; }));
+                       .map([]() -> uintptr_t { return 0; });
         return runtime::Pending();
       }
       auto nbytes =
-          into_sys_result(static_cast<int>(n))
-              .map(std::function<uintptr_t(int)>([](auto n) { return n; }));
+          into_sys_result(static_cast<int>(n)).map([](auto n) -> uintptr_t {
+            return n;
+          });
       INFO("read {} bytes from {}\n", n, self_->socket_);
       return runtime::Ready<CoOutput>{nbytes};
     }
@@ -218,14 +217,14 @@ auto net::TcpStream::write(I begin, I end) -> Future<IoResult<uintptr_t>> {
                        ->io_handle()
                        ->registry()
                        ->Register(&event_)
-                       .map(std::function<uintptr_t(void)>([]() { return 0; }));
+                       .map([]() -> uintptr_t { return 0; });
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()
                       ->io_handle()
                       ->registry()
                       ->reregister(&event_)
-                      .map(std::function<uintptr_t(void)>([]() { return 0; }));
+                      .map([]() -> uintptr_t { return 0; });
           }
           if (res.is_err()) {
             return runtime::Ready<CoOutput>{res};
@@ -234,8 +233,8 @@ auto net::TcpStream::write(I begin, I end) -> Future<IoResult<uintptr_t>> {
         return runtime::Pending();
       }
       auto n = ::write(self_->socket_.into_c_fd(), &*begin_, end_ - begin_);
-      auto nbytes = into_sys_result(n).map(std::function<uintptr_t(int)>(
-          [](auto n) { return static_cast<uintptr_t>(n); }));
+      auto nbytes = into_sys_result(n).map(
+          [](auto n) -> uintptr_t { return static_cast<uintptr_t>(n); });
       INFO("write {} bytes to {}\n", n, self_->socket_);
       return runtime::Ready<CoOutput>{nbytes};
     }
@@ -266,11 +265,10 @@ auto net::TcpStream::write_all(const std::vector<char> &buf)
   auto end = buf.cend();
 
   while (total_write != len) {
-    auto res = (co_await write(begin, end))
-                   .map(std::function<void(uintptr_t)>([&](auto n) {
-                     total_write += n;
-                     begin += n;
-                   }));
+    auto res = (co_await write(begin, end)).map([&](auto n) {
+      total_write += n;
+      begin += n;
+    });
     if (res.is_err()) {
       auto err = res.unwrap_err();
       if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK ||
@@ -294,7 +292,7 @@ auto net::TcpStream::shutdown(Shutdown shutdown) const
         return ::shutdown(
             socket_.into_c_fd(),
             static_cast<std::underlying_type_t<Shutdown>>(shutdown));
-      }))).map(std::function<void(int)>([](auto n) {}));
+      }))).map([](auto n) {});
   ASYNC_TRY(res);
   INFO("shutdown {}\n", socket_);
   co_return Ok<IoError>();

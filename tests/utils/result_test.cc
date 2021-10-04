@@ -60,8 +60,8 @@ TEST_F(ResultTest, UnwrapOr) {
 }
 
 TEST_F(ResultTest, Map) {
-  auto map_int_f = std::function<const char *(int)>([](auto n) { return "a"; });
-  auto map_void_f = std::function<const char *(void)>([]() { return "a"; });
+  auto map_int_f = [](auto n) { return "a"; };
+  auto map_void_f = []() { return "a"; };
 
   ASSERT_EQ(no_void_ok_.map(map_int_f).unwrap(), "a");
   ASSERT_EQ(no_void_err_.map(map_int_f).unwrap_err(), 1);
@@ -74,15 +74,15 @@ TEST_F(ResultTest, Map) {
 }
 
 TEST_F(ResultTest, MapToVoid) {
-  auto map_to_void_f = std::function<void(int)>([](auto n) {});
+  auto map_to_void_f = [](auto n) {};
 
   ASSERT_NO_THROW(no_void_ok_.map(map_to_void_f).unwrap());
   ASSERT_EQ(no_void_err_.map(map_to_void_f).unwrap_err(), 1);
 }
 
 TEST_F(ResultTest, MapErr) {
-  auto map_int_f = std::function<const char *(int)>([](auto n) { return "a"; });
-  auto map_void_f = std::function<const char *(void)>([]() { return "a"; });
+  auto map_int_f = [](auto n) { return "a"; };
+  auto map_void_f = []() { return "a"; };
 
   ASSERT_EQ(no_void_ok_.map_err(map_int_f).unwrap(), 1);
   ASSERT_EQ(no_void_err_.map_err(map_int_f).unwrap_err(), "a");
@@ -95,7 +95,7 @@ TEST_F(ResultTest, MapErr) {
 }
 
 TEST_F(ResultTest, MapErrToVoid) {
-  auto map_to_void_f = std::function<void(int)>([](auto n) {});
+  auto map_to_void_f = [](auto n) {};
 
   ASSERT_EQ(no_void_ok_.map_err(map_to_void_f).unwrap(), 1);
   ASSERT_NO_THROW(no_void_err_.map_err(map_to_void_f).unwrap_err());

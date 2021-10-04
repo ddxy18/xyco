@@ -28,7 +28,7 @@ auto net::Epoll::Register(reactor::Event *event) -> IoResult<void> {
 
   auto result =
       into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_ADD, event->fd_, &epoll_event))
-          .map(std::function<void(int)>([&](auto n) {}));
+          .map([&](auto n) -> void {});
   TRY(result);
   TRACE("register fd:{}\n", event->fd_, epoll_event.data.ptr);
 
@@ -41,7 +41,7 @@ auto net::Epoll::reregister(reactor::Event *event) -> IoResult<void> {
 
   auto result =
       into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_MOD, event->fd_, &epoll_event))
-          .map(std::function<void(int)>([&](auto n) {}));
+          .map([](auto n) {});
   TRY(result);
   TRACE("reregister fd:{}\n", event->fd_, epoll_event.data.ptr);
 
@@ -54,7 +54,7 @@ auto net::Epoll::deregister(reactor::Event *event) -> IoResult<void> {
 
   auto result =
       into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_DEL, event->fd_, &epoll_event))
-          .map(std::function<void(int)>([&](auto n) {}));
+          .map([](auto n) {});
   TRY(result);
   TRACE("deregister fd:{}\n", event->fd_, epoll_event.data.ptr);
 
@@ -73,8 +73,7 @@ auto net::Epoll::select(reactor::Events *events, int timeout)
 
   auto ready_len =
       epoll_wait(epfd_, epoll_events.data(), final_max_events, final_timeout);
-  auto result =
-      into_sys_result(ready_len).map(std::function<void(int)>([](auto n) {}));
+  auto result = into_sys_result(ready_len).map([](auto n) {});
   TRY(result);
   TRACE("epoll_wait:{}\n", ready_len);
 
