@@ -10,8 +10,6 @@
 template <typename T, typename E>
 class Result;
 
-class Void {};
-
 template <typename T>
 concept Printable = requires(T val) {
   fmt::print(fmt::runtime("{}"), val);
@@ -68,7 +66,7 @@ class Result {
   [[nodiscard]] auto map(const std::function<MapT(T)>& f) -> Result<MapT, E> {
     if constexpr (std::is_same_v<MapT, void>) {
       if (inner_.index() == 0) {
-        return Ok<MapT, E>();
+        return Ok<E>();
       }
       return Err<MapT, E>(std::get<1>(inner_));
     } else {
@@ -80,11 +78,11 @@ class Result {
   }
 
   template <typename MapE>
-  [[nodiscard]] auto map_err(const std::function<MapE(E)>& f) -> Result<T, MapE>
-  requires(!std::is_void<MapE>::value) {
+  [[nodiscard]] auto map_err(const std::function<MapE(E)>& f)
+      -> Result<T, MapE> {
     if constexpr (std::is_same_v<MapE, void>) {
-      if (!inner_.index() == 1) {
-        return Err<T, MapE>();
+      if (inner_.index() == 1) {
+        return Err<T>();
       }
       return Ok<T, MapE>(std::get<0>(inner_));
     } else {

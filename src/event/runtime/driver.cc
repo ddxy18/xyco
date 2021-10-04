@@ -6,23 +6,23 @@ runtime::BlockingPoll::BlockingPoll(int woker_num) : pool_(woker_num) {
   pool_.run();
 }
 
-auto runtime::BlockingPoll::Register(reactor::Event* ev) -> IoResult<Void> {
+auto runtime::BlockingPoll::Register(reactor::Event* ev) -> IoResult<void> {
   events_.push_back(ev);
   pool_.spawn(
       blocking::Task(*static_cast<std::function<void()>*>(ev->before_extra_)));
-  return Ok<Void, IoError>(Void());
+  return Ok<IoError>();
 }
 
-auto runtime::BlockingPoll::reregister(reactor::Event* ev) -> IoResult<Void> {
-  return Ok<Void, IoError>(Void());
+auto runtime::BlockingPoll::reregister(reactor::Event* ev) -> IoResult<void> {
+  return Ok<IoError>();
 }
 
-auto runtime::BlockingPoll::deregister(reactor::Event* ev) -> IoResult<Void> {
-  return Ok<Void, IoError>(Void());
+auto runtime::BlockingPoll::deregister(reactor::Event* ev) -> IoResult<void> {
+  return Ok<IoError>();
 }
 
 auto runtime::BlockingPoll::select(reactor::Events* events, int timeout)
-    -> IoResult<Void> {
+    -> IoResult<void> {
   auto i = 0;
   decltype(events_) new_events;
   std::copy_if(std::begin(events_), std::end(events_),
@@ -32,7 +32,7 @@ auto runtime::BlockingPoll::select(reactor::Events* events, int timeout)
                std::back_inserter(*events),
                [](auto* ev) { return ev->after_extra_ != nullptr; });
   events_ = new_events;
-  return Ok<Void, IoError>(Void());
+  return Ok<IoError>();
 }
 
 auto runtime::Driver::poll() -> void {

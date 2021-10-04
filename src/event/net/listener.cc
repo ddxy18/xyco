@@ -10,12 +10,12 @@
 template <typename T>
 using Future = runtime::Future<T>;
 
-auto net::TcpSocket::bind(SocketAddr addr) -> Future<IoResult<Void>> {
+auto net::TcpSocket::bind(SocketAddr addr) -> Future<IoResult<void>> {
   auto bind = co_await runtime::AsyncFuture(std::function<int()>([&]() {
     return ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr));
   }));
-  auto res = into_sys_result(bind).map(
-      std::function<Void(int)>([=](auto n) { return Void(); }));
+  auto res =
+      into_sys_result(bind).map(std::function<void(int)>([=](auto n) {}));
   ASYNC_TRY(res);
   INFO("{} bind to {}\n", socket_, addr);
 
@@ -94,16 +94,16 @@ auto net::TcpSocket::listen(int backlog) -> Future<IoResult<TcpListener>> {
   co_return Ok<TcpListener, IoError>(listener);
 }
 
-auto net::TcpSocket::set_reuseaddr(bool reuseaddr) -> IoResult<Void> {
+auto net::TcpSocket::set_reuseaddr(bool reuseaddr) -> IoResult<void> {
   return into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
                                       SO_REUSEADDR, &reuseaddr, sizeof(bool)))
-      .map(std::function<Void(int)>([=](auto n) { return Void(); }));
+      .map(std::function<void(int)>([=](auto n) {}));
 }
 
-auto net::TcpSocket::set_reuseport(bool reuseport) -> IoResult<Void> {
+auto net::TcpSocket::set_reuseport(bool reuseport) -> IoResult<void> {
   return into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
                                       SO_REUSEADDR, &reuseport, sizeof(bool)))
-      .map(std::function<Void(int)>([=](auto n) { return Void(); }));
+      .map(std::function<void(int)>([=](auto n) {}));
 }
 
 auto net::TcpSocket::new_v4() -> IoResult<TcpSocket> {
@@ -153,16 +153,14 @@ auto net::TcpStream::read(std::vector<char> *buf)
                        ->io_handle()
                        ->registry()
                        ->Register(&event_)
-                       .map(std::function<uintptr_t(Void)>(
-                           [](auto res) { return 0; }));
+                       .map(std::function<uintptr_t(void)>([]() { return 0; }));
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()
                       ->io_handle()
                       ->registry()
                       ->reregister(&event_)
-                      .map(std::function<uintptr_t(Void)>(
-                          [](auto res) { return 0; }));
+                      .map(std::function<uintptr_t(void)>([]() { return 0; }));
           }
           if (res.is_err()) {
             return runtime::Ready<CoOutput>{res};
@@ -176,8 +174,7 @@ auto net::TcpStream::read(std::vector<char> *buf)
                        ->io_handle()
                        ->registry()
                        ->reregister(&event_)
-                       .map(std::function<uintptr_t(Void)>(
-                           [](auto res) { return 0; }));
+                       .map(std::function<uintptr_t(void)>([]() { return 0; }));
         return runtime::Pending();
       }
       auto nbytes =
@@ -221,16 +218,14 @@ auto net::TcpStream::write(I begin, I end) -> Future<IoResult<uintptr_t>> {
                        ->io_handle()
                        ->registry()
                        ->Register(&event_)
-                       .map(std::function<uintptr_t(Void)>(
-                           [](auto res) { return 0; }));
+                       .map(std::function<uintptr_t(void)>([]() { return 0; }));
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()
                       ->io_handle()
                       ->registry()
                       ->reregister(&event_)
-                      .map(std::function<uintptr_t(Void)>(
-                          [](auto res) { return 0; }));
+                      .map(std::function<uintptr_t(void)>([]() { return 0; }));
           }
           if (res.is_err()) {
             return runtime::Ready<CoOutput>{res};
@@ -264,7 +259,7 @@ auto net::TcpStream::write(const std::vector<char> &buf)
 }
 
 auto net::TcpStream::write_all(const std::vector<char> &buf)
-    -> Future<IoResult<Void>> {
+    -> Future<IoResult<void>> {
   auto len = buf.size();
   auto total_write = 0;
   auto begin = buf.cbegin();
@@ -272,10 +267,9 @@ auto net::TcpStream::write_all(const std::vector<char> &buf)
 
   while (total_write != len) {
     auto res = (co_await write(begin, end))
-                   .map(std::function<Void(uintptr_t)>([&](auto n) {
+                   .map(std::function<void(uintptr_t)>([&](auto n) {
                      total_write += n;
                      begin += n;
-                     return Void();
                    }));
     if (res.is_err()) {
       auto err = res.unwrap_err();
@@ -283,27 +277,27 @@ auto net::TcpStream::write_all(const std::vector<char> &buf)
           err.errno_ == EINTR) {
         continue;
       }
-      co_return Err<Void, IoError>(err);
+      co_return Err<void, IoError>(err);
     }
   }
-  co_return Ok<Void, IoError>(Void());
+  co_return Ok<IoError>();
 }
 
-auto net::TcpStream::flush() -> Future<IoResult<Void>> {
-  co_return Ok<Void, IoError>(Void());
+auto net::TcpStream::flush() -> Future<IoResult<void>> {
+  co_return Ok<IoError>();
 }
 
 auto net::TcpStream::shutdown(Shutdown shutdown) const
-    -> Future<IoResult<Void>> {
+    -> Future<IoResult<void>> {
   auto res =
       into_sys_result(co_await runtime::AsyncFuture(std::function<int()>([&]() {
         return ::shutdown(
             socket_.into_c_fd(),
             static_cast<std::underlying_type_t<Shutdown>>(shutdown));
-      }))).map(std::function<Void(int)>([](auto n) { return Void(); }));
+      }))).map(std::function<void(int)>([](auto n) {}));
   ASYNC_TRY(res);
   INFO("shutdown {}\n", socket_);
-  co_return Ok<Void, IoError>(Void());
+  co_return Ok<IoError>();
 }
 
 auto net::TcpListener::bind(SocketAddr addr) -> Future<IoResult<TcpListener>> {

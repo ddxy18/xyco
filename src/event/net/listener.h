@@ -20,15 +20,15 @@ class TcpSocket {
   using Future = runtime::Future<T>;
 
  public:
-  auto bind(SocketAddr addr) -> Future<IoResult<Void>>;
+  auto bind(SocketAddr addr) -> Future<IoResult<void>>;
 
   auto connect(SocketAddr addr) -> Future<IoResult<TcpStream>>;
 
   auto listen(int backlog) -> Future<IoResult<TcpListener>>;
 
-  auto set_reuseaddr(bool reuseaddr) -> IoResult<Void>;
+  auto set_reuseaddr(bool reuseaddr) -> IoResult<void>;
 
-  auto set_reuseport(bool reuseport) -> IoResult<Void>;
+  auto set_reuseport(bool reuseport) -> IoResult<void>;
 
   static auto new_v4() -> IoResult<TcpSocket>;
 
@@ -55,12 +55,12 @@ class TcpStream : public ReadTrait, WriteTrait {
       -> Future<IoResult<uintptr_t>> override;
 
   auto write_all(const std::vector<char> &buf)
-      -> Future<IoResult<Void>> override;
+      -> Future<IoResult<void>> override;
 
-  auto flush() -> Future<IoResult<Void>> override;
+  auto flush() -> Future<IoResult<void>> override;
 
   [[nodiscard]] auto shutdown(Shutdown shutdown) const
-      -> Future<IoResult<Void>>;
+      -> Future<IoResult<void>>;
 
   Socket socket_;
 

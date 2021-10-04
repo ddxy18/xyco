@@ -27,14 +27,14 @@ class Event {
 
 class Registry {
  public:
-  [[nodiscard]] virtual auto Register(Event *ev) -> IoResult<Void> = 0;
+  [[nodiscard]] virtual auto Register(Event *ev) -> IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto reregister(Event *ev) -> IoResult<Void> = 0;
+  [[nodiscard]] virtual auto reregister(Event *ev) -> IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto deregister(Event *ev) -> IoResult<Void> = 0;
+  [[nodiscard]] virtual auto deregister(Event *ev) -> IoResult<void> = 0;
 
   [[nodiscard]] virtual auto select(Events *events, int timeout)
-      -> IoResult<Void> = 0;
+      -> IoResult<void> = 0;
 
   Registry() = default;
 
@@ -55,7 +55,7 @@ class Poll {
 
   auto registry() -> Registry *;
 
-  auto poll(Events *events, int timeout) -> IoResult<Void>;
+  auto poll(Events *events, int timeout) -> IoResult<void>;
 
  private:
   std::unique_ptr<Registry> registry_;

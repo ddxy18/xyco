@@ -11,14 +11,14 @@ class Epoll : public reactor::Registry {
 
   Epoll();
 
-  [[nodiscard]] auto Register(reactor::Event *ev) -> IoResult<Void> override;
+  [[nodiscard]] auto Register(reactor::Event *ev) -> IoResult<void> override;
 
-  [[nodiscard]] auto reregister(reactor::Event *ev) -> IoResult<Void> override;
+  [[nodiscard]] auto reregister(reactor::Event *ev) -> IoResult<void> override;
 
-  [[nodiscard]] auto deregister(reactor::Event *ev) -> IoResult<Void> override;
+  [[nodiscard]] auto deregister(reactor::Event *ev) -> IoResult<void> override;
 
   [[nodiscard]] auto select(reactor::Events *events, int timeout)
-      -> IoResult<Void> override;
+      -> IoResult<void> override;
 
  private:
   int epfd_;
