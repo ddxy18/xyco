@@ -19,6 +19,8 @@ class TcpSocket {
   template <typename T>
   using Future = runtime::Future<T>;
 
+  friend struct fmt::formatter<TcpSocket>;
+
  public:
   auto bind(SocketAddr addr) -> Future<IoResult<void>>;
 
@@ -44,6 +46,8 @@ class TcpStream : public ReadTrait, WriteTrait {
   template <typename T>
   using Future = runtime::Future<T>;
 
+  friend struct fmt::formatter<TcpStream>;
+
  public:
   explicit TcpStream(Socket socket);
 
@@ -62,15 +66,16 @@ class TcpStream : public ReadTrait, WriteTrait {
   [[nodiscard]] auto shutdown(Shutdown shutdown) const
       -> Future<IoResult<void>>;
 
-  Socket socket_;
-
  private:
   template <typename I>
   auto write(I begin, I end) -> Future<IoResult<uintptr_t>>;
+
+  Socket socket_;
 };
 
 class TcpListener {
   friend class TcpSocket;
+  friend struct fmt::formatter<TcpListener>;
 
   template <typename T>
   using Future = runtime::Future<T>;
@@ -84,8 +89,28 @@ class TcpListener {
   TcpListener(int fd);
 
   Socket socket_;
-  reactor::Poll *poll_;
 };
 }  // namespace net
+
+template <>
+struct fmt::formatter<net::TcpSocket> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const net::TcpSocket &tcp_socket, FormatContext &ctx) const
+      -> decltype(ctx.out());
+};
+
+template <>
+struct fmt::formatter<net::TcpStream> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const net::TcpStream &tcp_stream, FormatContext &ctx) const
+      -> decltype(ctx.out());
+};
+
+template <>
+struct fmt::formatter<net::TcpListener> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const net::TcpListener &tcp_listener, FormatContext &ctx) const
+      -> decltype(ctx.out());
+};
 
 #endif  // XYWEBSERVER_EVENT_NET_LISTENER_H_
