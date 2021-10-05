@@ -11,9 +11,9 @@ auto IoError::from_sys_error() -> IoError {
 
 auto into_sys_result(int return_value) -> IoResult<int> {
   if (return_value == -1) {
-    return err<int, IoError>(IoError::from_sys_error());
+    return IoResult<int>::err(IoError::from_sys_error());
   }
-  return ok<int, IoError>(return_value);
+  return IoResult<int>::ok(return_value);
 }
 
 template <typename FormatContext>

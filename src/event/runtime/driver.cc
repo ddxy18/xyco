@@ -10,15 +10,15 @@ auto runtime::BlockingPoll::Register(reactor::Event* ev) -> IoResult<void> {
   events_.push_back(ev);
   pool_.spawn(
       blocking::Task(*static_cast<std::function<void()>*>(ev->before_extra_)));
-  return ok<IoError>();
+  return IoResult<void>::ok();
 }
 
 auto runtime::BlockingPoll::reregister(reactor::Event* ev) -> IoResult<void> {
-  return ok<IoError>();
+  return IoResult<void>::ok();
 }
 
 auto runtime::BlockingPoll::deregister(reactor::Event* ev) -> IoResult<void> {
-  return ok<IoError>();
+  return IoResult<void>::ok();
 }
 
 auto runtime::BlockingPoll::select(reactor::Events* events, int timeout)
@@ -32,7 +32,7 @@ auto runtime::BlockingPoll::select(reactor::Events* events, int timeout)
                std::back_inserter(*events),
                [](auto* ev) { return ev->after_extra_ != nullptr; });
   events_ = new_events;
-  return ok<IoError>();
+  return IoResult<void>::ok();
 }
 
 auto runtime::Driver::poll() -> void {

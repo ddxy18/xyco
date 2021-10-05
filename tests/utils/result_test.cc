@@ -5,14 +5,14 @@
 class ResultTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    no_void_ok_ = ok<int, int>(1);
-    no_void_err_ = err<int, int>(1);
-    void_t_ok_ = ok<int>();
-    void_t_err_ = err<void, int>(1);
-    void_e_ok_ = ok<int, void>(1);
-    void_e_err_ = err<int>();
-    void_t_void_e_ok_ = ok<void>();
-    void_t_void_e_err_ = err<void>();
+    no_void_ok_ = Result<int, int>::ok(1);
+    no_void_err_ = Result<int, int>::err(1);
+    void_t_ok_ = Result<void, int>::ok();
+    void_t_err_ = Result<void, int>::err(1);
+    void_e_ok_ = Result<int, void>::ok(1);
+    void_e_err_ = Result<int, void>::err();
+    void_t_void_e_ok_ = Result<void, void>::ok();
+    void_t_void_e_err_ = Result<void, void>::err();
   }
 
  public:
@@ -48,61 +48,66 @@ TEST_F(ResultTest, Unwrap) {
   ASSERT_NO_THROW(void_t_void_e_err_.unwrap_err());
 }
 
-TEST_F(ResultTest, UnwrapOr) {
-  ASSERT_EQ(no_void_ok_.unwrap_or(-1), 1);
-  ASSERT_EQ(no_void_err_.unwrap_or(-1), -1);
-  void_t_ok_.unwrap_or();
-  void_t_err_.unwrap_or();
-  ASSERT_EQ(void_e_ok_.unwrap_or(-1), 1);
-  ASSERT_EQ(void_e_err_.unwrap_or(-1), -1);
-  void_t_void_e_ok_.unwrap_or();
-  void_t_void_e_err_.unwrap_or();
+TEST_F(ResultTest, UnwrapOrElse) {
+  auto int_to_int_f = [](auto n) { return -1; };
+  auto int_to_void_f = [](auto n) {};
+  auto void_to_int_f = []() { return -1; };
+  auto void_to_void_f = []() {};
+
+  ASSERT_EQ(no_void_ok_.unwrap_or_else(int_to_int_f), 1);
+  ASSERT_EQ(no_void_err_.unwrap_or_else(int_to_int_f), -1);
+  void_t_ok_.unwrap_or_else(int_to_void_f);
+  void_t_err_.unwrap_or_else(int_to_void_f);
+  ASSERT_EQ(void_e_ok_.unwrap_or_else(void_to_int_f), 1);
+  ASSERT_EQ(void_e_err_.unwrap_or_else(void_to_int_f), -1);
+  void_t_void_e_ok_.unwrap_or_else(void_to_void_f);
+  void_t_void_e_err_.unwrap_or_else(void_to_void_f);
 }
 
 TEST_F(ResultTest, Map) {
-  auto map_int_f = [](auto n) { return "a"; };
-  auto map_void_f = []() { return "a"; };
+  auto int2str = [](auto n) { return "a"; };
+  auto void2str = []() { return "a"; };
 
-  ASSERT_EQ(no_void_ok_.map(map_int_f).unwrap(), "a");
-  ASSERT_EQ(no_void_err_.map(map_int_f).unwrap_err(), 1);
-  ASSERT_EQ(void_t_ok_.map(map_void_f).unwrap(), "a");
-  ASSERT_EQ(void_t_err_.map(map_void_f).unwrap_err(), 1);
-  ASSERT_EQ(void_e_ok_.map(map_int_f).unwrap(), "a");
-  ASSERT_NO_THROW(void_e_err_.map(map_int_f).unwrap_err());
-  ASSERT_EQ(void_t_void_e_ok_.map(map_void_f).unwrap(), "a");
-  ASSERT_NO_THROW(void_t_void_e_err_.map(map_void_f).unwrap_err());
+  ASSERT_EQ(no_void_ok_.map(int2str).unwrap(), "a");
+  ASSERT_EQ(no_void_err_.map(int2str).unwrap_err(), 1);
+  ASSERT_EQ(void_t_ok_.map(void2str).unwrap(), "a");
+  ASSERT_EQ(void_t_err_.map(void2str).unwrap_err(), 1);
+  ASSERT_EQ(void_e_ok_.map(int2str).unwrap(), "a");
+  ASSERT_NO_THROW(void_e_err_.map(int2str).unwrap_err());
+  ASSERT_EQ(void_t_void_e_ok_.map(void2str).unwrap(), "a");
+  ASSERT_NO_THROW(void_t_void_e_err_.map(void2str).unwrap_err());
 }
 
 TEST_F(ResultTest, MapToVoid) {
-  auto map_to_void_f = [](auto n) {};
+  auto int2void = [](auto n) {};
 
-  ASSERT_NO_THROW(no_void_ok_.map(map_to_void_f).unwrap());
-  ASSERT_EQ(no_void_err_.map(map_to_void_f).unwrap_err(), 1);
+  ASSERT_NO_THROW(no_void_ok_.map(int2void).unwrap());
+  ASSERT_EQ(no_void_err_.map(int2void).unwrap_err(), 1);
 }
 
 TEST_F(ResultTest, MapErr) {
-  auto map_int_f = [](auto n) { return "a"; };
-  auto map_void_f = []() { return "a"; };
+  auto int2str = [](auto n) { return "a"; };
+  auto void2str = []() { return "a"; };
 
-  ASSERT_EQ(no_void_ok_.map_err(map_int_f).unwrap(), 1);
-  ASSERT_EQ(no_void_err_.map_err(map_int_f).unwrap_err(), "a");
-  ASSERT_NO_THROW(void_t_ok_.map_err(map_int_f).unwrap());
-  ASSERT_EQ(void_t_err_.map_err(map_int_f).unwrap_err(), "a");
-  ASSERT_EQ(void_e_ok_.map_err(map_void_f).unwrap(), 1);
-  ASSERT_EQ(void_e_err_.map_err(map_void_f).unwrap_err(), "a");
-  ASSERT_NO_THROW(void_t_void_e_ok_.map_err(map_void_f).unwrap());
-  ASSERT_EQ(void_t_void_e_err_.map_err(map_void_f).unwrap_err(), "a");
+  ASSERT_EQ(no_void_ok_.map_err(int2str).unwrap(), 1);
+  ASSERT_EQ(no_void_err_.map_err(int2str).unwrap_err(), "a");
+  ASSERT_NO_THROW(void_t_ok_.map_err(int2str).unwrap());
+  ASSERT_EQ(void_t_err_.map_err(int2str).unwrap_err(), "a");
+  ASSERT_EQ(void_e_ok_.map_err(void2str).unwrap(), 1);
+  ASSERT_EQ(void_e_err_.map_err(void2str).unwrap_err(), "a");
+  ASSERT_NO_THROW(void_t_void_e_ok_.map_err(void2str).unwrap());
+  ASSERT_EQ(void_t_void_e_err_.map_err(void2str).unwrap_err(), "a");
 }
 
 TEST_F(ResultTest, MapErrToVoid) {
-  auto map_to_void_f = [](auto n) {};
+  auto int2void = [](auto n) {};
 
-  ASSERT_EQ(no_void_ok_.map_err(map_to_void_f).unwrap(), 1);
-  ASSERT_NO_THROW(no_void_err_.map_err(map_to_void_f).unwrap_err());
+  ASSERT_EQ(no_void_ok_.map_err(int2void).unwrap(), 1);
+  ASSERT_NO_THROW(no_void_err_.map_err(int2void).unwrap_err());
 }
 
 TEST_F(ResultTest, Pointer) {
   auto value = std::make_unique<int>(1);
-  auto result = ok<int *, int>(value.get());
+  auto result = Result<int *, int>::ok(value.get());
   ASSERT_EQ(*result.unwrap(), 1);
 }
