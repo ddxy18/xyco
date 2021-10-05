@@ -49,26 +49,25 @@ auto net::TcpSocket::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
                            ->registry()
                            ->Register(&event_);
             if (res.is_err()) {
-              return runtime::Ready<CoOutput>{
-                  err<TcpStream, IoError>(res.unwrap_err())};
+              return runtime::Ready<CoOutput>{CoOutput::err(res.unwrap_err())};
             }
             ready_ = true;
             return runtime::Pending();
           }
           WARN("{} connect fail", sock_);
           return runtime::Ready<CoOutput>{
-              err<TcpStream, IoError>(into_sys_result(c).unwrap_err())};
+              CoOutput::err(into_sys_result(c).unwrap_err())};
         }
       }
       int ret = 0;
       socklen_t len = sizeof(decltype(ret));
       getsockopt(sock_.into_c_fd(), SOL_SOCKET, SO_ERROR, &ret, &len);
       if (ret != 0) {
-        return runtime::Ready<CoOutput>{err<TcpStream, IoError>(
-            IoError{ret, strerror_l(ret, uselocale(nullptr))})};
+        return runtime::Ready<CoOutput>{
+            CoOutput::err(IoError{ret, strerror_l(ret, uselocale(nullptr))})};
       }
       INFO("{} connect to {}\n", sock_, addr_);
-      return runtime::Ready<CoOutput>{ok<TcpStream, IoError>(TcpStream{sock_})};
+      return runtime::Ready<CoOutput>{CoOutput::ok(TcpStream{sock_})};
     }
 
    private:
@@ -92,7 +91,7 @@ auto net::TcpSocket::listen(int backlog) -> Future<IoResult<TcpListener>> {
   ASYNC_TRY(res);
   INFO("{} listening\n", socket_);
 
-  co_return ok<TcpListener, IoError>(listener);
+  co_return IoResult<TcpListener>::ok(listener);
 }
 
 auto net::TcpSocket::set_reuseaddr(bool reuseaddr) -> IoResult<void> {
@@ -124,7 +123,7 @@ net::TcpStream::TcpStream(Socket socket) : socket_(socket) {}
 auto net::TcpStream::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
   auto socket = addr.is_v4() ? TcpSocket::new_v4() : TcpSocket::new_v6();
   if (socket.is_err()) {
-    co_return err<TcpStream, IoError>(socket.unwrap_err());
+    co_return IoResult<TcpStream>::err(socket.unwrap_err());
   }
   co_return co_await socket.unwrap().connect(addr);
 }
@@ -276,14 +275,14 @@ auto net::TcpStream::write_all(const std::vector<char> &buf)
           error.errno_ == EINTR) {
         continue;
       }
-      co_return err<void, IoError>(error);
+      co_return IoResult<void>::err(error);
     }
   }
-  co_return ok<IoError>();
+  co_return IoResult<void>::ok();
 }
 
 auto net::TcpStream::flush() -> Future<IoResult<void>> {
-  co_return ok<IoError>();
+  co_return IoResult<void>::ok();
 }
 
 auto net::TcpStream::shutdown(Shutdown shutdown) const
@@ -296,7 +295,7 @@ auto net::TcpStream::shutdown(Shutdown shutdown) const
       }))).map([](auto n) {});
   ASYNC_TRY(res);
   INFO("shutdown {}\n", socket_);
-  co_return ok<IoError>();
+  co_return IoResult<void>::ok();
 }
 
 auto net::TcpListener::bind(SocketAddr addr) -> Future<IoResult<TcpListener>> {
@@ -307,12 +306,12 @@ auto net::TcpListener::bind(SocketAddr addr) -> Future<IoResult<TcpListener>> {
 
   auto socket_result = TcpSocket::new_v4();
   if (socket_result.is_err()) {
-    co_return err<TcpListener, IoError>(socket_result.unwrap_err());
+    co_return IoResult<TcpListener>::err(socket_result.unwrap_err());
   }
   auto tcp_socket = socket_result.unwrap();
   auto bind_result = co_await tcp_socket.bind(addr);
   if (bind_result.is_err()) {
-    co_return err<TcpListener, IoError>(bind_result.unwrap_err());
+    co_return IoResult<TcpListener>::err(bind_result.unwrap_err());
   }
   co_return co_await tcp_socket.listen(max_pending_connection);
 }
@@ -343,9 +342,7 @@ auto net::TcpListener::accept()
                       ->reregister(&event_);
           }
           if (res.is_err()) {
-            return runtime::Ready<CoOutput>{
-                err<std::pair<TcpStream, SocketAddr>, IoError>(
-                    res.unwrap_err())};
+            return runtime::Ready<CoOutput>{CoOutput::err(res.unwrap_err())};
           }
         }
         ready_ = true;
@@ -358,8 +355,7 @@ auto net::TcpListener::accept()
                   static_cast<sockaddr *>(static_cast<void *>(&addr_in)),
                   &addrlen, SOCK_NONBLOCK));
       if (res.is_err()) {
-        return runtime::Ready<CoOutput>{
-            err<std::pair<TcpStream, SocketAddr>, IoError>(res.unwrap_err())};
+        return runtime::Ready<CoOutput>{CoOutput::err(res.unwrap_err())};
       }
       auto fd = res.unwrap();
       std::string ip(INET_ADDRSTRLEN, 0);
@@ -371,8 +367,7 @@ auto net::TcpListener::accept()
       INFO("accept from {} new connect={{{}, addr:{}}}\n", self_->socket_,
            socket, sock_addr);
       return runtime::Ready<CoOutput>{
-          ok<std::pair<TcpStream, SocketAddr>, IoError>(
-              {TcpStream(socket), sock_addr})};
+          CoOutput::ok(TcpStream(socket), sock_addr)};
     }
 
    private:
