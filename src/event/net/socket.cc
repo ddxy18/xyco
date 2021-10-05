@@ -64,14 +64,14 @@ auto fmt::formatter<SocketAddr>::format(const SocketAddr& addr,
     port = std::get<SocketAddrV6>(addr.addr_).get_port();
   }
 
-  return format_to(ctx.out(), "{}:{}", ip, port);
+  return format_to(ctx.out(), "{}:{}", ip.c_str(), port);
 }
 
 template <typename FormatContext>
 auto fmt::formatter<Socket>::format(const Socket& socket,
                                     FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "Socket{{fd={}}}", socket.fd_);
+  return format_to(ctx.out(), "Socket{{fd_={}}}", socket.fd_);
 }
 
 template auto fmt::formatter<SocketAddr>::format(

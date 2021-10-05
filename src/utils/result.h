@@ -1,8 +1,6 @@
 #ifndef XYWEBSERVER_UTILS_RESULT_H_
 #define XYWEBSERVER_UTILS_RESULT_H_
 
-#include <type_traits>
-#include <utility>
 #include <variant>
 
 #include "panic.h"
@@ -84,8 +82,13 @@ class Result {
     }
   }
 
-  auto unwrap_err() -> E {
+  auto unwrap_err() -> E requires(Printable<T> || std::is_void_v<T>) {
     if (inner_.index() == 0) {
+      if constexpr (std::is_same_v<T, void>) {
+        TRACE("unwrap_err err:{T=void}\n");
+      } else {
+        TRACE("unwrap_err err:{}\n", std::get<0>(inner_).inner_);
+      }
       panic();
     }
     if constexpr (!std::is_same_v<E, void>) {

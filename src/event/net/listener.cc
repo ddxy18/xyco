@@ -333,7 +333,9 @@ auto net::TcpListener::accept()
       if (!ready_) {
         event_ = reactor::Event{reactor::Interest::Read,
                                 self_->socket_.into_c_fd(), this};
-        auto res = self_->poll_->registry()->Register(&event_);
+        auto res =
+            runtime::RuntimeCtx::get_ctx()->io_handle()->registry()->Register(
+                &event_);
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()
@@ -380,5 +382,41 @@ auto net::TcpListener::accept()
   co_return res;
 }
 
-net::TcpListener::TcpListener(int fd)
-    : socket_(fd), poll_(runtime::RuntimeCtx::get_ctx()->io_handle()) {}
+net::TcpListener::TcpListener(int fd) : socket_(fd) {}
+
+template <typename FormatContext>
+auto fmt::formatter<net::TcpSocket>::format(const net::TcpSocket &tcp_socket,
+                                            FormatContext &ctx) const
+    -> decltype(ctx.out()) {
+  return format_to(ctx.out(), "TcpSocket{{socket_={}}}", tcp_socket.socket_);
+}
+
+template <typename FormatContext>
+auto fmt::formatter<net::TcpStream>::format(const net::TcpStream &tcp_stream,
+                                            FormatContext &ctx) const
+    -> decltype(ctx.out()) {
+  return format_to(ctx.out(), "TcpStream{{socket_={}}}", tcp_stream.socket_);
+}
+
+template <typename FormatContext>
+auto fmt::formatter<net::TcpListener>::format(
+    const net::TcpListener &tcp_listener, FormatContext &ctx) const
+    -> decltype(ctx.out()) {
+  return format_to(ctx.out(), "TcpListener{{socket_={}}}",
+                   tcp_listener.socket_);
+}
+
+template auto fmt::formatter<net::TcpSocket>::format(
+    const net::TcpSocket &tcp_socket,
+    fmt::basic_format_context<fmt::appender, char> &ctx) const
+    -> decltype(ctx.out());
+
+template auto fmt::formatter<net::TcpStream>::format(
+    const net::TcpStream &tcp_stream,
+    fmt::basic_format_context<fmt::appender, char> &ctx) const
+    -> decltype(ctx.out());
+
+template auto fmt::formatter<net::TcpListener>::format(
+    const net::TcpListener &tcp_listener,
+    fmt::basic_format_context<fmt::appender, char> &ctx) const
+    -> decltype(ctx.out());
