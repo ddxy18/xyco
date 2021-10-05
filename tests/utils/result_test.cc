@@ -5,14 +5,14 @@
 class ResultTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    no_void_ok_ = Ok<int, int>(1);
-    no_void_err_ = Err<int, int>(1);
-    void_t_ok_ = Ok<int>();
-    void_t_err_ = Err<void, int>(1);
-    void_e_ok_ = Ok<int, void>(1);
-    void_e_err_ = Err<int>();
-    void_t_void_e_ok_ = Ok<void>();
-    void_t_void_e_err_ = Err<void>();
+    no_void_ok_ = ok<int, int>(1);
+    no_void_err_ = err<int, int>(1);
+    void_t_ok_ = ok<int>();
+    void_t_err_ = err<void, int>(1);
+    void_e_ok_ = ok<int, void>(1);
+    void_e_err_ = err<int>();
+    void_t_void_e_ok_ = ok<void>();
+    void_t_void_e_err_ = err<void>();
   }
 
  public:
@@ -103,6 +103,6 @@ TEST_F(ResultTest, MapErrToVoid) {
 
 TEST_F(ResultTest, Pointer) {
   auto value = std::make_unique<int>(1);
-  auto result = Ok<int *, int>(value.get());
+  auto result = ok<int *, int>(value.get());
   ASSERT_EQ(*result.unwrap(), 1);
 }

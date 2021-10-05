@@ -16,24 +16,24 @@ concept Printable = requires(T val) {
 };
 
 template <typename T, typename E>
-auto Ok(T inner) -> Result<T, E>
+auto ok(T inner) -> Result<T, E>
 requires(!std::is_same_v<T, void>);
 
 template <typename E>
-auto Ok() -> Result<void, E>;
+auto ok() -> Result<void, E>;
 
 template <typename T, typename E>
-auto Err(E inner) -> Result<T, E>
+auto err(E inner) -> Result<T, E>
 requires(!std::is_same_v<E, void>);
 
 template <typename T>
-auto Err() -> Result<T, void>;
+auto err() -> Result<T, void>;
 
 template <typename T, typename E>
 class Result {
-  friend auto Ok<T, E>(T inner) -> Result<T, E>
+  friend auto ok<T, E>(T inner) -> Result<T, E>
   requires(!std::is_same_v<T, void>);
-  friend auto Err<T, E>(E inner) -> Result<T, E>
+  friend auto err<T, E>(E inner) -> Result<T, E>
   requires(!std::is_same_v<E, void>);
 
  public:
@@ -59,7 +59,6 @@ class Result {
       panic();
     }
     return std::get<1>(inner_);
-    // return std::get<1>(inner_);  // unreachable
   }
 
   template <typename Fn>
@@ -72,14 +71,14 @@ class Result {
 
     if constexpr (std::is_same_v<MapT, void>) {
       if (inner_.index() == 0) {
-        return Ok<E>();
+        return ok<E>();
       }
-      return Err<MapT, E>(std::get<1>(inner_));
+      return err<MapT, E>(std::get<1>(inner_));
     } else {
       if (inner_.index() == 0) {
-        return Ok<MapT, E>(f(std::get<0>(inner_)));
+        return ok<MapT, E>(f(std::get<0>(inner_)));
       }
-      return Err<MapT, E>(std::get<1>(inner_));
+      return err<MapT, E>(std::get<1>(inner_));
     }
   }
 
@@ -92,14 +91,14 @@ class Result {
 
     if constexpr (std::is_same_v<MapE, void>) {
       if (inner_.index() == 1) {
-        return Err<T>();
+        return err<T>();
       }
-      return Ok<T, MapE>(std::get<0>(inner_));
+      return ok<T, MapE>(std::get<0>(inner_));
     } else {
       if (inner_.index() == 1) {
-        return Err<T, MapE>(f(std::get<1>(inner_)));
+        return err<T, MapE>(f(std::get<1>(inner_)));
       }
-      return Ok<T, MapE>(std::get<0>(inner_));
+      return ok<T, MapE>(std::get<0>(inner_));
     }
   }
 
@@ -116,8 +115,8 @@ class Result {
 
 template <>
 class Result<void, void> {
-  friend auto Ok<void>() -> Result<void, void>;
-  friend auto Err<void>() -> Result<void, void>;
+  friend auto ok<void>() -> Result<void, void>;
+  friend auto err<void>() -> Result<void, void>;
 
  public:
   Result() = default;
@@ -143,9 +142,9 @@ class Result<void, void> {
     using MapT = decltype(f());
 
     if (inner_.index() == 0) {
-      return Ok<MapT, void>(f());
+      return ok<MapT, void>(f());
     }
-    return Err<MapT>();
+    return err<MapT>();
   }
 
   template <typename Fn>
@@ -154,9 +153,9 @@ class Result<void, void> {
     using MapE = decltype(f());
 
     if (inner_.index() == 1) {
-      return Err<void, MapE>(f());
+      return err<void, MapE>(f());
     }
-    return Ok<MapE>();
+    return ok<MapE>();
   }
 
   auto is_ok() -> bool { return inner_.index() == 0; }
@@ -171,9 +170,9 @@ class Result<void, void> {
 
 template <typename T>
 requires(!std::is_same_v<T, void>) class Result<T, void> {
-  friend auto Ok<T, void>(T inner) -> Result<T, void>
+  friend auto ok<T, void>(T inner) -> Result<T, void>
   requires(!std::is_same_v<T, void>);
-  friend auto Err<T>() -> Result<T, void>;
+  friend auto err<T>() -> Result<T, void>;
 
  public:
   Result() = default;
@@ -206,14 +205,14 @@ requires(!std::is_same_v<T, void>) class Result<T, void> {
 
     if constexpr (std::is_same_v<MapT, void>) {
       if (inner_.index() == 0) {
-        return Ok<void>();
+        return ok<void>();
       }
-      return Err<void>();
+      return err<void>();
     } else {
       if (inner_.index() == 0) {
-        return Ok<MapT, void>(f(std::get<0>(inner_)));
+        return ok<MapT, void>(f(std::get<0>(inner_)));
       }
-      return Err<MapT>();
+      return err<MapT>();
     }
   }
 
@@ -223,9 +222,9 @@ requires(!std::is_same_v<T, void>) class Result<T, void> {
     using MapE = decltype(f());
 
     if (inner_.index() == 1) {
-      return Err<T, MapE>(f());
+      return err<T, MapE>(f());
     }
-    return Ok<T, MapE>(std::get<0>(inner_));
+    return ok<T, MapE>(std::get<0>(inner_));
   }
 
   auto is_ok() -> bool { return inner_.index() == 0; }
@@ -240,8 +239,8 @@ requires(!std::is_same_v<T, void>) class Result<T, void> {
 
 template <typename E>
 class Result<void, E> {
-  friend auto Ok<E>() -> Result<void, E>;
-  friend auto Err<void, E>(E inner) -> Result<void, E>
+  friend auto ok<E>() -> Result<void, E>;
+  friend auto err<void, E>(E inner) -> Result<void, E>
   requires(!std::is_same_v<E, void>);
 
  public:
@@ -269,9 +268,9 @@ class Result<void, E> {
     using MapT = decltype(f());
 
     if (inner_.index() == 1) {
-      return Err<MapT, E>(std::get<1>(inner_));
+      return err<MapT, E>(std::get<1>(inner_));
     }
-    return Ok<MapT, E>(f());
+    return ok<MapT, E>(f());
   }
 
   template <typename Fn>
@@ -283,14 +282,14 @@ class Result<void, E> {
 
     if constexpr (std::is_same_v<MapE, void>) {
       if (inner_.index() == 1) {
-        return Err<void>();
+        return err<void>();
       }
-      return Ok<void>();
+      return ok<void>();
     } else {
       if (inner_.index() == 1) {
-        return Err<void, MapE>(f(std::get<1>(inner_)));
+        return err<void, MapE>(f(std::get<1>(inner_)));
       }
-      return Ok<MapE>();
+      return ok<MapE>();
     }
   }
 
@@ -305,7 +304,7 @@ class Result<void, E> {
 };
 
 template <typename T, typename E>
-auto Ok(T inner) -> Result<T, E>
+auto ok(T inner) -> Result<T, E>
 requires(!std::is_same_v<T, void>) {
   if constexpr (std::is_same_v<E, void>) {
     return Result<T, E>(
@@ -317,7 +316,7 @@ requires(!std::is_same_v<T, void>) {
 }
 
 template <typename E>
-auto Ok() -> Result<void, E> {
+auto ok() -> Result<void, E> {
   if constexpr (std::is_same_v<E, void>) {
     return Result<void, E>(
         std::variant<bool, bool>{std::in_place_index<0>, true});
@@ -327,7 +326,7 @@ auto Ok() -> Result<void, E> {
 }
 
 template <typename T, typename E>
-auto Err(E inner) -> Result<T, E>
+auto err(E inner) -> Result<T, E>
 requires(!std::is_same_v<E, void>) {
   if constexpr (std::is_same_v<T, void>) {
     return Result<T, E>(
@@ -340,7 +339,7 @@ requires(!std::is_same_v<E, void>) {
 }
 
 template <typename T>
-auto Err() -> Result<T, void> {
+auto err() -> Result<T, void> {
   if constexpr (std::is_same_v<T, void>) {
     return Result<T, void>(
         std::variant<bool, bool>{std::in_place_index<1>, true});
