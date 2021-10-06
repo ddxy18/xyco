@@ -10,20 +10,23 @@ auto runtime::Worker::run() -> void {
   // runtime::runtime = runtime_;
   RuntimeCtx::set_ctx(runtime_);
   while (true) {
+    std::unique_lock<std::mutex> lock_guard(runtime_->mutex_);
     while (!runtime_->handles_.empty()) {
-      runtime_->mutex_.lock();
       auto [handle, future] = runtime_->handles_.back();
       runtime_->handles_.pop_back();
-      runtime_->mutex_.unlock();
+      lock_guard.unlock();
       if (future == nullptr || future->poll_wrapper()) {
         handle.resume();
       }
+      lock_guard.lock();
     }
+    lock_guard.unlock();
     runtime_->driver_->poll();
   }
 }
 
 auto runtime::Runtime::register_future(FutureBase *future) -> void {
+  std::scoped_lock<std::mutex> lock_guard(mutex_);
   this->handles_.emplace(handles_.begin(), future->get_handle(), future);
 }
 

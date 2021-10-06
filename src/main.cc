@@ -52,7 +52,9 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
   rt->spawn(start_client());
   rt->spawn(start_client());
   rt->spawn(start_client());
+
   while (true) {
+    // prevent being dropped in release mode
+    std::this_thread::sleep_for(std::chrono::seconds(1));
   }
-  return 0;
 }
