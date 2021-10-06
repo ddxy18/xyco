@@ -9,12 +9,13 @@ blocking::BlockingPool::BlockingPool(int worker_num) : workers_(worker_num) {}
 auto blocking::Task::operator()() -> void { inner_(); }
 
 auto blocking::Worker::run() -> void {
+  std::unique_lock<std::mutex> lock_guard(mutex_);
   while (!tasks_.empty()) {
-    mutex_.lock();
     auto task = tasks_.front();
     tasks_.pop();
-    mutex_.unlock();
+    lock_guard.unlock();
     task();
+    lock_guard.lock();
   }
 }
 
@@ -34,7 +35,6 @@ auto blocking::BlockingPool::spawn(blocking::Task task) -> void {
   auto worker = std::min_element(
       workers_.begin(), workers_.end(),
       [](Worker &a, Worker &b) { return a.tasks_.size() < b.tasks_.size(); });
-  worker->mutex_.lock();
+  std::scoped_lock<std::mutex> lock_guard(worker->mutex_);
   worker->tasks_.push(task);
-  worker->mutex_.unlock();
 }

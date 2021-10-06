@@ -1,5 +1,7 @@
 #include "utils.h"
 
+#include <atomic>
+
 #include "utils/result.h"
 
 // co_outer's lifetime is managed by the caller to avoid being destroyed
@@ -19,7 +21,7 @@ auto TestRuntimeCtx::co_run(std::function<runtime::Future<void>()> &&co)
 
   static auto runtime = run();
 
-  bool ended = false;
+  std::atomic_bool ended = false;
   auto *co_outer = gsl::owner<std::function<runtime::Future<void>()> *>(
       new std::function<runtime::Future<void>()>(
           [&]() -> runtime::Future<void> {

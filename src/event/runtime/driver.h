@@ -24,6 +24,7 @@ class BlockingPoll : public reactor::Registry {
 
  private:
   reactor::Events events_;
+  std::mutex mutex_;
   blocking::BlockingPool pool_;
 };
 

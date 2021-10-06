@@ -30,9 +30,8 @@ class Runtime : public RuntimeBase {
   template <typename T>
   auto spawn(Future<T> future) -> void {
     if (future.get_handle()) {
-      mutex_.lock();
+      std::scoped_lock<std::mutex> lock_guard(mutex_);
       handles_.insert(handles_.begin(), {future.get_handle(), nullptr});
-      mutex_.unlock();
     }
   }
 
