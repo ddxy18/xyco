@@ -38,13 +38,13 @@ class Registry {
 
   Registry() = default;
 
-  Registry(Registry &) = default;
+  Registry(const Registry &) = delete;
 
-  Registry(Registry &&) = default;
+  Registry(Registry &&) = delete;
 
-  auto operator=(const Registry &) -> Registry & = default;
+  auto operator=(const Registry &) -> Registry & = delete;
 
-  auto operator=(Registry &&) -> Registry & = default;
+  auto operator=(Registry &&) -> Registry & = delete;
 
   virtual ~Registry() = default;
 };

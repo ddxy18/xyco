@@ -86,6 +86,7 @@ net::Epoll::Epoll() : epfd_(epoll_create(1)) {
   }
 }
 
-net::Epoll::~Epoll() { 
+net::Epoll::~Epoll() {
   // FIXME(dongxiaoyu): replace global epoll with per worker epoll
-  close(epfd_); }
+  close(epfd_);
+}
