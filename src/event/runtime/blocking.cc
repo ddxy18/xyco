@@ -1,8 +1,8 @@
 #include "blocking.h"
 
-blocking::Task::Task(const std::function<void()> &task) : inner_(task) {}
-
 auto blocking::Task::operator()() -> void { inner_(); }
+
+blocking::Task::Task(std::function<void()> task) : inner_(std::move(task)) {}
 
 auto blocking::Worker::run() -> void {
   while (!end_) {
@@ -31,7 +31,7 @@ auto blocking::BlockingPool::spawn(blocking::Task task) -> void {
       [](Worker &a, Worker &b) { return a.tasks_.size() < b.tasks_.size(); });
   {
     std::scoped_lock<std::mutex> lock_guard(worker->mutex_);
-    worker->tasks_.push(task);
+    worker->tasks_.push(std::move(task));
   }
   worker->cv_.notify_one();
 }

@@ -8,37 +8,43 @@
 #include "runtime_base.h"
 
 namespace runtime {
-template <typename Output>
-class AsyncFuture : public runtime::Future<Output> {
+template <typename Return>
+class AsyncFuture : public runtime::Future<Return> {
  public:
-  explicit AsyncFuture(std::function<Output()> f)
-      : Future<Output>(nullptr),
-        f_(std::function<void()>([&]() {
-          auto res = f();
-          event_.after_extra_ = gsl::owner<Output *>((new Output(res)));
-          return;
-        })),
-        ready_(false),
-        event_(reactor::Event{reactor::Interest::All, -1, this, nullptr,
-                              nullptr}) {
-    event_.before_extra_ = &f_;
-  }
-
   [[nodiscard]] auto poll(runtime::Handle<void> self)
-      -> runtime::Poll<Output> override {
+      -> runtime::Poll<Return> override {
     if (!ready_) {
       ready_ = true;
       auto res = RuntimeCtx::get_ctx()->blocking_handle()->registry()->Register(
           &event_);
       return Pending();
     }
-    return Ready<Output>{*static_cast<Output *>(event_.after_extra_)};
+    return Ready<Return>{*static_cast<Return *>(event_.after_extra_)};
   }
+
+  template <typename Fn>
+  requires(std::is_invocable_r_v<Return, Fn>) explicit AsyncFuture(Fn &&f)
+      : Future<Return>(nullptr),
+        f_([&]() {
+          event_.after_extra_ = gsl::owner<Return *>((new Return(f())));
+        }),
+        ready_(false),
+        event_(reactor::Event{reactor::Interest::All, -1, this, f_, nullptr}) {}
+
+  AsyncFuture(const AsyncFuture<Return> &) = delete;
+
+  AsyncFuture(AsyncFuture<Return> &&) = delete;
+
+  auto operator=(const AsyncFuture<Return> &) -> AsyncFuture<Return> & = delete;
+
+  auto operator=(AsyncFuture<Return> &&) -> AsyncFuture<Return> & = delete;
+
+  ~AsyncFuture() = default;
 
  private:
   bool ready_;
-  reactor::Event event_;
   std::function<void()> f_;
+  reactor::Event event_;
 };
 }  // namespace runtime
 

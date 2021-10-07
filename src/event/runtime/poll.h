@@ -21,7 +21,7 @@ class Event {
   Interest interest_;
   int fd_;
   runtime::FutureBase *future_;
-  void *before_extra_;
+  std::function<void()> before_extra_;
   void *after_extra_;
 };
 
