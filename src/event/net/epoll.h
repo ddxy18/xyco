@@ -9,8 +9,6 @@ class Epoll : public reactor::Registry {
   static const int MAX_TIMEOUT_MS = 2;
   static const int MAX_EVENTS = 10000;
 
-  Epoll();
-
   [[nodiscard]] auto Register(reactor::Event *ev) -> IoResult<void> override;
 
   [[nodiscard]] auto reregister(reactor::Event *ev) -> IoResult<void> override;
@@ -19,6 +17,18 @@ class Epoll : public reactor::Registry {
 
   [[nodiscard]] auto select(reactor::Events *events, int timeout)
       -> IoResult<void> override;
+
+  Epoll();
+
+  Epoll(const Epoll &epoll) = delete;
+
+  Epoll(Epoll &&epoll) = delete;
+
+  auto operator=(const Epoll &epoll) -> Epoll & = delete;
+
+  auto operator=(Epoll &&epoll) -> Epoll & = delete;
+
+  ~Epoll() override;
 
  private:
   int epfd_;

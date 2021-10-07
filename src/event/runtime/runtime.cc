@@ -7,9 +7,8 @@ thread_local runtime::RuntimeBase *runtime::RuntimeCtx::runtime_ = nullptr;
 runtime::Worker::Worker(Runtime *runtime) : runtime_(runtime) {}
 
 auto runtime::Worker::run() -> void {
-  // runtime::runtime = runtime_;
   RuntimeCtx::set_ctx(runtime_);
-  while (true) {
+  while (!runtime_->end_) {
     std::unique_lock<std::mutex> lock_guard(runtime_->mutex_);
     while (!runtime_->handles_.empty()) {
       auto [handle, future] = runtime_->handles_.back();
@@ -40,12 +39,18 @@ auto runtime::Runtime::blocking_handle() -> IoHandle * {
 
 auto runtime::Runtime::run() -> void {
   for (auto worker : workers_) {
-    auto t = std::thread(&Worker::run, worker);
-    t.detach();
+    worker_ctx_.emplace_back(&Worker::run, worker);
   }
 }
 
-runtime::Runtime::Runtime(Privater priv) {}
+runtime::Runtime::Runtime(Privater priv) : driver_(nullptr) {}
+
+runtime::Runtime::~Runtime() {
+  end_ = true;
+  for (auto &t : worker_ctx_) {
+    t.join();
+  }
+}
 
 auto runtime::Builder::new_multi_thread() -> Builder { return {}; }
 

@@ -1,6 +1,8 @@
 #ifndef XYWEBSERVER_EVENT_RUNTIME_RUNTIME_H_
 #define XYWEBSERVER_EVENT_RUNTIME_RUNTIME_H_
 
+#include <atomic>
+
 #include "driver.h"
 #include "future.h"
 #include "runtime_base.h"
@@ -54,13 +56,17 @@ class Runtime : public RuntimeBase {
 
   Runtime(Privater priv);
 
+  ~Runtime();
+
  private:
   std::vector<Worker> workers_;
+  std::vector<std::thread> worker_ctx_;
   // (handle, nullptr) -> init_suspend of a spawned async function
   // (handle, future) -> co_await on a future object
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
   std::mutex mutex_;
   std::unique_ptr<Driver> driver_;
+  std::atomic_bool end_;
 };
 
 class Builder {

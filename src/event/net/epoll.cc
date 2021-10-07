@@ -1,6 +1,7 @@
 #include "epoll.h"
 
 #include <sys/epoll.h>
+#include <unistd.h>
 
 #include <gsl/gsl>
 #include <vector>
@@ -13,12 +14,6 @@ auto to_sys(reactor::Interest interest) -> int {
       return EPOLLOUT | EPOLLET;
     case reactor::Interest::All:
       return EPOLLIN | EPOLLOUT | EPOLLET;
-  }
-}
-
-net::Epoll::Epoll() : epfd_(epoll_create(1)) {
-  if (epfd_ == -1) {
-    panic();
   }
 }
 
@@ -84,3 +79,13 @@ auto net::Epoll::select(reactor::Events *events, int timeout)
   }
   return IoResult<void>::ok();
 }
+
+net::Epoll::Epoll() : epfd_(epoll_create(1)) {
+  if (epfd_ == -1) {
+    panic();
+  }
+}
+
+net::Epoll::~Epoll() { 
+  // FIXME(dongxiaoyu): replace global epoll with per worker epoll
+  close(epfd_); }
