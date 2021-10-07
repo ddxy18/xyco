@@ -1,6 +1,7 @@
 #ifndef XYWEBSERVER_EVENT_RUNTIME_BLOCKING_H_
 #define XYWEBSERVER_EVENT_RUNTIME_BLOCKING_H_
 
+#include <condition_variable>
 #include <mutex>
 #include <queue>
 
@@ -26,6 +27,7 @@ class Worker {
 
   std::queue<Task> tasks_;
   std::mutex mutex_;
+  std::condition_variable cv_;
 };
 
 class BlockingPool {
