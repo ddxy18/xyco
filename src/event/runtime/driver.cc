@@ -43,8 +43,8 @@ auto runtime::BlockingPoll::select(reactor::Events* events, int timeout)
 
 auto runtime::Driver::poll() -> void {
   reactor::Events events;
-  net_poll_.poll(&events, net::Epoll::MAX_TIMEOUT);
-  blocking_poll_.poll(&events, net::Epoll::MAX_TIMEOUT);
+  net_poll_.poll(&events, net::Epoll::MAX_TIMEOUT_MS);
+  blocking_poll_.poll(&events, net::Epoll::MAX_TIMEOUT_MS);
 }
 
 auto runtime::Driver::net_handle() -> reactor::Poll* { return &net_poll_; }

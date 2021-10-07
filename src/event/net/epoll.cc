@@ -65,8 +65,8 @@ auto net::Epoll::select(reactor::Events *events, int timeout)
     -> IoResult<void> {
   auto final_timeout = timeout;
   auto final_max_events = MAX_EVENTS;
-  if (timeout < 0 || timeout > MAX_TIMEOUT) {
-    final_timeout = MAX_TIMEOUT;
+  if (timeout < 0 || timeout > MAX_TIMEOUT_MS) {
+    final_timeout = MAX_TIMEOUT_MS;
   }
 
   static auto epoll_events = std::array<epoll_event, MAX_EVENTS>();
