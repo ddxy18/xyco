@@ -6,7 +6,7 @@
 namespace net {
 class Epoll : public reactor::Registry {
  public:
-  static const int MAX_TIMEOUT = 2000;
+  static const int MAX_TIMEOUT_MS = 2;
   static const int MAX_EVENTS = 10000;
 
   Epoll();
