@@ -30,8 +30,7 @@ class TestRuntimeCtxGuard {
 class TestRuntimeCtx {
  public:
   // run until co finished
-  static auto co_run(std::function<runtime::Future<void>()> &&co)
-      -> gsl::owner<std::function<runtime::Future<void>()> *>;
+  static auto co_run(std::function<runtime::Future<void>()> &&co) -> void;
 
   static auto co_run_no_wait(std::function<runtime::Future<void>()> &&co)
       -> TestRuntimeCtxGuard;

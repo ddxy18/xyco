@@ -23,15 +23,13 @@ class NoRuntimeTest : public ::testing::Test {
 };
 
 TEST_F(InRuntimeTest, NoSuspend) {
-  gsl::owner<std::function<runtime::Future<void>()> *> co_outer =
-      TestRuntimeCtx::co_run({[]() -> runtime::Future<void> {
-        int co_result = -1;
-        auto co_innner = []() -> runtime::Future<int> { co_return 1; };
-        co_result = co_await co_innner();
+  TestRuntimeCtx::co_run({[]() -> runtime::Future<void> {
+    int co_result = -1;
+    auto co_innner = []() -> runtime::Future<int> { co_return 1; };
+    co_result = co_await co_innner();
 
-        CO_ASSERT_EQ(co_result, 1);
-      }});
-  delete co_outer;
+    CO_ASSERT_EQ(co_result, 1);
+  }});
 }
 
 TEST_F(InRuntimeTest, Suspend) {
@@ -66,6 +64,7 @@ TEST_F(InRuntimeTest, Suspend) {
   if (handle->poll_wrapper()) {
     handle->get_handle().resume();
   }
+
   ASSERT_EQ(co_result, 1);
 }
 
@@ -76,5 +75,6 @@ TEST_F(NoRuntimeTest, NeverRun) {
         auto co_innner = []() -> runtime::Future<int> { co_return 1; };
         co_result = co_await co_innner();
       }});
+      
   ASSERT_EQ(co_result, -1);
 }
