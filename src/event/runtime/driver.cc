@@ -11,8 +11,7 @@ auto runtime::BlockingPoll::Register(reactor::Event* ev) -> IoResult<void> {
     std::scoped_lock<std::mutex> lock_guard(mutex_);
     events_.push_back(ev);
   }
-  pool_.spawn(
-      blocking::Task(*static_cast<std::function<void()>*>(ev->before_extra_)));
+  pool_.spawn(blocking::Task(ev->before_extra_));
   return IoResult<void>::ok();
 }
 

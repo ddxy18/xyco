@@ -37,13 +37,14 @@ class Runtime : public RuntimeBase {
     }
   }
 
-  template <typename T>
-  auto spawn_blocking(std::function<T()> future) -> void {
-    spawn(std::function<Future<T>()>([=]() -> Future<T> {
-      auto res = co_await AsyncFuture<T>(
-          std::function<T()>([=]() { return future(); }));
+  template <typename Fn>
+  auto spawn_blocking(Fn &&f) -> void requires(std::is_invocable_v<Fn>) {
+    using Return = decltype(f());
+
+    spawn([=]() -> Future<Return> {
+      auto res = co_await AsyncFuture<Return>([=]() { return f(); });
       co_return res;
-    })());
+    }());
   }
 
   auto register_future(FutureBase *future) -> void override;

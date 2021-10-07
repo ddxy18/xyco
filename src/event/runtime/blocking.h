@@ -11,12 +11,12 @@
 namespace blocking {
 class Task {
  public:
-  explicit Task(const std::function<void()> &task);
-
   auto operator()() -> void;
 
+  explicit Task(std::function<void()> task);
+
  private:
-  const std::function<void()> &inner_;
+  std::function<void()> inner_;
 };
 
 class Worker {
