@@ -7,10 +7,11 @@
 
 #include "driver.h"
 #include "future.h"
-#include "runtime_base.h"
 
 namespace runtime {
 class Runtime;
+
+using IoHandle = reactor::Poll;
 
 class Worker {
   friend class Runtime;
@@ -22,7 +23,7 @@ class Worker {
   std::atomic_bool end_;
 };
 
-class Runtime : public RuntimeBase {
+class Runtime {
   friend class Worker;
   friend class Builder;
 
@@ -48,11 +49,11 @@ class Runtime : public RuntimeBase {
     }());
   }
 
-  auto register_future(FutureBase *future) -> void override;
+  auto register_future(FutureBase *future) -> void;
 
-  auto io_handle() -> IoHandle * override;
+  auto io_handle() -> IoHandle *;
 
-  auto blocking_handle() -> IoHandle * override;
+  auto blocking_handle() -> IoHandle *;
 
   auto run() -> void;
 
