@@ -39,6 +39,14 @@ class BlockingPool {
 
   explicit BlockingPool(int worker_num);
 
+  BlockingPool(const BlockingPool &runtime) = delete;
+
+  BlockingPool(BlockingPool &&runtime) = delete;
+
+  auto operator=(const BlockingPool &runtime) -> BlockingPool & = delete;
+
+  auto operator=(BlockingPool &&runtime) -> BlockingPool & = delete;
+
   ~BlockingPool();
 
  private:

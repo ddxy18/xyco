@@ -56,6 +56,14 @@ class Runtime : public RuntimeBase {
 
   Runtime(Privater priv);
 
+  Runtime(const Runtime &runtime) = delete;
+
+  Runtime(Runtime &&runtime) = delete;
+
+  auto operator=(const Runtime &runtime) -> Runtime & = delete;
+
+  auto operator=(Runtime &&runtime) -> Runtime & = delete;
+
   ~Runtime();
 
  private:

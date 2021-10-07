@@ -43,7 +43,7 @@ auto runtime::Runtime::run() -> void {
   }
 }
 
-runtime::Runtime::Runtime(Privater priv) : driver_(nullptr) {}
+runtime::Runtime::Runtime(Privater priv) : driver_(nullptr), end_(false) {}
 
 runtime::Runtime::~Runtime() {
   end_ = true;
