@@ -1,13 +1,14 @@
 #include "utils.h"
 
-#include <atomic>
+#include <condition_variable>
+#include <mutex>
 
 #include "utils/result.h"
 
 // co_outer's lifetime is managed by the caller to avoid being destroyed
 // automatically before resumed.
 auto TestRuntimeCtx::co_run(std::function<runtime::Future<void>()> &&co)
-    -> gsl::owner<std::function<runtime::Future<void>()> *> {
+    -> void {
   auto run = []() {
     auto runtime = runtime::Builder::new_multi_thread()
                        .worker_threads(1)
@@ -21,18 +22,16 @@ auto TestRuntimeCtx::co_run(std::function<runtime::Future<void>()> &&co)
 
   static auto runtime = run();
 
-  std::atomic_bool ended = false;
-  auto *co_outer = gsl::owner<std::function<runtime::Future<void>()> *>(
-      new std::function<runtime::Future<void>()>(
-          [&]() -> runtime::Future<void> {
-            co_await co();
-            ended = true;
-          }));
-  runtime->spawn((*co_outer)());
-  while (!ended) {
-  }
+  std::mutex mutex;
+  std::unique_lock<std::mutex> lock_guard(mutex);
+  std::condition_variable cv;
 
-  return co_outer;
+  auto co_outer = [&]() -> runtime::Future<void> {
+    co_await co();
+    cv.notify_one();
+  };
+  runtime->spawn(co_outer());
+  cv.wait(lock_guard);
 }
 
 auto TestRuntimeCtx::co_run_no_wait(std::function<runtime::Future<void>()> &&co)
