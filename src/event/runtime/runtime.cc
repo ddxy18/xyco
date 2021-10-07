@@ -2,7 +2,7 @@
 
 #include <thread>
 
-thread_local runtime::RuntimeBase *runtime::RuntimeCtx::runtime_ = nullptr;
+thread_local runtime::Runtime *runtime::RuntimeCtx::runtime_ = nullptr;
 
 auto runtime::Worker::run(Runtime *runtime) -> void {
   RuntimeCtx::set_ctx(runtime);

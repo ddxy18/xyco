@@ -7,7 +7,7 @@
 #include <variant>
 
 namespace runtime {
-class RuntimeBase;
+class Runtime;
 
 template <typename T>
 using Handle = std::experimental::coroutine_handle<T>;
@@ -16,12 +16,12 @@ class RuntimeCtx {
  public:
   static auto is_in_ctx() -> bool { return runtime_ != nullptr; }
 
-  static auto set_ctx(RuntimeBase *runtime) -> void { runtime_ = runtime; }
+  static auto set_ctx(Runtime *runtime) -> void { runtime_ = runtime; }
 
-  static auto get_ctx() -> RuntimeBase * { return runtime_; }
+  static auto get_ctx() -> Runtime * { return runtime_; }
 
  private:
-  thread_local static RuntimeBase *runtime_;
+  thread_local static Runtime *runtime_;
 };
 
 class Pending {};
