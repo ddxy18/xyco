@@ -18,11 +18,11 @@ enum class Interest { Read, Write, All };
 
 class Event {
  public:
-  Interest interest_;
-  int fd_;
-  runtime::FutureBase *future_;
+  Interest interest_{};
+  int fd_{};
+  runtime::FutureBase *future_{};
   std::function<void()> before_extra_;
-  void *after_extra_;
+  void *after_extra_{};
 };
 
 class Registry {

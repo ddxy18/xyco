@@ -32,8 +32,7 @@ auto net::TcpSocket::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
         : runtime::Future<CoOutput>(nullptr),
           ready_(false),
           sock_(self->socket_),
-          addr_(addr),
-          event_() {}
+          addr_(addr) {}
 
     [[nodiscard]] auto poll(runtime::Handle<void> self)
         -> runtime::Poll<CoOutput> override {
@@ -137,8 +136,7 @@ auto net::TcpStream::read(std::vector<char> *buf)
         : runtime::Future<CoOutput>(nullptr),
           buf_(buf),
           ready_(false),
-          self_(self),
-          event_() {}
+          self_(self) {}
 
     [[nodiscard]] auto poll(runtime::Handle<void> self)
         -> runtime::Poll<CoOutput> override {
@@ -203,8 +201,7 @@ auto net::TcpStream::write(I begin, I end) -> Future<IoResult<uintptr_t>> {
           begin_(begin),
           end_(end),
           ready_(false),
-          self_(self),
-          event_() {}
+          self_(self) {}
 
     [[nodiscard]] auto poll(runtime::Handle<void> self)
         -> runtime::Poll<CoOutput> override {
@@ -321,10 +318,7 @@ auto net::TcpListener::accept()
   class Future : public runtime::Future<CoOutput> {
    public:
     explicit Future(TcpListener *self)
-        : runtime::Future<CoOutput>(nullptr),
-          self_(self),
-          ready_(false),
-          event_() {}
+        : runtime::Future<CoOutput>(nullptr), self_(self), ready_(false) {}
 
     [[nodiscard]] auto poll(runtime::Handle<void> self)
         -> runtime::Poll<CoOutput> override {

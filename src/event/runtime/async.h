@@ -19,11 +19,15 @@ class AsyncFuture : public runtime::Future<Return> {
           &event_);
       return Pending();
     }
-    return Ready<Return>{*static_cast<Return *>(event_.after_extra_)};
+
+    auto result = std::move(*static_cast<Return *>(event_.after_extra_));
+    delete static_cast<Return *>(event_.after_extra_);
+
+    return Ready<Return>{result};
   }
 
   template <typename Fn>
-  requires(std::is_invocable_r_v<Return, Fn>) explicit AsyncFuture(Fn &&f)
+  explicit AsyncFuture(Fn &&f) requires(std::is_invocable_r_v<Return, Fn>)
       : Future<Return>(nullptr),
         f_([&]() {
           event_.after_extra_ = gsl::owner<Return *>((new Return(f())));
