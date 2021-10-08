@@ -41,7 +41,7 @@ jobs:
       - name: install essential packages
         run: |
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
-          apt update && apt install -y build-essential git wget cmake clang-tidy
+          apt update && apt install -y build-essential git wget cmake
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -64,7 +64,9 @@ jobs:
             ~/.cargo/git/db/
             tools/target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-      - uses: actions/cache@v2
+      - name: cache llvm toolchain
+        id: cache-llvm
+        uses: actions/cache@v2
         with:
           path: |
             ./llvm
@@ -89,7 +91,9 @@ jobs:
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
           cmake --build ./build --config Release --target xywebserver_test
           cd build && ctest -C Release -T test --output-on-failure
-      - uses: actions/cache@v2
+      - name: cache llvm toolchain
+        id: cache-llvm
+        uses: actions/cache@v2
         with:
           path: |
             ./llvm
