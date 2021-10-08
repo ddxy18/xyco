@@ -42,8 +42,7 @@ class Runtime : public RuntimeBase {
     using Return = decltype(f());
 
     spawn([=]() -> Future<Return> {
-      auto res = co_await AsyncFuture<Return>([=]() { return f(); });
-      co_return res;
+      co_return co_await AsyncFuture<Return>([=]() { return f(); });
     }());
   }
 
