@@ -1,7 +1,9 @@
 #ifndef XYWEBSERVER_EVENT_RUNTIME_FUTURE_H_
 #define XYWEBSERVER_EVENT_RUNTIME_FUTURE_H_
 
+#include <exception>
 #include <experimental/coroutine>
+#include <optional>
 #include <variant>
 
 namespace runtime {
@@ -107,20 +109,12 @@ class Future : public FutureBase {
 
     auto final_suspend() noexcept -> FinalAwaitable { return {waiting_}; }
 
-    auto unhandled_exception() -> void {}
+    auto unhandled_exception() -> void { return_ = std::current_exception(); }
 
-    auto return_value(Output &value) -> Output {
-      return_ = value;
-      return value;
-    }
-
-    auto return_value(Output &&value) -> Output {
-      return_ = value;
-      return value;
-    }
+    auto return_value(Output &&value) -> void { return_ = value; }
 
    private:
-    Output return_;
+    std::variant<Output, std::exception_ptr> return_;
     Handle<void> waiting_;
   };
 
@@ -152,10 +146,13 @@ class Future : public FutureBase {
     }
 
     auto await_resume() -> Output {
-      if (future_.self_) {
-        return future_.self_.promise().return_;
+      auto return_v =
+          future_.self_ ? future_.self_.promise().return_ : future_.return_;
+
+      if (return_v.index() == 1) {
+        std::rethrow_exception(std::get<std::exception_ptr>(return_v));
       }
-      return future_.return_;
+      return std::move(std::get<Output>(return_v));
     }
 
    private:
@@ -165,7 +162,7 @@ class Future : public FutureBase {
   // co_await Future object should pass nullptr
   explicit Future(Handle<promise_type> self) : self_(self), return_() {}
 
-  auto operator co_await() -> Awaitable { return Awaitable{*this}; }
+  auto operator co_await() -> Awaitable { return Awaitable(*this); }
 
   [[nodiscard]] virtual auto poll(Handle<void> self) -> Poll<Output> {
     return Pending();
@@ -212,6 +209,7 @@ class Future<void> : public FutureBase {
     auto return_void() -> void;
 
    private:
+    std::exception_ptr exception_ptr_;
     Handle<void> waiting_;
   };
 

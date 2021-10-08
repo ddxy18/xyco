@@ -1,7 +1,11 @@
 #include "utils.h"
 
+#include <gtest/gtest.h>
+
 #include <condition_variable>
+#include <exception>
 #include <mutex>
+#include <stdexcept>
 
 #include "utils/result.h"
 
@@ -27,8 +31,14 @@ auto TestRuntimeCtx::co_run(std::function<runtime::Future<void>()> &&co)
   std::condition_variable cv;
 
   auto co_outer = [&]() -> runtime::Future<void> {
-    co_await co();
-    cv.notify_one();
+    /* try { */
+      co_await co();
+      cv.notify_one();
+    /* } catch (std::runtime_error e) {
+      auto f = [&]() { ASSERT_NO_THROW(throw e); };
+      f();
+      cv.notify_one();
+    } */
   };
   runtime->spawn(co_outer());
   cv.wait(lock_guard);

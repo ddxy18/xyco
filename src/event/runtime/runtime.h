@@ -2,6 +2,8 @@
 #define XYWEBSERVER_EVENT_RUNTIME_RUNTIME_H_
 
 #include <atomic>
+#include <exception>
+#include <thread>
 
 #include "driver.h"
 #include "future.h"
@@ -20,6 +22,7 @@ class Worker {
 
  private:
   Runtime *runtime_;
+  std::atomic_bool end_;
 };
 
 class Runtime : public RuntimeBase {
@@ -31,9 +34,10 @@ class Runtime : public RuntimeBase {
  public:
   template <typename T>
   auto spawn(Future<T> future) -> void {
-    if (future.get_handle()) {
+    auto future_wrapper = spawn_catch_exception(future);
+    if (future_wrapper.get_handle()) {
       std::scoped_lock<std::mutex> lock_guard(mutex_);
-      handles_.insert(handles_.begin(), {future.get_handle(), nullptr});
+      handles_.insert(handles_.begin(), {future_wrapper.get_handle(), nullptr});
     }
   }
 
@@ -67,6 +71,15 @@ class Runtime : public RuntimeBase {
   ~Runtime();
 
  private:
+  template <typename T>
+  auto spawn_catch_exception(Future<T> future) -> Future<void> {
+    try {
+      co_await future;
+    } catch (std::exception e) {
+      std::this_thread::yield();
+    }
+  }
+
   std::vector<Worker> workers_;
   std::vector<std::thread> worker_ctx_;
   // (handle, nullptr) -> init_suspend of a spawned async function
