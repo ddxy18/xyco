@@ -15,7 +15,9 @@ auto runtime::Future<void>::PromiseType::final_suspend() noexcept
   return {waiting_};
 }
 
-auto runtime::Future<void>::PromiseType::unhandled_exception() -> void {}
+auto runtime::Future<void>::PromiseType::unhandled_exception() -> void {
+  exception_ptr_ = std::current_exception();
+}
 
 auto runtime::Future<void>::PromiseType::return_void() -> void {}
 
@@ -43,12 +45,17 @@ auto runtime::Future<void>::Awaitable::await_suspend(
   return std::holds_alternative<Pending>(res);
 }
 
-auto runtime::Future<void>::Awaitable::await_resume() -> void {}
+auto runtime::Future<void>::Awaitable::await_resume() -> void {
+  auto ptr = future_.self_.promise().exception_ptr_;
+  if (ptr) {
+    std::rethrow_exception(ptr);
+  }
+}
 
 runtime::Future<void>::Future(Handle<promise_type> self) : self_(self) {}
 
 auto runtime::Future<void>::operator co_await() -> Awaitable {
-  return Awaitable{*this};
+  return Awaitable(*this);
 }
 
 [[nodiscard]] auto runtime::Future<void>::poll(Handle<void> self)
