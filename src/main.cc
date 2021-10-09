@@ -44,6 +44,8 @@ auto start_client() -> Future<void> {
 }
 
 auto main(int /*unused*/, char** /*unused*/) -> int {
+  constexpr std::chrono::seconds wait_seconds(5);
+
   auto rt = runtime::Builder::new_multi_thread()
                 .worker_threads(2)
                 .max_blocking_threads(2)
@@ -55,5 +57,5 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
   rt->spawn(start_client());
   rt->spawn(start_client());
 
-  std::this_thread::sleep_for(std::chrono::seconds(5));
+  std::this_thread::sleep_for(wait_seconds);
 }
