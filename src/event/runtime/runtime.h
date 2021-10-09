@@ -4,6 +4,7 @@
 #include <atomic>
 #include <exception>
 #include <thread>
+#include <unordered_map>
 
 #include "driver.h"
 #include "future.h"
@@ -17,10 +18,17 @@ class Worker {
   friend class Runtime;
 
  public:
-  auto run(Runtime *runtime) -> void;
+  auto lanuch(Runtime *runtime) -> void;
+
+  auto stop() -> void;
+
+  auto get_native_id() const -> std::thread::id;
 
  private:
+  static auto run_loop_once(Runtime *runtime) -> void;
+
   std::atomic_bool end_;
+  std::thread ctx_;
 };
 
 class Runtime {
@@ -55,8 +63,6 @@ class Runtime {
 
   auto blocking_handle() -> IoHandle *;
 
-  auto run() -> void;
-
   Runtime(Privater priv);
 
   Runtime(const Runtime &runtime) = delete;
@@ -80,24 +86,18 @@ class Runtime {
     } catch (std::exception e) {
       auto tid = std::this_thread::get_id();
       std::scoped_lock<std::mutex> lock_guard(worker_mutex_);
-      auto pos = std::find_if(
-          std::begin(worker_ctx_), std::end(worker_ctx_),
-          [&](auto &worker_thread) { return worker_thread.get_id() == tid; });
+      auto pos = workers_.find(tid);
       if (workers_.size() == 1) {
         ERROR("unhandled coroutine exception, terminate the process");
         std::terminate();
       }
       ERROR("unhandled coroutine exception, kill current worker");
-      workers_[std::distance(worker_ctx_.begin(), pos)]->end_ = true;
-      pos->detach();
-      worker_ctx_.erase(pos);
-      workers_.erase(workers_.begin() +
-                     std::distance(worker_ctx_.begin(), pos));
+      pos->second->stop();
+      workers_.erase(pos);
     }
   }
 
-  std::vector<std::unique_ptr<Worker>> workers_;
-  std::vector<std::thread> worker_ctx_;
+  std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
   std::mutex worker_mutex_;
   // (handle, nullptr) -> initial_suspend of a spawned async function
   // (handle, future) -> co_await on a future object
