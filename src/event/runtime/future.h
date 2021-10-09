@@ -109,12 +109,12 @@ class Future : public FutureBase {
 
     auto final_suspend() noexcept -> FinalAwaitable { return {waiting_}; }
 
-    auto unhandled_exception() -> void { return_ = std::current_exception(); }
+    auto unhandled_exception() -> void {}
 
     auto return_value(Output &&value) -> void { return_ = value; }
 
    private:
-    std::variant<Output, std::exception_ptr> return_;
+    std::optional<Output> return_;
     Handle<void> waiting_;
   };
 
@@ -149,10 +149,10 @@ class Future : public FutureBase {
       auto return_v =
           future_.self_ ? future_.self_.promise().return_ : future_.return_;
 
-      if (return_v.index() == 1) {
-        std::rethrow_exception(std::get<std::exception_ptr>(return_v));
+      if (!return_v.has_value()) {
+        std::rethrow_exception(std::current_exception());
       }
-      return std::move(std::get<Output>(return_v));
+      return std::move(return_v.value());
     }
 
    private:
