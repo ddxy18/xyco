@@ -28,9 +28,11 @@ auto start_server() -> Future<void> {
 auto start_client() -> Future<void> {
   constexpr int max_buf_size = 10;
 
+  auto start = std::chrono::system_clock::now();
   auto connection = (co_await net::TcpStream::connect(
       SocketAddr::new_v4(Ipv4Addr("127.0.0.1"), SERVER_PORT)));
-  while (connection.is_err()) {
+  while (connection.is_err() &&
+         std::chrono::system_clock::now() - start <= std::chrono::seconds(1)) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     connection = (co_await net::TcpStream::connect(
         SocketAddr::new_v4(Ipv4Addr("127.0.0.1"), SERVER_PORT)));
@@ -53,8 +55,5 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
   rt->spawn(start_client());
   rt->spawn(start_client());
 
-  while (true) {
-    // prevent being dropped in release mode
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
+  std::this_thread::sleep_for(std::chrono::seconds(5));
 }

@@ -31,14 +31,14 @@ auto TestRuntimeCtx::co_run(std::function<runtime::Future<void>()> &&co)
   std::condition_variable cv;
 
   auto co_outer = [&]() -> runtime::Future<void> {
-    /* try { */
+    try {
       co_await co();
       cv.notify_one();
-    /* } catch (std::runtime_error e) {
+    } catch (std::exception e) {
       auto f = [&]() { ASSERT_NO_THROW(throw e); };
       f();
       cv.notify_one();
-    } */
+    }
   };
   runtime->spawn(co_outer());
   cv.wait(lock_guard);

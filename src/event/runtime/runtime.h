@@ -11,17 +11,14 @@
 
 namespace runtime {
 class Runtime;
-class Builder;
-class Driver;
 
 class Worker {
- public:
-  explicit Worker(Runtime *runtime);
+  friend class Runtime;
 
-  auto run() -> void;
+ public:
+  auto run(Runtime *runtime) -> void;
 
  private:
-  Runtime *runtime_;
   std::atomic_bool end_;
 };
 
@@ -34,10 +31,11 @@ class Runtime : public RuntimeBase {
  public:
   template <typename T>
   auto spawn(Future<T> future) -> void {
-    auto future_wrapper = spawn_catch_exception(future);
-    if (future_wrapper.get_handle()) {
-      std::scoped_lock<std::mutex> lock_guard(mutex_);
-      handles_.insert(handles_.begin(), {future_wrapper.get_handle(), nullptr});
+    // resume once to skip initial_suspend
+    spawn_catch_exception(future).get_handle().resume();
+    if (future.get_handle()) {
+      std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
+      handles_.insert(handles_.begin(), {future.get_handle(), nullptr});
     }
   }
 
@@ -71,23 +69,40 @@ class Runtime : public RuntimeBase {
   ~Runtime();
 
  private:
+  // Handle all unhandled exceptions of spawned coroutine.
+  // more than one worker: kill the current worker
+  // last worker: terminate the process
   template <typename T>
   auto spawn_catch_exception(Future<T> future) -> Future<void> {
     try {
       co_await future;
     } catch (std::exception e) {
-      std::this_thread::yield();
+      auto tid = std::this_thread::get_id();
+      std::scoped_lock<std::mutex> lock_guard(worker_mutex_);
+      auto pos = std::find_if(
+          std::begin(worker_ctx_), std::end(worker_ctx_),
+          [&](auto &worker_thread) { return worker_thread.get_id() == tid; });
+      if (workers_.size() == 1) {
+        ERROR("unhandled coroutine exception, terminate the process");
+        std::terminate();
+      }
+      ERROR("unhandled coroutine exception, kill current worker");
+      workers_[std::distance(worker_ctx_.begin(), pos)]->end_ = true;
+      pos->detach();
+      worker_ctx_.erase(pos);
+      workers_.erase(workers_.begin() +
+                     std::distance(worker_ctx_.begin(), pos));
     }
   }
 
-  std::vector<Worker> workers_;
+  std::vector<std::unique_ptr<Worker>> workers_;
   std::vector<std::thread> worker_ctx_;
-  // (handle, nullptr) -> init_suspend of a spawned async function
+  std::mutex worker_mutex_;
+  // (handle, nullptr) -> initial_suspend of a spawned async function
   // (handle, future) -> co_await on a future object
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
-  std::mutex mutex_;
+  std::mutex handle_mutex_;
   std::unique_ptr<Driver> driver_;
-  std::atomic_bool end_;
 };
 
 class Builder {

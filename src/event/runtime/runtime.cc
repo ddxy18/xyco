@@ -4,15 +4,13 @@
 
 thread_local runtime::RuntimeBase *runtime::RuntimeCtx::runtime_ = nullptr;
 
-runtime::Worker::Worker(Runtime *runtime) : runtime_(runtime) {}
-
-auto runtime::Worker::run() -> void {
-  RuntimeCtx::set_ctx(runtime_);
-  while (!runtime_->end_) {
-    std::unique_lock<std::mutex> lock_guard(runtime_->mutex_);
-    while (!runtime_->handles_.empty()) {
-      auto [handle, future] = runtime_->handles_.back();
-      runtime_->handles_.pop_back();
+auto runtime::Worker::run(Runtime *runtime) -> void {
+  RuntimeCtx::set_ctx(runtime);
+  while (!end_) {
+    std::unique_lock<std::mutex> lock_guard(runtime->handle_mutex_);
+    while (!runtime->handles_.empty()) {
+      auto [handle, future] = runtime->handles_.back();
+      runtime->handles_.pop_back();
       lock_guard.unlock();
       if (future == nullptr || future->poll_wrapper()) {
         handle.resume();
@@ -20,12 +18,12 @@ auto runtime::Worker::run() -> void {
       lock_guard.lock();
     }
     lock_guard.unlock();
-    runtime_->driver_->poll();
+    runtime->driver_->poll();
   }
 }
 
 auto runtime::Runtime::register_future(FutureBase *future) -> void {
-  std::scoped_lock<std::mutex> lock_guard(mutex_);
+  std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
   this->handles_.emplace(handles_.begin(), future->get_handle(), future);
 }
 
@@ -38,15 +36,18 @@ auto runtime::Runtime::blocking_handle() -> IoHandle * {
 }
 
 auto runtime::Runtime::run() -> void {
-  for (auto worker : workers_) {
-    worker_ctx_.emplace_back(&Worker::run, worker);
+  for (auto &worker : workers_) {
+    worker = std::make_unique<Worker>();
+    worker_ctx_.emplace_back(&Worker::run, worker.get(), this);
   }
 }
 
-runtime::Runtime::Runtime(Privater priv) : driver_(nullptr), end_(false) {}
+runtime::Runtime::Runtime(Privater priv) {}
 
 runtime::Runtime::~Runtime() {
-  end_ = true;
+  for (auto &worker : workers_) {
+    worker->end_ = true;
+  }
   for (auto &t : worker_ctx_) {
     t.join();
   }
@@ -65,9 +66,9 @@ auto runtime::Builder::max_blocking_threads(uintptr_t val) -> Builder & {
 }
 
 auto runtime::Builder::build() const -> IoResult<std::unique_ptr<Runtime>> {
-  auto r = std::make_unique<Runtime>(Runtime::Privater());
-  r->workers_ = std::vector<Worker>(worker_num_, Worker(r.get()));
-  r->driver_ = std::make_unique<Driver>(blocking_num_);
+  auto runtime = std::make_unique<Runtime>(Runtime::Privater());
+  runtime->workers_ = std::vector<std::unique_ptr<Worker>>(worker_num_);
+  runtime->driver_ = std::make_unique<Driver>(blocking_num_);
 
-  return IoResult<std::unique_ptr<Runtime>>::ok(std::move(r));
+  return IoResult<std::unique_ptr<Runtime>>::ok(std::move(runtime));
 }
