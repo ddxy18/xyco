@@ -14,14 +14,11 @@
 auto TestRuntimeCtx::co_run(std::function<runtime::Future<void>()> &&co)
     -> void {
   auto run = []() {
-    auto runtime = runtime::Builder::new_multi_thread()
-                       .worker_threads(1)
-                       .max_blocking_threads(1)
-                       .build()
-                       .unwrap();
-    runtime->run();
-
-    return runtime;
+    return runtime::Builder::new_multi_thread()
+        .worker_threads(1)
+        .max_blocking_threads(1)
+        .build()
+        .unwrap();
   };
 
   static auto runtime = run();

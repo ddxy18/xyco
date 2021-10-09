@@ -1,3 +1,4 @@
+#include <chrono>
 #include <thread>
 
 #include "event/net/listener.h"
@@ -32,7 +33,7 @@ auto start_client() -> Future<void> {
   auto connection = (co_await net::TcpStream::connect(
       SocketAddr::new_v4(Ipv4Addr("127.0.0.1"), SERVER_PORT)));
   while (connection.is_err() &&
-         std::chrono::system_clock::now() - start <= std::chrono::seconds(1)) {
+         std::chrono::system_clock::now() - start <= std::chrono::seconds(2)) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     connection = (co_await net::TcpStream::connect(
         SocketAddr::new_v4(Ipv4Addr("127.0.0.1"), SERVER_PORT)));
@@ -51,8 +52,9 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
                 .max_blocking_threads(2)
                 .build()
                 .unwrap();
-  rt->run();
   rt->spawn(start_server());
+  // ensure server prepared to accept new connections
+  std::this_thread::sleep_for(std::chrono::seconds(1));
   rt->spawn(start_client());
   rt->spawn(start_client());
   rt->spawn(start_client());
