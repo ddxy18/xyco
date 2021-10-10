@@ -37,7 +37,7 @@ class BlockingPool {
 
   auto spawn(Task task) -> void;
 
-  explicit BlockingPool(int worker_num);
+  explicit BlockingPool(uintptr_t worker_num);
 
   BlockingPool(const BlockingPool &runtime) = delete;
 

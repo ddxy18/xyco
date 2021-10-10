@@ -24,19 +24,56 @@ auto runtime::Worker::get_native_id() const -> std::thread::id {
   return ctx_.get_id();
 }
 
+auto runtime::Worker::get_epoll_registry() -> net::EpollRegistry & {
+  return epoll_registry_;
+}
+
 auto runtime::Worker::run_loop_once(Runtime *runtime) -> void {
-  std::unique_lock<std::mutex> lock_guard(runtime->handle_mutex_);
-  while (!runtime->handles_.empty()) {
-    auto [handle, future] = runtime->handles_.back();
-    runtime->handles_.pop_back();
-    lock_guard.unlock();
-    if (future == nullptr || future->poll_wrapper()) {
-      handle.resume();
+  {
+    std::unique_lock<std::mutex> lock_guard(handle_mutex_);
+    while (!handles_.empty()) {
+      auto [handle, future] = handles_.back();
+      handles_.pop_back();
+      lock_guard.unlock();
+      if (future->poll_wrapper()) {
+        handle.resume();
+      }
+      lock_guard.lock();
     }
-    lock_guard.lock();
   }
-  lock_guard.unlock();
+  {
+    std::unique_lock<std::mutex> lock_guard(runtime->handle_mutex_);
+    while (!runtime->handles_.empty()) {
+      auto [handle, future] = runtime->handles_.back();
+      runtime->handles_.pop_back();
+      lock_guard.unlock();
+      if (future == nullptr || future->poll_wrapper()) {
+        handle.resume();
+      }
+      lock_guard.lock();
+    }
+  }
+  reactor::Events events;
+  epoll_registry_.select(&events, net::EpollRegistry::MAX_TIMEOUT_MS).unwrap();
+  for (auto &ev : events) {
+    if (ev != nullptr && ev->future_ != nullptr) {
+      TRACE("process event: fd={}\n", ev->fd_);
+      std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
+      handles_.emplace(handles_.begin(), ev->future_->get_handle(),
+                       ev->future_);
+    }
+  }
   runtime->driver_->poll();
+}
+
+auto runtime::Runtime::wake(reactor::Events &events) -> void {
+  for (auto &ev : events) {
+    if (ev != nullptr && ev->future_ != nullptr) {
+      TRACE("process event: fd={}\n", ev->fd_);
+      register_future(ev->future_);
+    }
+  }
+  events.clear();
 }
 
 auto runtime::Runtime::register_future(FutureBase *future) -> void {
@@ -44,11 +81,11 @@ auto runtime::Runtime::register_future(FutureBase *future) -> void {
   this->handles_.emplace(handles_.begin(), future->get_handle(), future);
 }
 
-auto runtime::Runtime::io_handle() -> IoHandle * {
+auto runtime::Runtime::io_handle() -> reactor::GlobalRegistry * {
   return driver_->net_handle();
 }
 
-auto runtime::Runtime::blocking_handle() -> IoHandle * {
+auto runtime::Runtime::blocking_handle() -> reactor::Registry * {
   return driver_->blocking_handle();
 }
 

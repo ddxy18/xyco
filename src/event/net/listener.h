@@ -5,10 +5,6 @@
 #include "event/net/socket.h"
 #include "event/runtime/future.h"
 
-namespace reactor {
-class Poll;
-}
-
 namespace net {
 class TcpStream;
 class TcpListener;

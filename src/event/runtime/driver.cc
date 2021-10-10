@@ -1,12 +1,14 @@
 #include "driver.h"
 
 #include "event/net/epoll.h"
+#include "runtime.h"
 
-runtime::BlockingPoll::BlockingPoll(int woker_num) : pool_(woker_num) {
+runtime::BlockingRegistry::BlockingRegistry(uintptr_t woker_num)
+    : pool_(woker_num) {
   pool_.run();
 }
 
-auto runtime::BlockingPoll::Register(reactor::Event* ev) -> IoResult<void> {
+auto runtime::BlockingRegistry::Register(reactor::Event* ev) -> IoResult<void> {
   {
     std::scoped_lock<std::mutex> lock_guard(mutex_);
     events_.push_back(ev);
@@ -15,15 +17,17 @@ auto runtime::BlockingPoll::Register(reactor::Event* ev) -> IoResult<void> {
   return IoResult<void>::ok();
 }
 
-auto runtime::BlockingPoll::reregister(reactor::Event* ev) -> IoResult<void> {
+auto runtime::BlockingRegistry::reregister(reactor::Event* ev)
+    -> IoResult<void> {
   return IoResult<void>::ok();
 }
 
-auto runtime::BlockingPoll::deregister(reactor::Event* ev) -> IoResult<void> {
+auto runtime::BlockingRegistry::deregister(reactor::Event* ev)
+    -> IoResult<void> {
   return IoResult<void>::ok();
 }
 
-auto runtime::BlockingPoll::select(reactor::Events* events, int timeout)
+auto runtime::BlockingRegistry::select(reactor::Events* events, int timeout)
     -> IoResult<void> {
   auto i = 0;
   decltype(events_) new_events;
@@ -40,18 +44,62 @@ auto runtime::BlockingPoll::select(reactor::Events* events, int timeout)
   return IoResult<void>::ok();
 }
 
-auto runtime::Driver::poll() -> void {
-  reactor::Events events;
-  net_poll_.poll(&events, net::Epoll::MAX_TIMEOUT_MS);
-  blocking_poll_.poll(&events, net::Epoll::MAX_TIMEOUT_MS);
+[[nodiscard]] auto runtime::IoRegistry::Register(reactor::Event* ev)
+    -> IoResult<void> {
+  return register_local(ev);
 }
 
-auto runtime::Driver::net_handle() -> reactor::Poll* { return &net_poll_; }
+[[nodiscard]] auto runtime::IoRegistry::reregister(reactor::Event* ev)
+    -> IoResult<void> {
+  return reregister_local(ev);
+}
 
-auto runtime::Driver::blocking_handle() -> reactor::Poll* {
-  return &blocking_poll_;
+[[nodiscard]] auto runtime::IoRegistry::deregister(reactor::Event* ev)
+    -> IoResult<void> {
+  return deregister_local(ev);
+}
+
+[[nodiscard]] auto runtime::IoRegistry::register_local(reactor::Event* ev)
+    -> IoResult<void> {
+  auto current_thread =
+      RuntimeCtx::get_ctx()->workers_.find(std::this_thread::get_id());
+  return current_thread->second->get_epoll_registry().Register(ev);
+}
+
+[[nodiscard]] auto runtime::IoRegistry::reregister_local(reactor::Event* ev)
+    -> IoResult<void> {
+  auto current_thread =
+      RuntimeCtx::get_ctx()->workers_.find(std::this_thread::get_id());
+  return current_thread->second->get_epoll_registry().reregister(ev);
+}
+
+[[nodiscard]] auto runtime::IoRegistry::deregister_local(reactor::Event* ev)
+    -> IoResult<void> {
+  auto current_thread =
+      RuntimeCtx::get_ctx()->workers_.find(std::this_thread::get_id());
+  return current_thread->second->get_epoll_registry().deregister(ev);
+}
+
+[[nodiscard]] auto runtime::IoRegistry::select(reactor::Events* events,
+                                               int timeout) -> IoResult<void> {
+  return IoResult<void>::ok();
+}
+
+auto runtime::Driver::poll() -> void {
+  reactor::Events events;
+  io_registry_.select(&events, net::EpollRegistry::MAX_TIMEOUT_MS).unwrap();
+
+  RuntimeCtx::get_ctx()->wake(events);
+  blocking_registry_.select(&events, net::EpollRegistry::MAX_TIMEOUT_MS)
+      .unwrap();
+  RuntimeCtx::get_ctx()->wake(events);
+}
+
+auto runtime::Driver::net_handle() -> IoRegistry* { return &io_registry_; }
+
+auto runtime::Driver::blocking_handle() -> BlockingRegistry* {
+  return &blocking_registry_;
 }
 
 runtime::Driver::Driver(uintptr_t blocking_num)
-    : net_poll_(std::make_unique<net::Epoll>()),
-      blocking_poll_(std::make_unique<BlockingPoll>(blocking_num)) {}
+    : io_registry_(), blocking_registry_(blocking_num) {}

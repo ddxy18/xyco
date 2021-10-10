@@ -7,12 +7,11 @@
 #include <unordered_map>
 
 #include "driver.h"
+#include "event/net/epoll.h"
 #include "future.h"
 
 namespace runtime {
 class Runtime;
-
-using IoHandle = reactor::Poll;
 
 class Worker {
   friend class Runtime;
@@ -24,16 +23,23 @@ class Worker {
 
   auto get_native_id() const -> std::thread::id;
 
+  auto get_epoll_registry() -> net::EpollRegistry &;
+
  private:
-  static auto run_loop_once(Runtime *runtime) -> void;
+  auto run_loop_once(Runtime *runtime) -> void;
 
   std::atomic_bool end_;
   std::thread ctx_;
+  net::EpollRegistry epoll_registry_;
+  // (handle, future) -> co_await on a future object
+  std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
+  std::mutex handle_mutex_;
 };
 
 class Runtime {
   friend class Worker;
   friend class Builder;
+  friend class IoRegistry;
 
   class Privater {};
 
@@ -57,11 +63,11 @@ class Runtime {
     }());
   }
 
-  auto register_future(FutureBase *future) -> void;
+  auto wake(reactor::Events &events) -> void;
 
-  auto io_handle() -> IoHandle *;
+  auto io_handle() -> reactor::GlobalRegistry *;
 
-  auto blocking_handle() -> IoHandle *;
+  auto blocking_handle() -> reactor::Registry *;
 
   Runtime(Privater priv);
 
@@ -96,6 +102,8 @@ class Runtime {
       workers_.erase(pos);
     }
   }
+
+  auto register_future(FutureBase *future) -> void;
 
   std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
   std::mutex worker_mutex_;

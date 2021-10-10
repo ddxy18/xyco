@@ -15,8 +15,7 @@ class AsyncFuture : public runtime::Future<Return> {
       -> runtime::Poll<Return> override {
     if (!ready_) {
       ready_ = true;
-      auto res = RuntimeCtx::get_ctx()->blocking_handle()->registry()->Register(
-          &event_);
+      auto res = RuntimeCtx::get_ctx()->blocking_handle()->Register(&event_);
       return Pending();
     }
 

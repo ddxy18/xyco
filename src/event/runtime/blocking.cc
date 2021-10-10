@@ -36,7 +36,8 @@ auto blocking::BlockingPool::spawn(blocking::Task task) -> void {
   worker->cv_.notify_one();
 }
 
-blocking::BlockingPool::BlockingPool(int worker_num) : workers_(worker_num) {}
+blocking::BlockingPool::BlockingPool(uintptr_t worker_num)
+    : workers_(worker_num) {}
 
 blocking::BlockingPool::~BlockingPool() {
   for (auto &worker : workers_) {
