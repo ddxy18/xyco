@@ -3,9 +3,6 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include <gsl/gsl>
-#include <vector>
-
 auto to_sys(reactor::Interest interest) -> int {
   switch (interest) {
     case reactor::Interest::Read:
@@ -17,46 +14,52 @@ auto to_sys(reactor::Interest interest) -> int {
   }
 }
 
-auto net::EpollRegistry::Register(reactor::Event *event) -> IoResult<void> {
-  epoll_event epoll_event{static_cast<uint32_t>(to_sys(event->interest_))};
-  epoll_event.data.ptr = event;
+auto net::EpollRegistry::Register(reactor::Event &event,
+                                  reactor::Interest interest)
+    -> IoResult<void> {
+  epoll_event epoll_event{.events = static_cast<uint32_t>(to_sys(interest)),
+                          .data = {.ptr = &event}};
 
   auto result =
-      into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_ADD, event->fd_, &epoll_event))
+      into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_ADD, event.fd_, &epoll_event))
           .map([&](auto n) -> void {});
   TRY(result);
-  TRACE("register fd:{}\n", event->fd_, epoll_event.data.ptr);
+  TRACE("register fd:{}\n", event.fd_, epoll_event.data.ptr);
 
   return result;
 }
 
-auto net::EpollRegistry::reregister(reactor::Event *event) -> IoResult<void> {
-  epoll_event epoll_event{static_cast<uint32_t>(to_sys(event->interest_))};
-  epoll_event.data.ptr = event;
+auto net::EpollRegistry::reregister(reactor::Event &event,
+                                    reactor::Interest interest)
+    -> IoResult<void> {
+  epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
+  epoll_event.data.ptr = &event;
 
   auto result =
-      into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_MOD, event->fd_, &epoll_event))
+      into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_MOD, event.fd_, &epoll_event))
           .map([](auto n) {});
   TRY(result);
-  TRACE("reregister fd:{}\n", event->fd_, epoll_event.data.ptr);
+  TRACE("reregister fd:{}\n", event.fd_, epoll_event.data.ptr);
 
   return result;
 }
 
-auto net::EpollRegistry::deregister(reactor::Event *event) -> IoResult<void> {
-  epoll_event epoll_event{static_cast<uint32_t>(to_sys(event->interest_))};
-  epoll_event.data.ptr = event;
+auto net::EpollRegistry::deregister(reactor::Event &event,
+                                    reactor::Interest interest)
+    -> IoResult<void> {
+  epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
+  epoll_event.data.ptr = &event;
 
   auto result =
-      into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_DEL, event->fd_, &epoll_event))
+      into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_DEL, event.fd_, &epoll_event))
           .map([](auto n) {});
   TRY(result);
-  TRACE("deregister fd:{}\n", event->fd_, epoll_event.data.ptr);
+  TRACE("deregister fd:{}\n", event.fd_, epoll_event.data.ptr);
 
   return result;
 }
 
-auto net::EpollRegistry::select(reactor::Events *events, int timeout)
+auto net::EpollRegistry::select(reactor::Events &events, int timeout)
     -> IoResult<void> {
   auto final_timeout = timeout;
   auto final_max_events = MAX_EVENTS;
@@ -72,10 +75,10 @@ auto net::EpollRegistry::select(reactor::Events *events, int timeout)
   TRY(result);
   TRACE("epoll_wait:{}\n", ready_len);
 
-  while (ready_len-- > 0) {
-    auto *ready_ev =
-        gsl::owner<reactor::Event *>((epoll_events.at(ready_len).data.ptr));
-    events->push_back(ready_ev);
+  for (auto i = 0; i < ready_len; i++) {
+    auto &ready_ev =
+        *static_cast<reactor::Event *>((epoll_events.at(i).data.ptr));
+    events.push_back(ready_ev);
   }
   return IoResult<void>::ok();
 }

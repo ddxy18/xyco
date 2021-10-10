@@ -11,13 +11,15 @@ namespace reactor {
 class Registry;
 class Event;
 enum class Interest;
-using Events = std::vector<Event *>;
+using Events = std::vector<std::reference_wrapper<Event>>;
 
 enum class Interest { Read, Write, All };
 
 class Event {
+  enum class State { Pending, Readable, Writable, All };
+
  public:
-  Interest interest_{};
+  State state_{};
   int fd_{};
   runtime::FutureBase *future_{};
   std::function<void()> before_extra_;
@@ -26,13 +28,16 @@ class Event {
 
 class Registry {
  public:
-  [[nodiscard]] virtual auto Register(Event *ev) -> IoResult<void> = 0;
+  [[nodiscard]] virtual auto Register(Event &ev, Interest interest)
+      -> IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto reregister(Event *ev) -> IoResult<void> = 0;
+  [[nodiscard]] virtual auto reregister(Event &ev, Interest interest)
+      -> IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto deregister(Event *ev) -> IoResult<void> = 0;
+  [[nodiscard]] virtual auto deregister(Event &ev, Interest interest)
+      -> IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto select(Events *events, int timeout)
+  [[nodiscard]] virtual auto select(Events &events, int timeout)
       -> IoResult<void> = 0;
 
   Registry() = default;
@@ -50,19 +55,25 @@ class Registry {
 
 class GlobalRegistry : public Registry {
  public:
-  [[nodiscard]] auto Register(Event *ev) -> IoResult<void> override = 0;
+  [[nodiscard]] auto Register(Event &ev, Interest interest)
+      -> IoResult<void> override = 0;
 
-  [[nodiscard]] auto reregister(Event *ev) -> IoResult<void> override = 0;
+  [[nodiscard]] auto reregister(Event &ev, Interest interest)
+      -> IoResult<void> override = 0;
 
-  [[nodiscard]] auto deregister(Event *ev) -> IoResult<void> override = 0;
+  [[nodiscard]] auto deregister(Event &ev, Interest interest)
+      -> IoResult<void> override = 0;
 
-  [[nodiscard]] virtual auto register_local(Event *ev) -> IoResult<void> = 0;
+  [[nodiscard]] virtual auto register_local(Event &ev, Interest interest)
+      -> IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto reregister_local(Event *ev) -> IoResult<void> = 0;
+  [[nodiscard]] virtual auto reregister_local(Event &ev, Interest interest)
+      -> IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto deregister_local(Event *ev) -> IoResult<void> = 0;
+  [[nodiscard]] virtual auto deregister_local(Event &ev, Interest interest)
+      -> IoResult<void> = 0;
 
-  [[nodiscard]] auto select(Events *events, int timeout)
+  [[nodiscard]] auto select(Events &events, int timeout)
       -> IoResult<void> override = 0;
 };
 }  // namespace reactor

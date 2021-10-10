@@ -9,13 +9,16 @@ class BlockingRegistry : public reactor::Registry {
  public:
   explicit BlockingRegistry(uintptr_t woker_num);
 
-  [[nodiscard]] auto Register(reactor::Event* ev) -> IoResult<void> override;
+  [[nodiscard]] auto Register(reactor::Event& ev, reactor::Interest interest)
+      -> IoResult<void> override;
 
-  [[nodiscard]] auto reregister(reactor::Event* ev) -> IoResult<void> override;
+  [[nodiscard]] auto reregister(reactor::Event& ev, reactor::Interest interest)
+      -> IoResult<void> override;
 
-  [[nodiscard]] auto deregister(reactor::Event* ev) -> IoResult<void> override;
+  [[nodiscard]] auto deregister(reactor::Event& ev, reactor::Interest interest)
+      -> IoResult<void> override;
 
-  [[nodiscard]] auto select(reactor::Events* events, int timeout)
+  [[nodiscard]] auto select(reactor::Events& events, int timeout)
       -> IoResult<void> override;
 
  private:
@@ -26,22 +29,28 @@ class BlockingRegistry : public reactor::Registry {
 
 class IoRegistry : public reactor::GlobalRegistry {
  public:
-  [[nodiscard]] auto Register(reactor::Event* ev) -> IoResult<void> override;
-
-  [[nodiscard]] auto reregister(reactor::Event* ev) -> IoResult<void> override;
-
-  [[nodiscard]] auto deregister(reactor::Event* ev) -> IoResult<void> override;
-
-  [[nodiscard]] auto register_local(reactor::Event* ev)
+  [[nodiscard]] auto Register(reactor::Event& ev, reactor::Interest interest)
       -> IoResult<void> override;
 
-  [[nodiscard]] auto reregister_local(reactor::Event* ev)
+  [[nodiscard]] auto reregister(reactor::Event& ev, reactor::Interest interest)
       -> IoResult<void> override;
 
-  [[nodiscard]] auto deregister_local(reactor::Event* ev)
+  [[nodiscard]] auto deregister(reactor::Event& ev, reactor::Interest interest)
       -> IoResult<void> override;
 
-  [[nodiscard]] auto select(reactor::Events* events, int timeout)
+  [[nodiscard]] auto register_local(reactor::Event& ev,
+                                    reactor::Interest interest)
+      -> IoResult<void> override;
+
+  [[nodiscard]] auto reregister_local(reactor::Event& ev,
+                                      reactor::Interest interest)
+      -> IoResult<void> override;
+
+  [[nodiscard]] auto deregister_local(reactor::Event& ev,
+                                      reactor::Interest interest)
+      -> IoResult<void> override;
+
+  [[nodiscard]] auto select(reactor::Events& events, int timeout)
       -> IoResult<void> override;
 };
 

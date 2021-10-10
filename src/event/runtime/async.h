@@ -15,7 +15,8 @@ class AsyncFuture : public runtime::Future<Return> {
       -> runtime::Poll<Return> override {
     if (!ready_) {
       ready_ = true;
-      auto res = RuntimeCtx::get_ctx()->blocking_handle()->Register(&event_);
+      auto res = RuntimeCtx::get_ctx()->blocking_handle()->Register(
+          event_, reactor::Interest::All);
       return Pending();
     }
 
@@ -32,7 +33,8 @@ class AsyncFuture : public runtime::Future<Return> {
           event_.after_extra_ = gsl::owner<Return *>((new Return(f())));
         }),
         ready_(false),
-        event_(reactor::Event{reactor::Interest::All, -1, this, f_, nullptr}) {}
+        event_(
+            reactor::Event{.fd_ = -1, .future_ = this, .before_extra_ = f_}) {}
 
   AsyncFuture(const AsyncFuture<Return> &) = delete;
 
