@@ -43,10 +43,8 @@ auto net::TcpSocket::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
           if (errno == EINPROGRESS || errno == EAGAIN) {
             event_ =
                 reactor::Event{reactor::Interest::All, sock_.into_c_fd(), this};
-            auto res = runtime::RuntimeCtx::get_ctx()
-                           ->io_handle()
-                           ->registry()
-                           ->Register(&event_);
+            auto res =
+                runtime::RuntimeCtx::get_ctx()->io_handle()->Register(&event_);
             if (res.is_err()) {
               return runtime::Ready<CoOutput>{CoOutput::err(res.unwrap_err())};
             }
@@ -144,16 +142,13 @@ auto net::TcpStream::read(std::vector<char> *buf)
         ready_ = true;
         event_ = reactor::Event{reactor::Interest::Read,
                                 self_->socket_.into_c_fd(), this};
-        auto res = runtime::RuntimeCtx::get_ctx()
-                       ->io_handle()
-                       ->registry()
-                       ->Register(&event_)
-                       .map([]() -> uintptr_t { return 0; });
+        auto res =
+            runtime::RuntimeCtx::get_ctx()->io_handle()->Register(&event_).map(
+                []() -> uintptr_t { return 0; });
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()
                       ->io_handle()
-                      ->registry()
                       ->reregister(&event_)
                       .map([]() -> uintptr_t { return 0; });
           }
@@ -167,7 +162,6 @@ auto net::TcpStream::read(std::vector<char> *buf)
       if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
         auto res = runtime::RuntimeCtx::get_ctx()
                        ->io_handle()
-                       ->registry()
                        ->reregister(&event_)
                        .map([]() -> uintptr_t { return 0; });
         return runtime::Pending();
@@ -209,16 +203,13 @@ auto net::TcpStream::write(I begin, I end) -> Future<IoResult<uintptr_t>> {
         ready_ = true;
         event_ = reactor::Event{reactor::Interest::Write,
                                 self_->socket_.into_c_fd(), this};
-        auto res = runtime::RuntimeCtx::get_ctx()
-                       ->io_handle()
-                       ->registry()
-                       ->Register(&event_)
-                       .map([]() -> uintptr_t { return 0; });
+        auto res =
+            runtime::RuntimeCtx::get_ctx()->io_handle()->Register(&event_).map(
+                []() -> uintptr_t { return 0; });
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()
                       ->io_handle()
-                      ->registry()
                       ->reregister(&event_)
                       .map([]() -> uintptr_t { return 0; });
           }
@@ -326,14 +317,11 @@ auto net::TcpListener::accept()
         event_ = reactor::Event{reactor::Interest::Read,
                                 self_->socket_.into_c_fd(), this};
         auto res =
-            runtime::RuntimeCtx::get_ctx()->io_handle()->registry()->Register(
-                &event_);
+            runtime::RuntimeCtx::get_ctx()->io_handle()->Register(&event_);
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
-            res = runtime::RuntimeCtx::get_ctx()
-                      ->io_handle()
-                      ->registry()
-                      ->reregister(&event_);
+            res = runtime::RuntimeCtx::get_ctx()->io_handle()->reregister(
+                &event_);
           }
           if (res.is_err()) {
             return runtime::Ready<CoOutput>{CoOutput::err(res.unwrap_err())};

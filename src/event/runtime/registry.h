@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_EVENT_RUNTIME_POLL_H_
-#define XYWEBSERVER_EVENT_RUNTIME_POLL_H_
+#ifndef XYWEBSERVER_EVENT_RUNTIME_REGISTRY_H_
+#define XYWEBSERVER_EVENT_RUNTIME_REGISTRY_H_
 
 #include "event/io/utils.h"
 
@@ -8,7 +8,6 @@ class FutureBase;
 }
 
 namespace reactor {
-class Poll;
 class Registry;
 class Event;
 enum class Interest;
@@ -49,17 +48,23 @@ class Registry {
   virtual ~Registry() = default;
 };
 
-class Poll {
+class GlobalRegistry : public Registry {
  public:
-  explicit Poll(std::unique_ptr<Registry> registry);
+  [[nodiscard]] auto Register(Event *ev) -> IoResult<void> override = 0;
 
-  auto registry() -> Registry *;
+  [[nodiscard]] auto reregister(Event *ev) -> IoResult<void> override = 0;
 
-  auto poll(Events *events, int timeout) -> IoResult<void>;
+  [[nodiscard]] auto deregister(Event *ev) -> IoResult<void> override = 0;
 
- private:
-  std::unique_ptr<Registry> registry_;
+  [[nodiscard]] virtual auto register_local(Event *ev) -> IoResult<void> = 0;
+
+  [[nodiscard]] virtual auto reregister_local(Event *ev) -> IoResult<void> = 0;
+
+  [[nodiscard]] virtual auto deregister_local(Event *ev) -> IoResult<void> = 0;
+
+  [[nodiscard]] auto select(Events *events, int timeout)
+      -> IoResult<void> override = 0;
 };
 }  // namespace reactor
 
-#endif  // XYWEBSERVER_EVENT_RUNTIME_POLL_H_
+#endif  // XYWEBSERVER_EVENT_RUNTIME_REGISTRY_H_

@@ -17,7 +17,7 @@ auto to_sys(reactor::Interest interest) -> int {
   }
 }
 
-auto net::Epoll::Register(reactor::Event *event) -> IoResult<void> {
+auto net::EpollRegistry::Register(reactor::Event *event) -> IoResult<void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(event->interest_))};
   epoll_event.data.ptr = event;
 
@@ -30,7 +30,7 @@ auto net::Epoll::Register(reactor::Event *event) -> IoResult<void> {
   return result;
 }
 
-auto net::Epoll::reregister(reactor::Event *event) -> IoResult<void> {
+auto net::EpollRegistry::reregister(reactor::Event *event) -> IoResult<void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(event->interest_))};
   epoll_event.data.ptr = event;
 
@@ -43,7 +43,7 @@ auto net::Epoll::reregister(reactor::Event *event) -> IoResult<void> {
   return result;
 }
 
-auto net::Epoll::deregister(reactor::Event *event) -> IoResult<void> {
+auto net::EpollRegistry::deregister(reactor::Event *event) -> IoResult<void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(event->interest_))};
   epoll_event.data.ptr = event;
 
@@ -56,7 +56,7 @@ auto net::Epoll::deregister(reactor::Event *event) -> IoResult<void> {
   return result;
 }
 
-auto net::Epoll::select(reactor::Events *events, int timeout)
+auto net::EpollRegistry::select(reactor::Events *events, int timeout)
     -> IoResult<void> {
   auto final_timeout = timeout;
   auto final_max_events = MAX_EVENTS;
@@ -80,13 +80,13 @@ auto net::Epoll::select(reactor::Events *events, int timeout)
   return IoResult<void>::ok();
 }
 
-net::Epoll::Epoll() : epfd_(epoll_create(1)) {
+net::EpollRegistry::EpollRegistry() : epfd_(epoll_create(1)) {
   if (epfd_ == -1) {
     panic();
   }
 }
 
-net::Epoll::~Epoll() {
+net::EpollRegistry::~EpollRegistry() {
   // FIXME(dongxiaoyu): replace global epoll with per worker epoll
   close(epfd_);
 }
