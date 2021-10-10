@@ -41,10 +41,9 @@ auto net::TcpSocket::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
             ::connect(sock_.into_c_fd(), addr_.into_c_addr(), sizeof(sockaddr));
         if (c == -1) {
           if (errno == EINPROGRESS || errno == EAGAIN) {
-            event_ =
-                reactor::Event{reactor::Interest::All, sock_.into_c_fd(), this};
-            auto res =
-                runtime::RuntimeCtx::get_ctx()->io_handle()->Register(&event_);
+            event_ = reactor::Event{.fd_ = sock_.into_c_fd(), .future_ = this};
+            auto res = runtime::RuntimeCtx::get_ctx()->io_handle()->Register(
+                event_, reactor::Interest::All);
             if (res.is_err()) {
               return runtime::Ready<CoOutput>{CoOutput::err(res.unwrap_err())};
             }
@@ -140,16 +139,17 @@ auto net::TcpStream::read(std::vector<char> *buf)
         -> runtime::Poll<CoOutput> override {
       if (!ready_) {
         ready_ = true;
-        event_ = reactor::Event{reactor::Interest::Read,
-                                self_->socket_.into_c_fd(), this};
-        auto res =
-            runtime::RuntimeCtx::get_ctx()->io_handle()->Register(&event_).map(
-                []() -> uintptr_t { return 0; });
+        event_ =
+            reactor::Event{.fd_ = self_->socket_.into_c_fd(), .future_ = this};
+        auto res = runtime::RuntimeCtx::get_ctx()
+                       ->io_handle()
+                       ->Register(event_, reactor::Interest::Read)
+                       .map([]() -> uintptr_t { return 0; });
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()
                       ->io_handle()
-                      ->reregister(&event_)
+                      ->reregister(event_, reactor::Interest::Read)
                       .map([]() -> uintptr_t { return 0; });
           }
           if (res.is_err()) {
@@ -162,7 +162,7 @@ auto net::TcpStream::read(std::vector<char> *buf)
       if (n == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
         auto res = runtime::RuntimeCtx::get_ctx()
                        ->io_handle()
-                       ->reregister(&event_)
+                       ->reregister(event_, reactor::Interest::Read)
                        .map([]() -> uintptr_t { return 0; });
         return runtime::Pending();
       }
@@ -201,16 +201,17 @@ auto net::TcpStream::write(I begin, I end) -> Future<IoResult<uintptr_t>> {
         -> runtime::Poll<CoOutput> override {
       if (!ready_) {
         ready_ = true;
-        event_ = reactor::Event{reactor::Interest::Write,
-                                self_->socket_.into_c_fd(), this};
-        auto res =
-            runtime::RuntimeCtx::get_ctx()->io_handle()->Register(&event_).map(
-                []() -> uintptr_t { return 0; });
+        event_ =
+            reactor::Event{.fd_ = self_->socket_.into_c_fd(), .future_ = this};
+        auto res = runtime::RuntimeCtx::get_ctx()
+                       ->io_handle()
+                       ->Register(event_, reactor::Interest::Write)
+                       .map([]() -> uintptr_t { return 0; });
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()
                       ->io_handle()
-                      ->reregister(&event_)
+                      ->reregister(event_, reactor::Interest::Write)
                       .map([]() -> uintptr_t { return 0; });
           }
           if (res.is_err()) {
@@ -314,14 +315,14 @@ auto net::TcpListener::accept()
     [[nodiscard]] auto poll(runtime::Handle<void> self)
         -> runtime::Poll<CoOutput> override {
       if (!ready_) {
-        event_ = reactor::Event{reactor::Interest::Read,
-                                self_->socket_.into_c_fd(), this};
-        auto res =
-            runtime::RuntimeCtx::get_ctx()->io_handle()->Register(&event_);
+        event_ =
+            reactor::Event{.fd_ = self_->socket_.into_c_fd(), .future_ = this};
+        auto res = runtime::RuntimeCtx::get_ctx()->io_handle()->Register(
+            event_, reactor::Interest::Read);
         if (res.is_err()) {
           if (res.unwrap_err().errno_ == EEXIST) {
             res = runtime::RuntimeCtx::get_ctx()->io_handle()->reregister(
-                &event_);
+                event_, reactor::Interest::Read);
           }
           if (res.is_err()) {
             return runtime::Ready<CoOutput>{CoOutput::err(res.unwrap_err())};

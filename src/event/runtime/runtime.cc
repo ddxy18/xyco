@@ -54,23 +54,22 @@ auto runtime::Worker::run_loop_once(Runtime *runtime) -> void {
     }
   }
   reactor::Events events;
-  epoll_registry_.select(&events, net::EpollRegistry::MAX_TIMEOUT_MS).unwrap();
-  for (auto &ev : events) {
-    if (ev != nullptr && ev->future_ != nullptr) {
-      TRACE("process event: fd={}\n", ev->fd_);
+  epoll_registry_.select(events, net::EpollRegistry::MAX_TIMEOUT_MS).unwrap();
+  for (reactor::Event &ev : events) {
+    if (ev.future_ != nullptr) {
+      TRACE("process event: fd={}\n", ev.fd_);
       std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
-      handles_.emplace(handles_.begin(), ev->future_->get_handle(),
-                       ev->future_);
+      handles_.emplace(handles_.begin(), ev.future_->get_handle(), ev.future_);
     }
   }
   runtime->driver_->poll();
 }
 
 auto runtime::Runtime::wake(reactor::Events &events) -> void {
-  for (auto &ev : events) {
-    if (ev != nullptr && ev->future_ != nullptr) {
-      TRACE("process event: fd={}\n", ev->fd_);
-      register_future(ev->future_);
+  for (reactor::Event &ev : events) {
+    if (ev.future_ != nullptr) {
+      TRACE("process event: fd={}\n", ev.fd_);
+      register_future(ev.future_);
     }
   }
   events.clear();

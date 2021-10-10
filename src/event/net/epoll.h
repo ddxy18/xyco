@@ -9,13 +9,16 @@ class EpollRegistry : public reactor::Registry {
   static const int MAX_TIMEOUT_MS = 2;
   static const int MAX_EVENTS = 10000;
 
-  [[nodiscard]] auto Register(reactor::Event *ev) -> IoResult<void> override;
+  [[nodiscard]] auto Register(reactor::Event &ev, reactor::Interest interest)
+      -> IoResult<void> override;
 
-  [[nodiscard]] auto reregister(reactor::Event *ev) -> IoResult<void> override;
+  [[nodiscard]] auto reregister(reactor::Event &ev, reactor::Interest interest)
+      -> IoResult<void> override;
 
-  [[nodiscard]] auto deregister(reactor::Event *ev) -> IoResult<void> override;
+  [[nodiscard]] auto deregister(reactor::Event &ev, reactor::Interest interest)
+      -> IoResult<void> override;
 
-  [[nodiscard]] auto select(reactor::Events *events, int timeout)
+  [[nodiscard]] auto select(reactor::Events &events, int timeout)
       -> IoResult<void> override;
 
   EpollRegistry();
