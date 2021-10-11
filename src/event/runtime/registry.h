@@ -16,9 +16,17 @@ using Events = std::vector<std::reference_wrapper<Event>>;
 enum class Interest { Read, Write, All };
 
 class Event {
+ public:
   enum class State { Pending, Readable, Writable, All };
 
- public:
+  [[nodiscard]] auto readable() const -> bool;
+
+  [[nodiscard]] auto writeable() const -> bool;
+
+  auto clear_readable() -> void;
+
+  auto clear_writeable() -> void;
+
   State state_{};
   int fd_{};
   runtime::FutureBase *future_{};

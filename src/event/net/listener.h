@@ -4,6 +4,7 @@
 #include "event/io/mod.h"
 #include "event/net/socket.h"
 #include "event/runtime/future.h"
+#include "event/runtime/registry.h"
 
 namespace net {
 class TcpStream;
@@ -43,10 +44,10 @@ class TcpStream : public ReadTrait, WriteTrait {
   using Future = runtime::Future<T>;
 
   friend struct fmt::formatter<TcpStream>;
+  friend class TcpSocket;
+  friend class TcpListener;
 
  public:
-  explicit TcpStream(Socket socket);
-
   static auto connect(SocketAddr addr) -> Future<IoResult<TcpStream>>;
 
   auto read(std::vector<char> *buf) -> Future<IoResult<uintptr_t>> override;
@@ -66,7 +67,10 @@ class TcpStream : public ReadTrait, WriteTrait {
   template <typename I>
   auto write(I begin, I end) -> Future<IoResult<uintptr_t>>;
 
+  explicit TcpStream(Socket socket, reactor::Event::State state);
+
   Socket socket_;
+  reactor::Event event_;
 };
 
 class TcpListener {
@@ -85,6 +89,7 @@ class TcpListener {
   TcpListener(int fd);
 
   Socket socket_;
+  reactor::Event event_;
 };
 }  // namespace net
 
