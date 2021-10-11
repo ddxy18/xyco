@@ -3,9 +3,9 @@
 #include <gtest/gtest.h>
 
 TEST(SocketTest, into_c_fd) {
-  Socket socket(1);
+  Socket socket(-1);  // prevent destructor closing the fd
 
-  ASSERT_EQ(socket.into_c_fd(), 1);
+  ASSERT_EQ(socket.into_c_fd(), -1);
 }
 
 TEST(SocketTest, new_v4) {

@@ -337,7 +337,7 @@ auto net::TcpListener::accept()
 }
 
 net::TcpListener::~TcpListener() {
-  if (socket_.into_c_fd() != -1) {
+  if (socket_.into_c_fd() != -1 && event_ != nullptr) {
     runtime::RuntimeCtx::get_ctx()
         ->io_handle()
         ->deregister(*event_, reactor::Interest::All)
