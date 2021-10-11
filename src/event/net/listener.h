@@ -34,7 +34,7 @@ class TcpSocket {
   static auto new_v6() -> IoResult<TcpSocket>;
 
  private:
-  TcpSocket(int fd);
+  TcpSocket(Socket &&socket);
 
   Socket socket_;
 };
@@ -63,14 +63,24 @@ class TcpStream : public ReadTrait, WriteTrait {
   [[nodiscard]] auto shutdown(Shutdown shutdown) const
       -> Future<IoResult<void>>;
 
+  TcpStream(const TcpStream &tcp_stream) = delete;
+
+  TcpStream(TcpStream &&tcp_stream) noexcept = default;
+
+  auto operator=(const TcpStream &tcp_stream) -> TcpStream & = delete;
+
+  auto operator=(TcpStream &&tcp_stream) noexcept -> TcpStream & = default;
+
+  ~TcpStream();
+
  private:
   template <typename I>
   auto write(I begin, I end) -> Future<IoResult<uintptr_t>>;
 
-  explicit TcpStream(Socket socket, reactor::Event::State state);
+  explicit TcpStream(Socket &&socket, reactor::Event::State state);
 
   Socket socket_;
-  reactor::Event event_;
+  std::unique_ptr<reactor::Event> event_;
 };
 
 class TcpListener {
@@ -85,11 +95,21 @@ class TcpListener {
 
   auto accept() -> Future<IoResult<std::pair<TcpStream, SocketAddr>>>;
 
+  TcpListener(const TcpListener &tcp_stream) = delete;
+
+  TcpListener(TcpListener &&tcp_stream) noexcept = default;
+
+  auto operator=(const TcpListener &tcp_stream) -> TcpListener & = delete;
+
+  auto operator=(TcpListener &&tcp_stream) noexcept -> TcpListener & = default;
+
+  ~TcpListener();
+
  private:
-  TcpListener(int fd);
+  TcpListener(Socket &&socket);
 
   Socket socket_;
-  reactor::Event event_;
+  std::unique_ptr<reactor::Event> event_;
 };
 }  // namespace net
 

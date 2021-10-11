@@ -28,7 +28,7 @@ auto net::TcpSocket::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
 
   class Future : public runtime::Future<CoOutput> {
    public:
-    explicit Future(SocketAddr addr, Socket socket)
+    explicit Future(SocketAddr addr, Socket &socket)
         : runtime::Future<CoOutput>(nullptr), socket_(socket), addr_(addr) {}
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
@@ -52,11 +52,11 @@ auto net::TcpSocket::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
       }
       INFO("{} connect to {}\n", socket_, addr_);
       return runtime::Ready<CoOutput>{
-          CoOutput::ok(TcpStream(socket_, event_.state_))};
+          CoOutput::ok(TcpStream(std::move(socket_), event_.state_))};
     }
 
    private:
-    Socket socket_;
+    Socket &socket_;
     SocketAddr addr_;
     reactor::Event event_;
   };
@@ -66,7 +66,8 @@ auto net::TcpSocket::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
         ::connect(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
   });
   if (connect_result.is_ok()) {
-    co_return CoOutput::ok(TcpStream(socket_, reactor::Event::State::Writable));
+    co_return CoOutput::ok(
+        TcpStream(std::move(socket_), reactor::Event::State::Writable));
   }
   auto err = connect_result.unwrap_err().errno_;
   if (err != EINPROGRESS && err != EAGAIN) {
@@ -77,15 +78,14 @@ auto net::TcpSocket::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
 }
 
 auto net::TcpSocket::listen(int backlog) -> Future<IoResult<TcpListener>> {
-  auto listener = TcpListener(socket_.into_c_fd());
-
-  auto listen = co_await runtime::AsyncFuture<int>(
-      [&]() { return ::listen(socket_.into_c_fd(), backlog); });
-  auto res = into_sys_result(listen).map([=](auto n) { return listener; });
+  auto listen_result = co_await runtime::AsyncFuture<IoResult<int>>([&]() {
+    return into_sys_result(::listen(socket_.into_c_fd(), backlog));
+  });
+  auto res = listen_result.map([&](auto n) { return TcpListener(Socket(-1)); });
   ASYNC_TRY(res);
   INFO("{} listening\n", socket_);
 
-  co_return IoResult<TcpListener>::ok(listener);
+  co_return IoResult<TcpListener>::ok(TcpListener(std::move(socket_)));
 }
 
 auto net::TcpSocket::set_reuseaddr(bool reuseaddr) -> IoResult<void> {
@@ -110,7 +110,7 @@ auto net::TcpSocket::new_v6() -> IoResult<TcpSocket> {
       .map([](auto fd) { return TcpSocket(fd); });
 }
 
-net::TcpSocket::TcpSocket(int fd) : socket_(fd) {}
+net::TcpSocket::TcpSocket(Socket &&socket) : socket_(std::move(socket)) {}
 
 auto net::TcpStream::connect(SocketAddr addr) -> Future<IoResult<TcpStream>> {
   auto socket = addr.is_v4() ? TcpSocket::new_v4() : TcpSocket::new_v6();
@@ -130,7 +130,7 @@ auto net::TcpStream::read(std::vector<char> *buf)
         : runtime::Future<CoOutput>(nullptr), buf_(buf), self_(self) {}
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      if (self_->event_.readable()) {
+      if (self_->event_->readable()) {
         auto n = ::read(self_->socket_.into_c_fd(), buf_->data(), buf_->size());
         if (n != -1) {
           INFO("read {} bytes from {}\n", n, self_->socket_);
@@ -141,8 +141,8 @@ auto net::TcpStream::read(std::vector<char> *buf)
               CoOutput::err(into_sys_result(-1).unwrap_err())};
         }
       }
-      self_->event_.clear_readable();
-      self_->event_.future_ = this;
+      self_->event_->clear_readable();
+      self_->event_->future_ = this;
       return runtime::Pending();
     }
 
@@ -152,7 +152,7 @@ auto net::TcpStream::read(std::vector<char> *buf)
   };
 
   auto result = co_await Future(buf, this);
-  event_.future_ = nullptr;
+  event_->future_ = nullptr;
   co_return result;
 }
 
@@ -169,15 +169,15 @@ auto net::TcpStream::write(I begin, I end) -> Future<IoResult<uintptr_t>> {
           self_(self) {}
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      if (self_->event_.writeable()) {
+      if (self_->event_->writeable()) {
         auto n = ::write(self_->socket_.into_c_fd(), &*begin_, end_ - begin_);
         auto nbytes = into_sys_result(n).map(
             [](auto n) -> uintptr_t { return static_cast<uintptr_t>(n); });
         INFO("write {} bytes to {}\n", n, self_->socket_);
         return runtime::Ready<CoOutput>{nbytes};
       }
-      self_->event_.clear_writeable();
-      self_->event_.future_ = this;
+      self_->event_->clear_writeable();
+      self_->event_->future_ = this;
       return runtime::Pending();
     }
 
@@ -188,7 +188,7 @@ auto net::TcpStream::write(I begin, I end) -> Future<IoResult<uintptr_t>> {
   };
 
   auto result = co_await Future(begin, end, this);
-  event_.future_ = nullptr;
+  event_->future_ = nullptr;
   co_return result;
 }
 
@@ -236,15 +236,26 @@ auto net::TcpStream::shutdown(Shutdown shutdown) const
   co_return IoResult<void>::ok();
 }
 
-net::TcpStream::TcpStream(Socket socket, reactor::Event::State state)
-    : socket_(socket), event_({.state_ = state, .fd_ = socket.into_c_fd()}) {
+net::TcpStream::~TcpStream() {
+  if (socket_.into_c_fd() != -1) {
+    runtime::RuntimeCtx::get_ctx()
+        ->io_handle()
+        ->deregister_local(*event_, reactor::Interest::All)
+        .unwrap();
+  }
+}
+
+net::TcpStream::TcpStream(Socket &&socket, reactor::Event::State state)
+    : socket_(std::move(socket)),
+      event_(std::make_unique<reactor::Event>(
+          reactor::Event{.state_ = state, .fd_ = socket_.into_c_fd()})) {
   auto *io_handle = runtime::RuntimeCtx::get_ctx()->io_handle();
   auto register_result =
-      io_handle->register_local(event_, reactor::Interest::All);
+      io_handle->register_local(*event_, reactor::Interest::All);
   if (register_result.is_err()) {
     auto err = register_result.unwrap_err().errno_;
     if (err == EEXIST) {
-      io_handle->reregister_local(event_, reactor::Interest::All).unwrap();
+      io_handle->reregister_local(*event_, reactor::Interest::All).unwrap();
     }
   }
 }
@@ -277,17 +288,17 @@ auto net::TcpListener::accept()
         : runtime::Future<CoOutput>(nullptr), self_(self) {}
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      if (self_->event_.fd_ == 0) {
-        self_->event_ =
-            reactor::Event{.fd_ = self_->socket_.into_c_fd(), .future_ = this};
+      if (self_->event_ == nullptr) {
+        self_->event_ = std::make_unique<reactor::Event>(
+            reactor::Event{.fd_ = self_->socket_.into_c_fd(), .future_ = this});
         auto res = runtime::RuntimeCtx::get_ctx()->io_handle()->Register(
-            self_->event_, reactor::Interest::Read);
+            *self_->event_, reactor::Interest::Read);
         if (res.is_err()) {
           return runtime::Ready<CoOutput>{CoOutput::err(res.unwrap_err())};
         }
       }
 
-      if (self_->event_.readable()) {
+      if (self_->event_->readable()) {
         sockaddr_in addr_in{};
         socklen_t addrlen = sizeof(addr_in);
         auto accept_result = into_sys_result(
@@ -297,7 +308,7 @@ auto net::TcpListener::accept()
         if (accept_result.is_err()) {
           auto err = accept_result.unwrap_err();
           if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK) {
-            self_->event_.state_ = reactor::Event::State::Pending;
+            self_->event_->state_ = reactor::Event::State::Pending;
             return runtime::Pending();
           }
           return runtime::Ready<CoOutput>{CoOutput::err(err)};
@@ -311,7 +322,8 @@ auto net::TcpListener::accept()
         INFO("accept from {} new connect={{{}, addr:{}}}\n", self_->socket_,
              socket, sock_addr);
         return runtime::Ready<CoOutput>{CoOutput::ok(
-            TcpStream(socket, reactor::Event::State::Writable), sock_addr)};
+            TcpStream(std::move(socket), reactor::Event::State::Writable),
+            sock_addr)};
       }
       return runtime::Pending();
     }
@@ -324,7 +336,16 @@ auto net::TcpListener::accept()
   co_return res;
 }
 
-net::TcpListener::TcpListener(int fd) : socket_(fd) {}
+net::TcpListener::~TcpListener() {
+  if (socket_.into_c_fd() != -1) {
+    runtime::RuntimeCtx::get_ctx()
+        ->io_handle()
+        ->deregister(*event_, reactor::Interest::All)
+        .unwrap();
+  }
+}
+
+net::TcpListener::TcpListener(Socket &&socket) : socket_(std::move(socket)) {}
 
 template <typename FormatContext>
 auto fmt::formatter<net::TcpSocket>::format(const net::TcpSocket &tcp_socket,
