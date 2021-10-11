@@ -1,5 +1,9 @@
 #include "socket.h"
 
+#include <unistd.h>
+
+#include "event/io/utils.h"
+
 auto SocketAddrV4::get_port() const -> uint16_t { return inner_.sin_port; }
 
 auto SocketAddrV6::get_port() const -> uint16_t { return inner_.sin6_port; }
@@ -45,9 +49,23 @@ auto SocketAddr::into_c_addr() const -> const sockaddr* {
   return static_cast<const sockaddr*>(ptr);
 }
 
+auto Socket::into_c_fd() const -> int { return fd_; }
+
 Socket::Socket(int fd) : fd_(fd) {}
 
-auto Socket::into_c_fd() const -> int { return fd_; }
+Socket::Socket(Socket&& socket) noexcept : fd_(socket.fd_) { socket.fd_ = -1; }
+
+auto Socket::operator=(Socket&& socket) noexcept -> Socket& {
+  fd_ = socket.fd_;
+  socket.fd_ = -1;
+  return *this;
+}
+
+Socket::~Socket() {
+  if (fd_ != -1) {
+    into_sys_result(::close(fd_)).unwrap();
+  }
+}
 
 template <typename FormatContext>
 auto fmt::formatter<SocketAddr>::format(const SocketAddr& addr,

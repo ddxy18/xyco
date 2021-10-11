@@ -111,7 +111,9 @@ class Future : public FutureBase {
 
     auto unhandled_exception() -> void {}
 
-    auto return_value(Output &&value) -> void { return_ = value; }
+    auto return_value(Output &&value) -> void {
+      return_ = std::forward<Output>(value);
+    }
 
    private:
     std::optional<Output> return_;
@@ -141,13 +143,13 @@ class Future : public FutureBase {
       if (std::holds_alternative<Pending>(res)) {
         return true;
       }
-      future_.return_ = std::get<Ready<Output>>(res).inner_;
+      future_.return_ = std::get<Ready<Output>>(std::move(res)).inner_;
       return false;
     }
 
     auto await_resume() -> Output {
-      auto return_v =
-          future_.self_ ? future_.self_.promise().return_ : future_.return_;
+      auto return_v = future_.self_ ? std::move(future_.self_.promise().return_)
+                                    : std::move(future_.return_);
 
       if (!return_v.has_value()) {
         std::rethrow_exception(std::current_exception());
@@ -169,11 +171,11 @@ class Future : public FutureBase {
   }
 
   [[nodiscard]] auto poll_wrapper() -> bool override {
-    auto res = poll(waiting_);
-    if (std::holds_alternative<Pending>(res)) {
+    auto result = poll(waiting_);
+    if (std::holds_alternative<Pending>(result)) {
       return false;
     }
-    return_ = std::get<Ready<Output>>(res).inner_;
+    return_ = std::get<Ready<Output>>(std::move(result)).inner_;
     return true;
   }
 

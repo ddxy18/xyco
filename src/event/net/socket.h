@@ -67,9 +67,19 @@ class Socket {
   friend struct fmt::formatter<Socket>;
 
  public:
+  [[nodiscard]] auto into_c_fd() const -> int;
+
   Socket(int fd);
 
-  [[nodiscard]] auto into_c_fd() const -> int;
+  Socket(const Socket& socket) = delete;
+
+  Socket(Socket&& socket) noexcept;
+
+  auto operator=(const Socket& socket) -> Socket& = delete;
+
+  auto operator=(Socket&& socket) noexcept -> Socket&;
+
+  ~Socket();
 
  private:
   int fd_;
