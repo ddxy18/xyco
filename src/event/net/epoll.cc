@@ -14,6 +14,21 @@ auto to_sys(reactor::Interest interest) -> int {
   }
 }
 
+auto to_state(uint32_t events) -> reactor::Event::State {
+  if ((events & EPOLLIN) != 0U) {
+    if ((events & EPOLLOUT) != 0U) {
+      return reactor::Event::State::All;
+    }
+  }
+  if ((events & EPOLLIN) != 0U) {
+    return reactor::Event::State::Readable;
+  }
+  if ((events & EPOLLOUT) != 0U) {
+    return reactor::Event::State::Writable;
+  }
+  return reactor::Event::State::Pending;
+}
+
 auto net::EpollRegistry::Register(reactor::Event &event,
                                   reactor::Interest interest)
     -> IoResult<void> {
@@ -78,6 +93,7 @@ auto net::EpollRegistry::select(reactor::Events &events, int timeout)
   for (auto i = 0; i < ready_len; i++) {
     auto &ready_ev =
         *static_cast<reactor::Event *>((epoll_events.at(i).data.ptr));
+    ready_ev.state_ = to_state(epoll_events.at(i).events);
     events.push_back(ready_ev);
   }
   return IoResult<void>::ok();
