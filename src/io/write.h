@@ -1,9 +1,10 @@
-#ifndef XYWEBSERVER_EVENT_IO_WRITE_H_
-#define XYWEBSERVER_EVENT_IO_WRITE_H_
+#ifndef XYCO_IO_WRITE_H_
+#define XYCO_IO_WRITE_H_
 
 #include "io/utils.h"
 #include "runtime/future.h"
 
+namespace io {
 class WriteTrait {
   template <typename T>
   using Future = runtime::Future<T>;
@@ -17,5 +18,6 @@ class WriteTrait {
 
   virtual auto flush() -> Future<IoResult<void>> = 0;
 };
+}  // namespace io
 
-#endif  // XYWEBSERVER_EVENT_IO_WRITE_H_
+#endif  // XYCO_IO_WRITE_H_

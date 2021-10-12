@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_EVENT_RUNTIME_ASYNC_H_
-#define XYWEBSERVER_EVENT_RUNTIME_ASYNC_H_
+#ifndef XYCO_RUNTIME_ASYNC_H_
+#define XYCO_RUNTIME_ASYNC_H_
 
 #include <gsl/pointers>
 
@@ -16,7 +16,7 @@ class AsyncFuture : public runtime::Future<Return> {
     if (!ready_) {
       ready_ = true;
       auto res = RuntimeCtx::get_ctx()->blocking_handle()->Register(
-          event_, reactor::Interest::All);
+          event_, runtime::Interest::All);
       return Pending();
     }
 
@@ -34,7 +34,7 @@ class AsyncFuture : public runtime::Future<Return> {
         }),
         ready_(false),
         event_(
-            reactor::Event{.fd_ = -1, .future_ = this, .before_extra_ = f_}) {}
+            runtime::Event{.fd_ = -1, .future_ = this, .before_extra_ = f_}) {}
 
   AsyncFuture(const AsyncFuture<Return> &) = delete;
 
@@ -49,8 +49,8 @@ class AsyncFuture : public runtime::Future<Return> {
  private:
   bool ready_;
   std::function<void()> f_;
-  reactor::Event event_;
+  runtime::Event event_;
 };
 }  // namespace runtime
 
-#endif  // XYWEBSERVER_EVENT_RUNTIME_ASYNC_H_
+#endif  // XYCO_RUNTIME_ASYNC_H_

@@ -1,2 +1,2 @@
 # xyco
-A simple runtime for c++20 coroutine
+C++20 based coroutine library

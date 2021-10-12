@@ -53,9 +53,9 @@ auto runtime::Worker::run_loop_once(Runtime *runtime) -> void {
       lock_guard.lock();
     }
   }
-  reactor::Events events;
+  runtime::Events events;
   epoll_registry_.select(events, net::NetRegistry::MAX_TIMEOUT_MS).unwrap();
-  for (reactor::Event &ev : events) {
+  for (runtime::Event &ev : events) {
     if (ev.future_ != nullptr) {
       TRACE("process event: fd={}\n", ev.fd_);
       std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
@@ -65,8 +65,8 @@ auto runtime::Worker::run_loop_once(Runtime *runtime) -> void {
   runtime->driver_->poll();
 }
 
-auto runtime::Runtime::wake(reactor::Events &events) -> void {
-  for (reactor::Event &ev : events) {
+auto runtime::Runtime::wake(runtime::Events &events) -> void {
+  for (runtime::Event &ev : events) {
     if (ev.future_ != nullptr) {
       TRACE("process event: fd={}\n", ev.fd_);
       register_future(ev.future_);
@@ -80,11 +80,11 @@ auto runtime::Runtime::register_future(FutureBase *future) -> void {
   this->handles_.emplace(handles_.begin(), future->get_handle(), future);
 }
 
-auto runtime::Runtime::io_handle() -> reactor::GlobalRegistry * {
+auto runtime::Runtime::io_handle() -> runtime::GlobalRegistry * {
   return driver_->net_handle();
 }
 
-auto runtime::Runtime::blocking_handle() -> reactor::Registry * {
+auto runtime::Runtime::blocking_handle() -> runtime::Registry * {
   return driver_->blocking_handle();
 }
 
@@ -108,7 +108,7 @@ auto runtime::Builder::max_blocking_threads(uintptr_t val) -> Builder & {
   return *this;
 }
 
-auto runtime::Builder::build() const -> IoResult<std::unique_ptr<Runtime>> {
+auto runtime::Builder::build() const -> io::IoResult<std::unique_ptr<Runtime>> {
   auto runtime = std::make_unique<Runtime>(Runtime::Privater());
   runtime->driver_ = std::make_unique<Driver>(blocking_num_);
   for (auto i = 0; i < worker_num_; i++) {
@@ -117,5 +117,5 @@ auto runtime::Builder::build() const -> IoResult<std::unique_ptr<Runtime>> {
     runtime->workers_.emplace(worker->get_native_id(), std::move(worker));
   }
 
-  return IoResult<std::unique_ptr<Runtime>>::ok(std::move(runtime));
+  return io::IoResult<std::unique_ptr<Runtime>>::ok(std::move(runtime));
 }

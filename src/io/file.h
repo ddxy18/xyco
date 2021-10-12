@@ -1,16 +1,16 @@
-#ifndef XYWEBSERVER_EVENT_IO_FILE_H_
-#define XYWEBSERVER_EVENT_IO_FILE_H_
+#ifndef XYCO_IO_FILE_H_
+#define XYCO_IO_FILE_H_
 
 #include <filesystem>
 
 #include "io/utils.h"
 
-class File;
-
+namespace io {
 class File {
  public:
   auto open(std::filesystem::path path) -> IoResult<File>;
   auto create(std::filesystem::path path) -> IoResult<File>;
 };
+}  // namespace io
 
-#endif  // XYWEBSERVER_EVENT_IO_FILE_H_
+#endif  // XYCO_IO_FILE_H_

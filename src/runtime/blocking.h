@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_EVENT_RUNTIME_BLOCKING_H_
-#define XYWEBSERVER_EVENT_RUNTIME_BLOCKING_H_
+#ifndef XYCO_RUNTIME_BLOCKING_H_
+#define XYCO_RUNTIME_BLOCKING_H_
 
 #include <atomic>
 #include <condition_variable>
@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-namespace blocking {
+namespace runtime {
 class Task {
  public:
   auto operator()() -> void;
@@ -19,7 +19,7 @@ class Task {
   std::function<void()> inner_;
 };
 
-class Worker {
+class BlockingWorker {
   friend class BlockingPool;
 
  private:
@@ -50,9 +50,9 @@ class BlockingPool {
   ~BlockingPool();
 
  private:
-  std::vector<Worker> workers_;
+  std::vector<BlockingWorker> workers_;
   std::vector<std::thread> worker_ctx_;
 };
-}  // namespace blocking
+}  // namespace runtime
 
-#endif  // XYWEBSERVER_EVENT_RUNTIME_BLOCKING_H_
+#endif  // XYCO_RUNTIME_BLOCKING_H_

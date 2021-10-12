@@ -7,48 +7,48 @@ runtime::BlockingRegistry::BlockingRegistry(uintptr_t woker_num)
   pool_.run();
 }
 
-auto runtime::BlockingRegistry::Register(reactor::Event& ev,
-                                         reactor::Interest interest)
-    -> IoResult<void> {
+auto runtime::BlockingRegistry::Register(runtime::Event& ev,
+                                         runtime::Interest interest)
+    -> io::IoResult<void> {
   {
     std::scoped_lock<std::mutex> lock_guard(mutex_);
     events_.push_back(ev);
   }
-  pool_.spawn(blocking::Task(ev.before_extra_));
-  return IoResult<void>::ok();
+  pool_.spawn(runtime::Task(ev.before_extra_));
+  return io::IoResult<void>::ok();
 }
 
-auto runtime::BlockingRegistry::reregister(reactor::Event& ev,
-                                           reactor::Interest interest)
-    -> IoResult<void> {
-  return IoResult<void>::ok();
+auto runtime::BlockingRegistry::reregister(runtime::Event& ev,
+                                           runtime::Interest interest)
+    -> io::IoResult<void> {
+  return io::IoResult<void>::ok();
 }
 
-auto runtime::BlockingRegistry::deregister(reactor::Event& ev,
-                                           reactor::Interest interest)
-    -> IoResult<void> {
-  return IoResult<void>::ok();
+auto runtime::BlockingRegistry::deregister(runtime::Event& ev,
+                                           runtime::Interest interest)
+    -> io::IoResult<void> {
+  return io::IoResult<void>::ok();
 }
 
-auto runtime::BlockingRegistry::select(reactor::Events& events, int timeout)
-    -> IoResult<void> {
+auto runtime::BlockingRegistry::select(runtime::Events& events, int timeout)
+    -> io::IoResult<void> {
   auto i = 0;
   decltype(events_) new_events;
 
   std::scoped_lock<std::mutex> lock_guard(mutex_);
   std::copy_if(std::begin(events_), std::end(events_),
                std::back_inserter(new_events),
-               [](reactor::Event& ev) { return ev.after_extra_ == nullptr; });
+               [](runtime::Event& ev) { return ev.after_extra_ == nullptr; });
   std::copy_if(std::begin(events_), std::end(events_),
                std::back_inserter(events),
-               [](reactor::Event& ev) { return ev.after_extra_ != nullptr; });
+               [](runtime::Event& ev) { return ev.after_extra_ != nullptr; });
   events_ = new_events;
 
-  return IoResult<void>::ok();
+  return io::IoResult<void>::ok();
 }
 
 auto runtime::Driver::poll() -> void {
-  reactor::Events events;
+  runtime::Events events;
   io_registry_.select(events, net::NetRegistry::MAX_TIMEOUT_MS).unwrap();
 
   RuntimeCtx::get_ctx()->wake(events);
