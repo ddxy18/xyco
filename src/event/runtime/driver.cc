@@ -109,4 +109,4 @@ auto runtime::Driver::blocking_handle() -> BlockingRegistry* {
 }
 
 runtime::Driver::Driver(uintptr_t blocking_num)
-    : io_registry_(), blocking_registry_(blocking_num) {}
+    : blocking_registry_(blocking_num) {}
