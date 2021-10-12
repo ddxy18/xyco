@@ -3,7 +3,7 @@
 #include <gsl/pointers>
 #include <memory>
 
-#include "event/runtime/runtime.h"
+#include "runtime/runtime.h"
 #include "utils.h"
 
 class InRuntimeTest : public ::testing::Test {

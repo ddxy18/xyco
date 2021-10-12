@@ -6,8 +6,8 @@
 #include <functional>
 #include <gsl/pointers>
 
-#include "event/runtime/future.h"
-#include "event/runtime/runtime.h"
+#include "runtime/future.h"
+#include "runtime/runtime.h"
 
 #define CO_ASSERT_EQ(val1, val2)               \
   ({                                           \

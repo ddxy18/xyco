@@ -29,9 +29,8 @@ auto to_state(uint32_t events) -> reactor::Event::State {
   return reactor::Event::State::Pending;
 }
 
-auto net::EpollRegistry::Register(reactor::Event &event,
-                                  reactor::Interest interest)
-    -> IoResult<void> {
+auto net::NetRegistry::Register(reactor::Event &event,
+                                reactor::Interest interest) -> IoResult<void> {
   epoll_event epoll_event{.events = static_cast<uint32_t>(to_sys(interest)),
                           .data = {.ptr = &event}};
 
@@ -44,8 +43,8 @@ auto net::EpollRegistry::Register(reactor::Event &event,
   return result;
 }
 
-auto net::EpollRegistry::reregister(reactor::Event &event,
-                                    reactor::Interest interest)
+auto net::NetRegistry::reregister(reactor::Event &event,
+                                  reactor::Interest interest)
     -> IoResult<void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
   epoll_event.data.ptr = &event;
@@ -59,8 +58,8 @@ auto net::EpollRegistry::reregister(reactor::Event &event,
   return result;
 }
 
-auto net::EpollRegistry::deregister(reactor::Event &event,
-                                    reactor::Interest interest)
+auto net::NetRegistry::deregister(reactor::Event &event,
+                                  reactor::Interest interest)
     -> IoResult<void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
   epoll_event.data.ptr = &event;
@@ -74,7 +73,7 @@ auto net::EpollRegistry::deregister(reactor::Event &event,
   return result;
 }
 
-auto net::EpollRegistry::select(reactor::Events &events, int timeout)
+auto net::NetRegistry::select(reactor::Events &events, int timeout)
     -> IoResult<void> {
   auto final_timeout = timeout;
   auto final_max_events = MAX_EVENTS;
@@ -99,13 +98,13 @@ auto net::EpollRegistry::select(reactor::Events &events, int timeout)
   return IoResult<void>::ok();
 }
 
-net::EpollRegistry::EpollRegistry() : epfd_(epoll_create(1)) {
+net::NetRegistry::NetRegistry() : epfd_(epoll_create(1)) {
   if (epfd_ == -1) {
     panic();
   }
 }
 
-net::EpollRegistry::~EpollRegistry() {
+net::NetRegistry::~NetRegistry() {
   // FIXME(dongxiaoyu): replace global epoll with per worker epoll
   close(epfd_);
 }
