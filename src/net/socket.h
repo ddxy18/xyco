@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_EVENT_NET_SOCKET_H_
-#define XYWEBSERVER_EVENT_NET_SOCKET_H_
+#ifndef XYCO_NET_SOCKET_H_
+#define XYCO_NET_SOCKET_H_
 
 #include <arpa/inet.h>
 
@@ -7,6 +7,7 @@
 
 #include "spdlog/fmt/fmt.h"
 
+namespace net {
 class SocketAddrV4 {
   friend class SocketAddr;
 
@@ -84,19 +85,20 @@ class Socket {
  private:
   int fd_;
 };
+}  // namespace net
 
 template <>
-struct fmt::formatter<SocketAddr> : public fmt::formatter<bool> {
+struct fmt::formatter<net::SocketAddr> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const SocketAddr& addr, FormatContext& ctx) const
+  auto format(const net::SocketAddr& addr, FormatContext& ctx) const
       -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<Socket> : public fmt::formatter<bool> {
+struct fmt::formatter<net::Socket> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const Socket& socket, FormatContext& ctx) const
+  auto format(const net::Socket& socket, FormatContext& ctx) const
       -> decltype(ctx.out());
 };
 
-#endif  // XYWEBSERVER_EVENT_NET_SOCKET_H_
+#endif  // XYCO_NET_SOCKET_H_

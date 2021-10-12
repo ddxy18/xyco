@@ -1,25 +1,25 @@
-#ifndef XYWEBSERVER_EVENT_NET_EPOLL_H_
-#define XYWEBSERVER_EVENT_NET_EPOLL_H_
+#ifndef XYCO_NET_EPOLL_H_
+#define XYCO_NET_EPOLL_H_
 
 #include "runtime/registry.h"
 
 namespace net {
-class NetRegistry : public reactor::Registry {
+class NetRegistry : public runtime::Registry {
  public:
   static const int MAX_TIMEOUT_MS = 2;
   static const int MAX_EVENTS = 10000;
 
-  [[nodiscard]] auto Register(reactor::Event &ev, reactor::Interest interest)
-      -> IoResult<void> override;
+  [[nodiscard]] auto Register(runtime::Event &ev, runtime::Interest interest)
+      -> io::IoResult<void> override;
 
-  [[nodiscard]] auto reregister(reactor::Event &ev, reactor::Interest interest)
-      -> IoResult<void> override;
+  [[nodiscard]] auto reregister(runtime::Event &ev, runtime::Interest interest)
+      -> io::IoResult<void> override;
 
-  [[nodiscard]] auto deregister(reactor::Event &ev, reactor::Interest interest)
-      -> IoResult<void> override;
+  [[nodiscard]] auto deregister(runtime::Event &ev, runtime::Interest interest)
+      -> io::IoResult<void> override;
 
-  [[nodiscard]] auto select(reactor::Events &events, int timeout)
-      -> IoResult<void> override;
+  [[nodiscard]] auto select(runtime::Events &events, int timeout)
+      -> io::IoResult<void> override;
 
   NetRegistry();
 
@@ -38,4 +38,4 @@ class NetRegistry : public reactor::Registry {
 };
 }  // namespace net
 
-#endif  // XYWEBSERVER_EVENT_NET_EPOLL_H_
+#endif  // XYCO_NET_EPOLL_H_

@@ -1,4 +1,4 @@
-name: xywebserver ci
+name: xyco ci
 
 on:
   pull_request:
@@ -69,7 +69,7 @@ jobs:
       - name: build
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
-          cmake --build ./build --config Release --target xywebserver
+          cmake --build ./build --config Release --target xyco
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy -s src -b build
 
   cpp-test:
@@ -96,5 +96,5 @@ jobs:
       - name: test
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
-          cmake --build ./build --config Release --target xywebserver_test
+          cmake --build ./build --config Release --target xyco_test
           cd build && ctest -C Release -T test --output-on-failure

@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_EVENT_RUNTIME_FUTURE_H_
-#define XYWEBSERVER_EVENT_RUNTIME_FUTURE_H_
+#ifndef XYCO_RUNTIME_FUTURE_H_
+#define XYCO_RUNTIME_FUTURE_H_
 
 #include <exception>
 #include <experimental/coroutine>
@@ -247,4 +247,4 @@ class Future<void> : public FutureBase {
 };
 }  // namespace runtime
 
-#endif  // XYWEBSERVER_EVENT_RUNTIME_FUTURE_H_
+#endif  // XYCO_RUNTIME_FUTURE_H_

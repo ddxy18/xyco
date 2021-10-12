@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.16.0)
 
 project(
-  xywebserver
+  xyco
   VERSION 0.1.0
-  DESCRIPTION "A http web server demo"
+  DESCRIPTION "C++20 based coroutine library"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -28,7 +28,7 @@ FetchContent_MakeAvailable(spdlog)
 
 include_directories(src)
 
-file(GLOB_RECURSE xywebserver_src_lib "src/io/*.cc"
+file(GLOB_RECURSE xyco_src_lib "src/io/*.cc"
      "src/net/*.cc" "src/runtime/*.cc" "src/utils/*.cc")
 
 add_subdirectory(src)

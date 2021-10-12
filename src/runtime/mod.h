@@ -1,6 +1,6 @@
-#ifndef XYWEBSERVER_EVENT_RUNTIME_MOD_H_
-#define XYWEBSERVER_EVENT_RUNTIME_MOD_H_
+#ifndef XYCO_RUNTIME_MOD_H_
+#define XYCO_RUNTIME_MOD_H_
 
 #include "future.h"
 
-#endif  // XYWEBSERVER_EVENT_RUNTIME_MOD_H_
+#endif  // XYCO_RUNTIME_MOD_H_

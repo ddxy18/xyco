@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_EVENT_NET_LISTENER_H_
-#define XYWEBSERVER_EVENT_NET_LISTENER_H_
+#ifndef XYCO_NET_LISTENER_H_
+#define XYCO_NET_LISTENER_H_
 
 #include "io/mod.h"
 #include "net/socket.h"
@@ -19,19 +19,19 @@ class TcpSocket {
   friend struct fmt::formatter<TcpSocket>;
 
  public:
-  auto bind(SocketAddr addr) -> Future<IoResult<void>>;
+  auto bind(SocketAddr addr) -> Future<io::IoResult<void>>;
 
-  auto connect(SocketAddr addr) -> Future<IoResult<TcpStream>>;
+  auto connect(SocketAddr addr) -> Future<io::IoResult<TcpStream>>;
 
-  auto listen(int backlog) -> Future<IoResult<TcpListener>>;
+  auto listen(int backlog) -> Future<io::IoResult<TcpListener>>;
 
-  auto set_reuseaddr(bool reuseaddr) -> IoResult<void>;
+  auto set_reuseaddr(bool reuseaddr) -> io::IoResult<void>;
 
-  auto set_reuseport(bool reuseport) -> IoResult<void>;
+  auto set_reuseport(bool reuseport) -> io::IoResult<void>;
 
-  static auto new_v4() -> IoResult<TcpSocket>;
+  static auto new_v4() -> io::IoResult<TcpSocket>;
 
-  static auto new_v6() -> IoResult<TcpSocket>;
+  static auto new_v6() -> io::IoResult<TcpSocket>;
 
  private:
   TcpSocket(Socket &&socket);
@@ -39,7 +39,7 @@ class TcpSocket {
   Socket socket_;
 };
 
-class TcpStream : public ReadTrait, WriteTrait {
+class TcpStream : public io::ReadTrait, io::WriteTrait {
   template <typename T>
   using Future = runtime::Future<T>;
 
@@ -48,20 +48,20 @@ class TcpStream : public ReadTrait, WriteTrait {
   friend class TcpListener;
 
  public:
-  static auto connect(SocketAddr addr) -> Future<IoResult<TcpStream>>;
+  static auto connect(SocketAddr addr) -> Future<io::IoResult<TcpStream>>;
 
-  auto read(std::vector<char> *buf) -> Future<IoResult<uintptr_t>> override;
+  auto read(std::vector<char> *buf) -> Future<io::IoResult<uintptr_t>> override;
 
   auto write(const std::vector<char> &buf)
-      -> Future<IoResult<uintptr_t>> override;
+      -> Future<io::IoResult<uintptr_t>> override;
 
   auto write_all(const std::vector<char> &buf)
-      -> Future<IoResult<void>> override;
+      -> Future<io::IoResult<void>> override;
 
-  auto flush() -> Future<IoResult<void>> override;
+  auto flush() -> Future<io::IoResult<void>> override;
 
   [[nodiscard]] auto shutdown(Shutdown shutdown) const
-      -> Future<IoResult<void>>;
+      -> Future<io::IoResult<void>>;
 
   TcpStream(const TcpStream &tcp_stream) = delete;
 
@@ -75,12 +75,12 @@ class TcpStream : public ReadTrait, WriteTrait {
 
  private:
   template <typename I>
-  auto write(I begin, I end) -> Future<IoResult<uintptr_t>>;
+  auto write(I begin, I end) -> Future<io::IoResult<uintptr_t>>;
 
-  explicit TcpStream(Socket &&socket, reactor::Event::State state);
+  explicit TcpStream(Socket &&socket, runtime::Event::State state);
 
   Socket socket_;
-  std::unique_ptr<reactor::Event> event_;
+  std::unique_ptr<runtime::Event> event_;
 };
 
 class TcpListener {
@@ -91,9 +91,9 @@ class TcpListener {
   using Future = runtime::Future<T>;
 
  public:
-  static auto bind(SocketAddr addr) -> Future<IoResult<TcpListener>>;
+  static auto bind(SocketAddr addr) -> Future<io::IoResult<TcpListener>>;
 
-  auto accept() -> Future<IoResult<std::pair<TcpStream, SocketAddr>>>;
+  auto accept() -> Future<io::IoResult<std::pair<TcpStream, SocketAddr>>>;
 
   TcpListener(const TcpListener &tcp_stream) = delete;
 
@@ -109,7 +109,7 @@ class TcpListener {
   TcpListener(Socket &&socket);
 
   Socket socket_;
-  std::unique_ptr<reactor::Event> event_;
+  std::unique_ptr<runtime::Event> event_;
 };
 }  // namespace net
 
@@ -134,4 +134,4 @@ struct fmt::formatter<net::TcpListener> : public fmt::formatter<bool> {
       -> decltype(ctx.out());
 };
 
-#endif  // XYWEBSERVER_EVENT_NET_LISTENER_H_
+#endif  // XYCO_NET_LISTENER_H_

@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_UTILS_RESULT_H_
-#define XYWEBSERVER_UTILS_RESULT_H_
+#ifndef XYCO_UTILS_RESULT_H_
+#define XYCO_UTILS_RESULT_H_
 
 #include <variant>
 
@@ -231,4 +231,4 @@ class Result {
     (result).unwrap();       \
   })
 
-#endif  // XYWEBSERVER_UTILS_RESULT_H_
+#endif  // XYCO_UTILS_RESULT_H_

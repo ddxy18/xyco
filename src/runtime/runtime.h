@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_EVENT_RUNTIME_RUNTIME_H_
-#define XYWEBSERVER_EVENT_RUNTIME_RUNTIME_H_
+#ifndef XYCO_RUNTIME_RUNTIME_H_
+#define XYCO_RUNTIME_RUNTIME_H_
 
 #include <atomic>
 #include <exception>
@@ -63,11 +63,11 @@ class Runtime {
     }());
   }
 
-  auto wake(reactor::Events &events) -> void;
+  auto wake(runtime::Events &events) -> void;
 
-  auto io_handle() -> reactor::GlobalRegistry *;
+  auto io_handle() -> runtime::GlobalRegistry *;
 
-  auto blocking_handle() -> reactor::Registry *;
+  auto blocking_handle() -> runtime::Registry *;
 
   Runtime(Privater priv);
 
@@ -130,7 +130,7 @@ class Builder {
 
   auto on_thread_stop(auto (*f)()->void) -> Builder &;
 
-  [[nodiscard]] auto build() const -> IoResult<std::unique_ptr<Runtime>>;
+  [[nodiscard]] auto build() const -> io::IoResult<std::unique_ptr<Runtime>>;
 
  private:
   uintptr_t worker_num_;
@@ -140,4 +140,4 @@ class Builder {
 };
 }  // namespace runtime
 
-#endif  // XYWEBSERVER_EVENT_RUNTIME_RUNTIME_H_
+#endif  // XYCO_RUNTIME_RUNTIME_H_

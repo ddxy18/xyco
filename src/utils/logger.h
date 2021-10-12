@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_UTILS_LOGGER_H_
-#define XYWEBSERVER_UTILS_LOGGER_H_
+#ifndef XYCO_UTILS_LOGGER_H_
+#define XYCO_UTILS_LOGGER_H_
 
 #include "spdlog/sinks/daily_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -15,7 +15,7 @@
 #undef WARN
 #undef ERROR
 
-#ifndef XYWEBSERVER_TEST
+#ifndef XYCO_TEST
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TRACE(...) \
   SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::trace, __VA_ARGS__)
@@ -44,4 +44,4 @@ class LoggerCtx {
   static auto get_logger() -> std::shared_ptr<spdlog::logger>;
 };
 
-#endif  // XYWEBSERVER_UTILS_LOGGER_H_
+#endif  // XYCO_UTILS_LOGGER_H_

@@ -1,14 +1,14 @@
 #include "registry.h"
 
-auto reactor::Event::readable() const -> bool {
+auto runtime::Event::readable() const -> bool {
   return state_ == State::Readable || state_ == State::All;
 }
 
-auto reactor::Event::writeable() const -> bool {
+auto runtime::Event::writeable() const -> bool {
   return state_ == State::Writable || state_ == State::All;
 }
 
-auto reactor::Event::clear_readable() -> void {
+auto runtime::Event::clear_readable() -> void {
   if (state_ == State::Readable) {
     state_ = State::Pending;
   }
@@ -17,7 +17,7 @@ auto reactor::Event::clear_readable() -> void {
   }
 }
 
-auto reactor::Event::clear_writeable() -> void {
+auto runtime::Event::clear_writeable() -> void {
   if (state_ == State::Writable) {
     state_ = State::Pending;
   }

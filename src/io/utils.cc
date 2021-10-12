@@ -3,28 +3,28 @@
 #include <cerrno>
 #include <string>
 
-auto IoError::from_sys_error() -> IoError {
+auto io::IoError::from_sys_error() -> IoError {
   auto err = IoError{};
   err.errno_ = errno;
   return err;
 }
 
-auto into_sys_result(int return_value) -> IoResult<int> {
+auto io::into_sys_result(int return_value) -> io::IoResult<int> {
   if (return_value == -1) {
-    return IoResult<int>::err(IoError::from_sys_error());
+    return io::IoResult<int>::err(io::IoError::from_sys_error());
   }
-  return IoResult<int>::ok(return_value);
+  return io::IoResult<int>::ok(return_value);
 }
 
 template <typename FormatContext>
-auto fmt::formatter<IoError>::format(const IoError& err,
-                                     FormatContext& ctx) const
+auto fmt::formatter<io::IoError>::format(const io::IoError& err,
+                                         FormatContext& ctx) const
     -> decltype(ctx.out()) {
   return format_to(ctx.out(), "{{errno={}, info={}}}", err.errno_,
                    fmt::join(err.info_, ""));
 }
 
-template auto fmt::formatter<IoError>::format(
-    const IoError& err,
+template auto fmt::formatter<io::IoError>::format(
+    const io::IoError& err,
     fmt::basic_format_context<fmt::appender, char>& ctx) const
     -> decltype(ctx.out());

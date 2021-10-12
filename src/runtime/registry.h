@@ -1,13 +1,10 @@
-#ifndef XYWEBSERVER_EVENT_RUNTIME_REGISTRY_H_
-#define XYWEBSERVER_EVENT_RUNTIME_REGISTRY_H_
+#ifndef XYCO_RUNTIME_REGISTRY_H_
+#define XYCO_RUNTIME_REGISTRY_H_
 
 #include "io/utils.h"
 
 namespace runtime {
 class FutureBase;
-}
-
-namespace reactor {
 class Registry;
 class Event;
 enum class Interest;
@@ -37,16 +34,16 @@ class Event {
 class Registry {
  public:
   [[nodiscard]] virtual auto Register(Event &ev, Interest interest)
-      -> IoResult<void> = 0;
+      -> io::IoResult<void> = 0;
 
   [[nodiscard]] virtual auto reregister(Event &ev, Interest interest)
-      -> IoResult<void> = 0;
+      -> io::IoResult<void> = 0;
 
   [[nodiscard]] virtual auto deregister(Event &ev, Interest interest)
-      -> IoResult<void> = 0;
+      -> io::IoResult<void> = 0;
 
   [[nodiscard]] virtual auto select(Events &events, int timeout)
-      -> IoResult<void> = 0;
+      -> io::IoResult<void> = 0;
 
   Registry() = default;
 
@@ -64,26 +61,26 @@ class Registry {
 class GlobalRegistry : public Registry {
  public:
   [[nodiscard]] auto Register(Event &ev, Interest interest)
-      -> IoResult<void> override = 0;
+      -> io::IoResult<void> override = 0;
 
   [[nodiscard]] auto reregister(Event &ev, Interest interest)
-      -> IoResult<void> override = 0;
+      -> io::IoResult<void> override = 0;
 
   [[nodiscard]] auto deregister(Event &ev, Interest interest)
-      -> IoResult<void> override = 0;
+      -> io::IoResult<void> override = 0;
 
   [[nodiscard]] virtual auto register_local(Event &ev, Interest interest)
-      -> IoResult<void> = 0;
+      -> io::IoResult<void> = 0;
 
   [[nodiscard]] virtual auto reregister_local(Event &ev, Interest interest)
-      -> IoResult<void> = 0;
+      -> io::IoResult<void> = 0;
 
   [[nodiscard]] virtual auto deregister_local(Event &ev, Interest interest)
-      -> IoResult<void> = 0;
+      -> io::IoResult<void> = 0;
 
   [[nodiscard]] auto select(Events &events, int timeout)
-      -> IoResult<void> override = 0;
+      -> io::IoResult<void> override = 0;
 };
-}  // namespace reactor
+}  // namespace runtime
 
-#endif  // XYWEBSERVER_EVENT_RUNTIME_REGISTRY_H_
+#endif  // XYCO_RUNTIME_REGISTRY_H_
