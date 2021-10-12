@@ -24,7 +24,7 @@ auto runtime::Worker::get_native_id() const -> std::thread::id {
   return ctx_.get_id();
 }
 
-auto runtime::Worker::get_epoll_registry() -> net::EpollRegistry & {
+auto runtime::Worker::get_epoll_registry() -> net::NetRegistry & {
   return epoll_registry_;
 }
 
@@ -54,7 +54,7 @@ auto runtime::Worker::run_loop_once(Runtime *runtime) -> void {
     }
   }
   reactor::Events events;
-  epoll_registry_.select(events, net::EpollRegistry::MAX_TIMEOUT_MS).unwrap();
+  epoll_registry_.select(events, net::NetRegistry::MAX_TIMEOUT_MS).unwrap();
   for (reactor::Event &ev : events) {
     if (ev.future_ != nullptr) {
       TRACE("process event: fd={}\n", ev.fd_);

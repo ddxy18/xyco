@@ -2,6 +2,7 @@
 #define XYWEBSERVER_EVENT_RUNTIME_DRIVER_H_
 
 #include "blocking.h"
+#include "io/driver.h"
 #include "registry.h"
 
 namespace runtime {
@@ -27,45 +28,18 @@ class BlockingRegistry : public reactor::Registry {
   blocking::BlockingPool pool_;
 };
 
-class IoRegistry : public reactor::GlobalRegistry {
- public:
-  [[nodiscard]] auto Register(reactor::Event& ev, reactor::Interest interest)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto reregister(reactor::Event& ev, reactor::Interest interest)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto deregister(reactor::Event& ev, reactor::Interest interest)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto register_local(reactor::Event& ev,
-                                    reactor::Interest interest)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto reregister_local(reactor::Event& ev,
-                                      reactor::Interest interest)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto deregister_local(reactor::Event& ev,
-                                      reactor::Interest interest)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto select(reactor::Events& events, int timeout)
-      -> IoResult<void> override;
-};
-
 class Driver {
  public:
   auto poll() -> void;
 
-  auto net_handle() -> IoRegistry*;
+  auto net_handle() -> io::IoRegistry*;
 
   auto blocking_handle() -> BlockingRegistry*;
 
   explicit Driver(uintptr_t blocking_num);
 
  private:
-  IoRegistry io_registry_;
+  io::IoRegistry io_registry_;
   BlockingRegistry blocking_registry_;
 };
 }  // namespace runtime

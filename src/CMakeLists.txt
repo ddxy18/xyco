@@ -1,13 +1,5 @@
-file(
-  GLOB
-  xywebserver_src
-  "*.cc"
-  "event/net/*.cc"
-  "event/runtime/*.cc"
-  "event/io/*.cc"
-  "utils/*.cc")
+file(GLOB_RECURSE xywebserver_src "*.cc")
 
-
-add_executable(xywebserver ${xywebserver_src})
+add_executable(xywebserver ${xywebserver_src_lib} main.cc)
 target_link_libraries(xywebserver GSL)
 target_link_libraries(xywebserver spdlog)

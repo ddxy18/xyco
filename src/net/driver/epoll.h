@@ -1,10 +1,10 @@
 #ifndef XYWEBSERVER_EVENT_NET_EPOLL_H_
 #define XYWEBSERVER_EVENT_NET_EPOLL_H_
 
-#include "event/runtime/registry.h"
+#include "runtime/registry.h"
 
 namespace net {
-class EpollRegistry : public reactor::Registry {
+class NetRegistry : public reactor::Registry {
  public:
   static const int MAX_TIMEOUT_MS = 2;
   static const int MAX_EVENTS = 10000;
@@ -21,17 +21,17 @@ class EpollRegistry : public reactor::Registry {
   [[nodiscard]] auto select(reactor::Events &events, int timeout)
       -> IoResult<void> override;
 
-  EpollRegistry();
+  NetRegistry();
 
-  EpollRegistry(const EpollRegistry &epoll) = delete;
+  NetRegistry(const NetRegistry &epoll) = delete;
 
-  EpollRegistry(EpollRegistry &&epoll) = delete;
+  NetRegistry(NetRegistry &&epoll) = delete;
 
-  auto operator=(const EpollRegistry &epoll) -> EpollRegistry & = delete;
+  auto operator=(const NetRegistry &epoll) -> NetRegistry & = delete;
 
-  auto operator=(EpollRegistry &&epoll) -> EpollRegistry & = delete;
+  auto operator=(NetRegistry &&epoll) -> NetRegistry & = delete;
 
-  ~EpollRegistry() override;
+  ~NetRegistry() override;
 
  private:
   int epfd_;

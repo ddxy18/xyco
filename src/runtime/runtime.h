@@ -7,8 +7,8 @@
 #include <unordered_map>
 
 #include "driver.h"
-#include "event/net/epoll.h"
 #include "future.h"
+#include "net/driver/mod.h"
 
 namespace runtime {
 class Runtime;
@@ -23,14 +23,14 @@ class Worker {
 
   auto get_native_id() const -> std::thread::id;
 
-  auto get_epoll_registry() -> net::EpollRegistry &;
+  auto get_epoll_registry() -> net::NetRegistry &;
 
  private:
   auto run_loop_once(Runtime *runtime) -> void;
 
   std::atomic_bool end_;
   std::thread ctx_;
-  net::EpollRegistry epoll_registry_;
+  net::NetRegistry epoll_registry_;
   // (handle, future) -> co_await on a future object
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
   std::mutex handle_mutex_;
@@ -39,7 +39,7 @@ class Worker {
 class Runtime {
   friend class Worker;
   friend class Builder;
-  friend class IoRegistry;
+  friend class io::IoRegistry;
 
   class Privater {};
 

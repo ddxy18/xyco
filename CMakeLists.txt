@@ -26,7 +26,10 @@ FetchContent_Declare(spdlog
                      GIT_TAG v1.x)
 FetchContent_MakeAvailable(spdlog)
 
-include_directories(src tests)
+include_directories(src)
+
+file(GLOB_RECURSE xywebserver_src_lib "src/io/*.cc"
+     "src/net/*.cc" "src/runtime/*.cc" "src/utils/*.cc")
 
 add_subdirectory(src)
 
