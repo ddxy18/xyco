@@ -7,7 +7,7 @@
 #include <clocale>
 #include <cstdint>
 
-#include "runtime/async.h"
+#include "runtime/async_future.h"
 
 template <typename T>
 using Future = runtime::Future<T>;
