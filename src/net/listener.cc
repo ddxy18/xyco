@@ -16,7 +16,7 @@ auto net::TcpSocket::bind(SocketAddr addr) -> Future<io::IoResult<void>> {
   auto bind = co_await runtime::AsyncFuture<int>([&]() {
     return ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr));
   });
-  auto res = io::into_sys_result(bind).map([](auto n) {});
+  auto res = io::into_sys_result(bind);
   ASYNC_TRY(res);
   INFO("{} bind to {}\n", socket_, addr);
 
@@ -90,17 +90,13 @@ auto net::TcpSocket::listen(int backlog) -> Future<io::IoResult<TcpListener>> {
 }
 
 auto net::TcpSocket::set_reuseaddr(bool reuseaddr) -> io::IoResult<void> {
-  return io::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
-                                          SO_REUSEADDR, &reuseaddr,
-                                          sizeof(bool)))
-      .map([](auto n) {});
+  return io::into_sys_result(::setsockopt(
+      socket_.into_c_fd(), SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(bool)));
 }
 
 auto net::TcpSocket::set_reuseport(bool reuseport) -> io::IoResult<void> {
-  return io::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
-                                          SO_REUSEADDR, &reuseport,
-                                          sizeof(bool)))
-      .map([](auto n) {});
+  return io::into_sys_result(::setsockopt(
+      socket_.into_c_fd(), SOL_SOCKET, SO_REUSEADDR, &reuseport, sizeof(bool)));
 }
 
 auto net::TcpSocket::new_v4() -> io::IoResult<TcpSocket> {
@@ -175,8 +171,7 @@ auto net::TcpStream::write(I begin, I end) -> Future<io::IoResult<uintptr_t>> {
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
       if (self_->event_->writeable()) {
         auto n = ::write(self_->socket_.into_c_fd(), &*begin_, end_ - begin_);
-        auto nbytes = io::into_sys_result(n).map(
-            [](auto n) -> uintptr_t { return static_cast<uintptr_t>(n); });
+        auto nbytes = io::into_sys_result(n);
         INFO("write {} bytes to {}\n", n, self_->socket_);
         return runtime::Ready<CoOutput>{nbytes};
       }
@@ -231,10 +226,9 @@ auto net::TcpStream::flush() -> Future<io::IoResult<void>> {
 auto net::TcpStream::shutdown(Shutdown shutdown) const
     -> Future<io::IoResult<void>> {
   auto res = io::into_sys_result(co_await runtime::AsyncFuture<int>([&]() {
-               return ::shutdown(
-                   socket_.into_c_fd(),
-                   static_cast<std::underlying_type_t<Shutdown>>(shutdown));
-             })).map([](auto n) {});
+    return ::shutdown(socket_.into_c_fd(),
+                      static_cast<std::underlying_type_t<Shutdown>>(shutdown));
+  }));
   ASYNC_TRY(res);
   INFO("shutdown {}\n", socket_);
   co_return io::IoResult<void>::ok();

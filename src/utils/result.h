@@ -204,6 +204,24 @@ class Result {
 
   auto is_err() -> bool { return !is_ok(); }
 
+  template <typename CastT, typename CastE>
+  operator Result<CastT, CastE>() {
+    if (is_ok()) {
+      if constexpr (std::is_same_v<CastT, void>) {
+        return Result<CastT, CastE>::ok();
+      } else {
+        return Result<CastT, CastE>::ok(
+            static_cast<CastT>(std::get<0>(inner_).inner_));
+      }
+    }
+    if constexpr (std::is_same_v<CastE, void>) {
+      return Result<CastT, CastE>::err();
+    } else {
+      return Result<CastT, CastE>::err(
+          static_cast<CastE>(std::get<1>(inner_).inner_));
+    }
+  }
+
   Result() = default;
 
  private:
