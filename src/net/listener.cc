@@ -13,14 +13,15 @@ template <typename T>
 using Future = runtime::Future<T>;
 
 auto net::TcpSocket::bind(SocketAddr addr) -> Future<io::IoResult<void>> {
-  auto bind = co_await runtime::AsyncFuture<int>([&]() {
-    return ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr));
+  auto bind_result = co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
+    return io::into_sys_result(
+        ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
   });
-  auto res = io::into_sys_result(bind);
-  ASYNC_TRY(res);
-  INFO("{} bind to {}\n", socket_, addr);
+  if (bind_result.is_ok()) {
+    INFO("{} bind to {}\n", socket_, addr);
+  }
 
-  co_return res;
+  co_return bind_result;
 }
 
 auto net::TcpSocket::connect(SocketAddr addr)
@@ -82,8 +83,7 @@ auto net::TcpSocket::listen(int backlog) -> Future<io::IoResult<TcpListener>> {
   auto listen_result = co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
     return io::into_sys_result(::listen(socket_.into_c_fd(), backlog));
   });
-  auto res = listen_result.map([&](auto n) { return TcpListener(Socket(-1)); });
-  ASYNC_TRY(res);
+  ASYNC_TRY(listen_result.map([&](auto n) { return TcpListener(Socket(-1)); }));
   INFO("{} listening\n", socket_);
 
   co_return io::IoResult<TcpListener>::ok(TcpListener(std::move(socket_)));
@@ -225,12 +225,13 @@ auto net::TcpStream::flush() -> Future<io::IoResult<void>> {
 
 auto net::TcpStream::shutdown(Shutdown shutdown) const
     -> Future<io::IoResult<void>> {
-  auto res = io::into_sys_result(co_await runtime::AsyncFuture<int>([&]() {
-    return ::shutdown(socket_.into_c_fd(),
-                      static_cast<std::underlying_type_t<Shutdown>>(shutdown));
+  ASYNC_TRY(co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
+    return io::into_sys_result(
+        ::shutdown(socket_.into_c_fd(),
+                   static_cast<std::underlying_type_t<Shutdown>>(shutdown)));
   }));
-  ASYNC_TRY(res);
   INFO("shutdown {}\n", socket_);
+
   co_return io::IoResult<void>::ok();
 }
 

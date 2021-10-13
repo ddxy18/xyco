@@ -232,21 +232,23 @@ class Result {
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRY(result)          \
-  ({                         \
-    if ((result).is_err()) { \
-      return (result);       \
-    }                        \
-    (result).unwrap();       \
+#define TRY(result)                        \
+  ({                                       \
+    auto result_ref = std::move((result)); \
+    if (result_ref.is_err()) {             \
+      return std::move(result_ref);        \
+    }                                      \
+    result_ref.unwrap();                   \
   })
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define ASYNC_TRY(result)    \
-  ({                         \
-    if ((result).is_err()) { \
-      co_return(result);     \
-    }                        \
-    (result).unwrap();       \
+#define ASYNC_TRY(result)                  \
+  ({                                       \
+    auto result_ref = std::move((result)); \
+    if (result_ref.is_err()) {             \
+      co_return std::move(result_ref);     \
+    }                                      \
+    result_ref.unwrap();                   \
   })
 
 #endif  // XYCO_UTILS_RESULT_H_
