@@ -1,6 +1,8 @@
 #ifndef XYCO_NET_LISTENER_H_
 #define XYCO_NET_LISTENER_H_
 
+#include <unistd.h>
+
 #include "io/mod.h"
 #include "net/socket.h"
 #include "runtime/future.h"
@@ -9,8 +11,6 @@
 namespace net {
 class TcpStream;
 class TcpListener;
-
-enum class Shutdown { Read, Write, All };
 
 class TcpSocket {
   template <typename T>
@@ -39,7 +39,7 @@ class TcpSocket {
   Socket socket_;
 };
 
-class TcpStream : public io::ReadTrait, io::WriteTrait {
+class TcpStream {
   template <typename T>
   using Future = runtime::Future<T>;
 
@@ -50,17 +50,89 @@ class TcpStream : public io::ReadTrait, io::WriteTrait {
  public:
   static auto connect(SocketAddr addr) -> Future<io::IoResult<TcpStream>>;
 
-  auto read(std::vector<char> *buf) -> Future<io::IoResult<uintptr_t>> override;
+  template <typename Iterator>
+  auto read(Iterator begin, Iterator end) -> Future<io::IoResult<uintptr_t>> {
+    using CoOutput = io::IoResult<uintptr_t>;
 
-  auto write(const std::vector<char> &buf)
-      -> Future<io::IoResult<uintptr_t>> override;
+    class Future : public runtime::Future<CoOutput> {
+     public:
+      Future(Iterator begin, Iterator end, net::TcpStream *self)
+          : runtime::Future<CoOutput>(nullptr),
+            begin_(begin),
+            end_(end),
+            self_(self) {}
 
-  auto write_all(const std::vector<char> &buf)
-      -> Future<io::IoResult<void>> override;
+      auto poll(runtime::Handle<void> self)
+          -> runtime::Poll<CoOutput> override {
+        if (self_->event_->readable()) {
+          auto n = ::read(self_->socket_.into_c_fd(), &*begin_,
+                          std::distance(begin_, end_));
+          if (n != -1) {
+            INFO("read {} bytes from {}\n", n, self_->socket_);
+            return runtime::Ready<CoOutput>{CoOutput::ok(n)};
+          }
+          if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            return runtime::Ready<CoOutput>{
+                CoOutput::err(io::into_sys_result(-1).unwrap_err())};
+          }
+        }
+        self_->event_->clear_readable();
+        self_->event_->future_ = this;
+        return runtime::Pending();
+      }
 
-  auto flush() -> Future<io::IoResult<void>> override;
+     private:
+      net::TcpStream *self_;
+      Iterator begin_;
+      Iterator end_;
+    };
 
-  [[nodiscard]] auto shutdown(Shutdown shutdown) const
+    auto result = co_await Future(begin, end, this);
+    event_->future_ = nullptr;
+    co_return result;
+  }
+
+  template <typename Iterator>
+  auto write(Iterator begin, Iterator end) -> Future<io::IoResult<uintptr_t>> {
+    using CoOutput = io::IoResult<uintptr_t>;
+
+    class Future : public runtime::Future<CoOutput> {
+     public:
+      Future(Iterator begin, Iterator end, TcpStream *self)
+          : runtime::Future<CoOutput>(nullptr),
+            begin_(begin),
+            end_(end),
+            self_(self) {}
+
+      auto poll(runtime::Handle<void> self)
+          -> runtime::Poll<CoOutput> override {
+        if (self_->event_->writeable()) {
+          auto n = ::write(self_->socket_.into_c_fd(), &*begin_,
+                           std::distance(begin_, end_));
+          auto nbytes = io::into_sys_result(n).map(
+              [](auto n) -> uintptr_t { return static_cast<uintptr_t>(n); });
+          INFO("write {} bytes to {}\n", n, self_->socket_);
+          return runtime::Ready<CoOutput>{nbytes};
+        }
+        self_->event_->clear_writeable();
+        self_->event_->future_ = this;
+        return runtime::Pending();
+      }
+
+     private:
+      TcpStream *self_;
+      Iterator begin_;
+      Iterator end_;
+    };
+
+    auto result = co_await Future(begin, end, this);
+    event_->future_ = nullptr;
+    co_return result;
+  }
+
+  auto flush() -> Future<io::IoResult<void>>;
+
+  [[nodiscard]] auto shutdown(io::Shutdown shutdown) const
       -> Future<io::IoResult<void>>;
 
   TcpStream(const TcpStream &tcp_stream) = delete;
@@ -74,9 +146,6 @@ class TcpStream : public io::ReadTrait, io::WriteTrait {
   ~TcpStream();
 
  private:
-  template <typename I>
-  auto write(I begin, I end) -> Future<io::IoResult<uintptr_t>>;
-
   explicit TcpStream(Socket &&socket, runtime::Event::State state);
 
   Socket socket_;

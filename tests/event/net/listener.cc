@@ -88,9 +88,12 @@ TEST_F(ListenerTest, TcpStream_rw) {
     auto [server_stream, addr] = (co_await server.accept()).unwrap();
 
     auto w_buf = {'a'};
-    auto w_nbytes = (co_await client.write(w_buf)).unwrap();
+    auto w_nbytes =
+        (co_await io::WriteExt<net::TcpStream>::write(client, w_buf)).unwrap();
     auto r_buf = std::vector<char>(w_buf.size());
-    auto r_nbytes = (co_await server_stream.read(&r_buf)).unwrap();
+    auto r_nbytes =
+        (co_await io::ReadExt<net::TcpStream>::read(server_stream, r_buf))
+            .unwrap();
 
     CO_ASSERT_EQ(w_nbytes, w_buf.size());
     CO_ASSERT_EQ(r_nbytes, r_buf.size());
@@ -102,7 +105,8 @@ TEST_F(ListenerTest, TcpListener_bind) {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8085;
 
-    auto result = co_await net::TcpListener::bind(net::SocketAddr::new_v4(ip, port));
+    auto result =
+        co_await net::TcpListener::bind(net::SocketAddr::new_v4(ip, port));
 
     CO_ASSERT_EQ(result.is_ok(), true);
   }});
