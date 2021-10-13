@@ -20,7 +20,7 @@ auto start_server() -> Future<void> {
   while (true) {
     auto [connection, addr] = (co_await listener.accept()).unwrap();
     auto buf = std::vector<char>({'a', 'b', 'c'});
-    (co_await connection.write(buf)).unwrap();
+    (co_await io::WriteExt<net::TcpStream>::write(connection, buf)).unwrap();
     INFO("success send \"{}\" to {}\n", fmt::join(buf, ""), connection);
   }
   co_return;
@@ -40,7 +40,7 @@ auto start_client() -> Future<void> {
   }
   auto c = connection.unwrap();
   auto buf = std::vector<char>(max_buf_size);
-  (co_await c.read(&buf)).unwrap();
+  (co_await io::ReadExt<net::TcpStream>::read(c, buf)).unwrap();
   INFO("success read \"{}\" from {}\n", fmt::join(buf, ""), c);
 }
 

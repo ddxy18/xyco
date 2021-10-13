@@ -1,17 +1,25 @@
 #ifndef XYCO_IO_READ_H_
 #define XYCO_IO_READ_H_
 
-#include <vector>
-
 #include "io/utils.h"
 #include "runtime/future.h"
 
 namespace io {
-class ReadTrait {
-  template <typename T>
-  using Future = runtime::Future<T>;
+template <typename Reader, typename Iterator>
+concept Readable = requires(Reader reader, Iterator begin, Iterator end) {
+  {
+    reader.read(begin, end)
+    } -> std::same_as<runtime::Future<IoResult<uintptr_t>>>;
+};
 
-  virtual auto read(std::vector<char> *buf) -> Future<IoResult<uintptr_t>> = 0;
+template <typename Reader>
+class ReadExt {
+ public:
+  static auto read(Reader &reader, std::vector<char> &buf)
+      -> runtime::Future<IoResult<uintptr_t>>
+  requires(Readable<Reader, decltype(buf.begin())>) {
+    co_return co_await reader.read(buf.begin(), buf.end());
+  }
 };
 }  // namespace io
 

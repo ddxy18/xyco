@@ -1,7 +1,6 @@
 #include "listener.h"
 
 #include <arpa/inet.h>
-#include <unistd.h>
 
 #include <cerrno>
 #include <clocale>
@@ -120,115 +119,16 @@ auto net::TcpStream::connect(SocketAddr addr)
   co_return co_await socket.unwrap().connect(addr);
 }
 
-auto net::TcpStream::read(std::vector<char> *buf)
-    -> Future<io::IoResult<uintptr_t>> {
-  using CoOutput = io::IoResult<uintptr_t>;
-
-  class Future : public runtime::Future<CoOutput> {
-   public:
-    Future(std::vector<char> *buf, net::TcpStream *self)
-        : runtime::Future<CoOutput>(nullptr), buf_(buf), self_(self) {}
-
-    auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      if (self_->event_->readable()) {
-        auto n = ::read(self_->socket_.into_c_fd(), buf_->data(), buf_->size());
-        if (n != -1) {
-          INFO("read {} bytes from {}\n", n, self_->socket_);
-          return runtime::Ready<CoOutput>{CoOutput::ok(n)};
-        }
-        if (errno != EAGAIN && errno != EWOULDBLOCK) {
-          return runtime::Ready<CoOutput>{
-              CoOutput::err(io::into_sys_result(-1).unwrap_err())};
-        }
-      }
-      self_->event_->clear_readable();
-      self_->event_->future_ = this;
-      return runtime::Pending();
-    }
-
-   private:
-    net::TcpStream *self_;
-    std::vector<char> *buf_;
-  };
-
-  auto result = co_await Future(buf, this);
-  event_->future_ = nullptr;
-  co_return result;
-}
-
-template <typename I>
-auto net::TcpStream::write(I begin, I end) -> Future<io::IoResult<uintptr_t>> {
-  using CoOutput = io::IoResult<uintptr_t>;
-
-  class Future : public runtime::Future<CoOutput> {
-   public:
-    Future(I begin, I end, TcpStream *self)
-        : runtime::Future<CoOutput>(nullptr),
-          begin_(begin),
-          end_(end),
-          self_(self) {}
-
-    auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      if (self_->event_->writeable()) {
-        auto n = ::write(self_->socket_.into_c_fd(), &*begin_, end_ - begin_);
-        auto nbytes = io::into_sys_result(n);
-        INFO("write {} bytes to {}\n", n, self_->socket_);
-        return runtime::Ready<CoOutput>{nbytes};
-      }
-      self_->event_->clear_writeable();
-      self_->event_->future_ = this;
-      return runtime::Pending();
-    }
-
-   private:
-    TcpStream *self_;
-    I begin_;
-    I end_;
-  };
-
-  auto result = co_await Future(begin, end, this);
-  event_->future_ = nullptr;
-  co_return result;
-}
-
-auto net::TcpStream::write(const std::vector<char> &buf)
-    -> Future<io::IoResult<uintptr_t>> {
-  co_return co_await write(buf.cbegin(), buf.cend());
-}
-
-auto net::TcpStream::write_all(const std::vector<char> &buf)
-    -> Future<io::IoResult<void>> {
-  auto len = buf.size();
-  auto total_write = 0;
-  auto begin = buf.cbegin();
-  auto end = buf.cend();
-
-  while (total_write != len) {
-    auto res = (co_await write(begin, end)).map([&](auto n) {
-      total_write += n;
-      begin += n;
-    });
-    if (res.is_err()) {
-      auto error = res.unwrap_err();
-      if (error.errno_ != EAGAIN && error.errno_ != EWOULDBLOCK &&
-          error.errno_ != EINTR) {
-        co_return io::IoResult<void>::err(error);
-      }
-    }
-  }
-  co_return io::IoResult<void>::ok();
-}
-
 auto net::TcpStream::flush() -> Future<io::IoResult<void>> {
   co_return io::IoResult<void>::ok();
 }
 
-auto net::TcpStream::shutdown(Shutdown shutdown) const
+auto net::TcpStream::shutdown(io::Shutdown shutdown) const
     -> Future<io::IoResult<void>> {
   ASYNC_TRY(co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
     return io::into_sys_result(
         ::shutdown(socket_.into_c_fd(),
-                   static_cast<std::underlying_type_t<Shutdown>>(shutdown)));
+                   static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
   }));
   INFO("shutdown {}\n", socket_);
 
