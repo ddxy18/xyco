@@ -32,18 +32,19 @@ class WriteExt {
   static auto write_all(Writer &writer, const std::vector<char> &buf)
       -> runtime::Future<IoResult<void>>
   requires(Writable<Writer, decltype(buf.cbegin())>) {
-    auto len = buf.size();
+    auto buf_size = buf.size();
     auto total_write = 0;
     auto begin = buf.cbegin();
     auto end = buf.cend();
 
-    while (total_write != len) {
-      auto res = (co_await writer.write(begin, end)).map([&](auto n) {
-        total_write += n;
-        begin += n;
-      });
-      if (res.is_err()) {
-        auto error = res.unwrap_err();
+    while (total_write != buf_size) {
+      auto write_result =
+          (co_await writer.write(begin, end)).map([&](auto nbytes) {
+            total_write += nbytes;
+            begin += nbytes;
+          });
+      if (write_result.is_err()) {
+        auto error = write_result.unwrap_err();
         if (error.errno_ != EAGAIN && error.errno_ != EWOULDBLOCK &&
             error.errno_ != EINTR) {
           co_return IoResult<void>::err(error);
