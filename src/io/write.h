@@ -1,6 +1,8 @@
 #ifndef XYCO_IO_WRITE_H_
 #define XYCO_IO_WRITE_H_
 
+#include <concepts>
+
 #include "io/utils.h"
 #include "runtime/future.h"
 

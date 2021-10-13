@@ -126,9 +126,9 @@ auto net::TcpStream::flush() -> Future<io::IoResult<void>> {
 auto net::TcpStream::shutdown(io::Shutdown shutdown) const
     -> Future<io::IoResult<void>> {
   ASYNC_TRY(co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
-    return io::into_sys_result(
-        ::shutdown(socket_.into_c_fd(),
-                   static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
+    return io::into_sys_result(::shutdown(
+        socket_.into_c_fd(),
+        static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
   }));
   INFO("shutdown {}\n", socket_);
 

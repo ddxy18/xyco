@@ -130,7 +130,7 @@ class TcpStream {
     co_return result;
   }
 
-  auto flush() -> Future<io::IoResult<void>>;
+  static auto flush() -> Future<io::IoResult<void>>;
 
   [[nodiscard]] auto shutdown(io::Shutdown shutdown) const
       -> Future<io::IoResult<void>>;
