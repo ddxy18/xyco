@@ -111,3 +111,31 @@ TEST_F(ResultTest, Pointer) {
   auto result = Result<int *, int>::ok(value.get());
   ASSERT_EQ(*result.unwrap(), 1);
 }
+
+TEST_F(ResultTest, CastToVoid) {
+  Result<void, int> void_t_ok = no_void_ok_;
+  ASSERT_TRUE(void_t_ok.is_ok());
+
+  Result<void, int> void_t_err = no_void_err_;
+  ASSERT_TRUE(void_t_err.is_err());
+
+  Result<int, void> void_e_ok = no_void_ok_;
+  ASSERT_TRUE(void_e_ok.is_ok());
+
+  Result<int, void> void_e_err = no_void_err_;
+  ASSERT_TRUE(void_e_err.is_err());
+}
+
+TEST_F(ResultTest, CastByStaticCast) {
+  Result<char, int> char_t_ok = no_void_ok_;
+  ASSERT_EQ(char_t_ok.unwrap(), 1);
+
+  Result<char, int> char_t_err = no_void_err_;
+  ASSERT_EQ(char_t_err.unwrap_err(), 1);
+
+  Result<int, char> char_e_ok = no_void_ok_;
+  ASSERT_EQ(char_e_ok.unwrap(), 1);
+
+  Result<int, char> char_e_err = no_void_err_;
+  ASSERT_EQ(char_e_err.unwrap_err(), 1);
+}
