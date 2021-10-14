@@ -10,87 +10,34 @@
 #include "runtime/future.h"
 
 namespace fs {
-class Permissions {
-  friend class File;
-  friend class FileAttr;
-
- public:
-  auto set_readonly(bool readonly) -> void;
-
- private:
-  Permissions(mode_t mode);
-
-  mode_t mode_;
-};
-
-class FileType {
-  friend class FileAttr;
-
- public:
-  [[nodiscard]] auto is_dir() const -> bool;
-
-  [[nodiscard]] auto is_file() const -> bool;
-
-  [[nodiscard]] auto is_symlink() const -> bool;
-
- private:
-  [[nodiscard]] auto is(mode_t mode) const -> bool;
-
-  FileType(mode_t mode);
-
-  mode_t mode_;
-};
-
-class StatxExtraFields {
-  friend class FileAttr;
-
- private:
-  // This is needed to check if btime is supported by the filesystem.
-  uint32_t stx_mask_;
-  statx_timestamp stx_btime_;
-};
-
-class FileAttr {
- public:
-  [[nodiscard]] auto file_type() const -> FileType;
-
-  [[nodiscard]] auto is_dir() const -> bool;
-
-  [[nodiscard]] auto is_file() const -> bool;
-
-  [[nodiscard]] auto is_symlink() const -> bool;
-
-  [[nodiscard]] auto len() const -> uint64_t;
-
-  [[nodiscard]] auto permissions() const -> Permissions;
-
-  auto modified() -> io::IoResult<timespec>;
-
-  auto accessed() -> io::IoResult<timespec>;
-
-  auto created() -> io::IoResult<timespec>;
-
- private:
-  stat64 stat_;
-  std::optional<StatxExtraFields> statx_extra_fields_;
-};
-
 class File {
   friend class OpenOptions;
 
  public:
-  static auto create(std::filesystem::path path)
+  static auto create(std::filesystem::path &&path)
       -> runtime::Future<io::IoResult<File>>;
 
-  static auto open(std::filesystem::path path)
+  static auto open(std::filesystem::path &&path)
       -> runtime::Future<io::IoResult<File>>;
 
-  auto set_len(uint64_t size) -> runtime::Future<io::IoResult<void>>;
+  auto resize(uintmax_t size) -> runtime::Future<io::IoResult<void>>;
 
-  auto metadata() -> runtime::Future<io::IoResult<FileAttr>>;
+  [[nodiscard]] auto size() const -> runtime::Future<io::IoResult<uintmax_t>>;
 
-  [[nodiscard]] auto set_permissions(Permissions permissions) const
-      -> runtime::Future<io::IoResult<void>>;
+  auto status() -> runtime::Future<io::IoResult<std::filesystem::file_status>>;
+
+  [[nodiscard]] auto set_permissions(std::filesystem::perms prms,
+                                     std::filesystem::perm_options opts =
+                                         std::filesystem::perm_options::replace)
+      const -> runtime::Future<io::IoResult<void>>;
+
+  [[nodiscard]] auto modified() const
+      -> runtime::Future<io::IoResult<timespec>>;
+
+  [[nodiscard]] auto accessed() const
+      -> runtime::Future<io::IoResult<timespec>>;
+
+  [[nodiscard]] auto created() const -> runtime::Future<io::IoResult<timespec>>;
 
   template <typename Iterator>
   auto read(Iterator begin, Iterator end)
@@ -103,14 +50,16 @@ class File {
   [[nodiscard]] auto flush() const -> runtime::Future<io::IoResult<void>>;
 
  private:
-  File(int fd) : fd_(fd) {}
+  File(int fd, std::filesystem::path &&path);
 
   int fd_;
+  std::filesystem::path path_;
 };
 
 class OpenOptions {
  public:
-  auto open(std::filesystem::path path) -> runtime::Future<io::IoResult<File>>;
+  auto open(std::filesystem::path &&path)
+      -> runtime::Future<io::IoResult<File>>;
 
   auto read(bool read) -> OpenOptions &;
 
