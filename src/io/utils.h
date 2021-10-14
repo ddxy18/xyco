@@ -10,6 +10,8 @@ class IoError;
 template <typename T>
 using IoResult = Result<T, IoError>;
 
+enum class ErrorKind : int { Uncategorized = -2, Unsupported };
+
 class IoError {
  public:
   static auto from_sys_error() -> IoError;

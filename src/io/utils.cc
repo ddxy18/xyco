@@ -1,7 +1,6 @@
 #include "utils.h"
 
-#include <cerrno>
-#include <string>
+#include <__utility/to_underlying.h>
 
 auto xyco::io::IoError::from_sys_error() -> IoError {
   auto err = IoError{};
@@ -20,7 +19,18 @@ template <typename FormatContext>
 auto fmt::formatter<xyco::io::IoError>::format(const xyco::io::IoError& err,
                                                FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "IoError{{errno={}, info={}}}", err.errno_,
+  if (err.errno_ > 0) {
+    return format_to(ctx.out(), "IoError{{errno={}, info={}}}", err.errno_,
+                     fmt::join(err.info_, ""));
+  }
+  std::string error_kind;
+  switch (err.errno_) {
+    case std::__to_underlying(xyco::io::ErrorKind::Uncategorized):
+      error_kind = std::string("Uncategorized");
+    case std::__to_underlying(xyco::io::ErrorKind::Unsupported):
+      error_kind = std::string("Unsupported");
+  }
+  return format_to(ctx.out(), "IoError{{error_kind={}, info={}}}", error_kind,
                    fmt::join(err.info_, ""));
 }
 
