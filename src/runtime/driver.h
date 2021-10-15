@@ -5,7 +5,7 @@
 #include "io/driver.h"
 #include "registry.h"
 
-namespace runtime {
+namespace xyco::runtime {
 class BlockingRegistry : public runtime::Registry {
  public:
   explicit BlockingRegistry(uintptr_t woker_num);
@@ -42,6 +42,6 @@ class Driver {
   io::IoRegistry io_registry_;
   BlockingRegistry blocking_registry_;
 };
-}  // namespace runtime
+}  // namespace xyco::runtime
 
 #endif  // XYCO_RUNTIME_DRIVER_H_

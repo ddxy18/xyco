@@ -8,7 +8,7 @@
 #include "runtime/future.h"
 #include "runtime/registry.h"
 
-namespace net {
+namespace xyco::net {
 class TcpStream;
 class TcpListener;
 
@@ -182,27 +182,27 @@ class TcpListener {
   Socket socket_;
   std::unique_ptr<runtime::Event> event_;
 };
-}  // namespace net
+}  // namespace xyco::net
 
 template <>
-struct fmt::formatter<net::TcpSocket> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::net::TcpSocket> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const net::TcpSocket &tcp_socket, FormatContext &ctx) const
+  auto format(const xyco::net::TcpSocket &tcp_socket, FormatContext &ctx) const
       -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<net::TcpStream> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::net::TcpStream> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const net::TcpStream &tcp_stream, FormatContext &ctx) const
+  auto format(const xyco::net::TcpStream &tcp_stream, FormatContext &ctx) const
       -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<net::TcpListener> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::net::TcpListener> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const net::TcpListener &tcp_listener, FormatContext &ctx) const
-      -> decltype(ctx.out());
+  auto format(const xyco::net::TcpListener &tcp_listener,
+              FormatContext &ctx) const -> decltype(ctx.out());
 };
 
 #endif  // XYCO_NET_LISTENER_H_

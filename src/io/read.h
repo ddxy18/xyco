@@ -6,7 +6,7 @@
 #include "io/utils.h"
 #include "runtime/future.h"
 
-namespace io {
+namespace xyco::io {
 template <typename Reader, typename Iterator>
 concept Readable = requires(Reader reader, Iterator begin, Iterator end) {
   {
@@ -61,6 +61,6 @@ class ReadExt {
     co_return IoResult<std::vector<char>>::ok(dst);
   }
 };
-}  // namespace io
+}  // namespace xyco::io
 
 #endif  // XYCO_IO_READ_H_

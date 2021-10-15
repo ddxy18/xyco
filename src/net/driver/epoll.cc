@@ -3,30 +3,30 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-auto to_sys(runtime::Interest interest) -> int {
+auto to_sys(xyco::runtime::Interest interest) -> int {
   switch (interest) {
-    case runtime::Interest::Read:
+    case xyco::runtime::Interest::Read:
       return EPOLLIN | EPOLLET;
-    case runtime::Interest::Write:
+    case xyco::runtime::Interest::Write:
       return EPOLLOUT | EPOLLET;
-    case runtime::Interest::All:
+    case xyco::runtime::Interest::All:
       return EPOLLIN | EPOLLOUT | EPOLLET;
   }
 }
 
-auto to_state(uint32_t events) -> runtime::IoExtra::State {
+auto to_state(uint32_t events) -> xyco::runtime::IoExtra::State {
   if ((events & EPOLLIN) != 0U) {
     if ((events & EPOLLOUT) != 0U) {
-      return runtime::IoExtra::State::All;
+      return xyco::runtime::IoExtra::State::All;
     }
   }
   if ((events & EPOLLIN) != 0U) {
-    return runtime::IoExtra::State::Readable;
+    return xyco::runtime::IoExtra::State::Readable;
   }
   if ((events & EPOLLOUT) != 0U) {
-    return runtime::IoExtra::State::Writable;
+    return xyco::runtime::IoExtra::State::Writable;
   }
-  return runtime::IoExtra::State::Pending;
+  return xyco::runtime::IoExtra::State::Pending;
 }
 
 template <>
@@ -36,12 +36,12 @@ struct fmt::formatter<epoll_event> : public fmt::formatter<bool> {
       -> decltype(ctx.out()) {
     return format_to(ctx.out(), "epoll_event{{events={:x},data={}}}",
                      event.events,
-                     *static_cast<runtime::Event *>(event.data.ptr));
+                     *static_cast<xyco::runtime::Event *>(event.data.ptr));
   }
 };
 
-auto net::NetRegistry::Register(runtime::Event &event,
-                                runtime::Interest interest)
+auto xyco::net::NetRegistry::Register(runtime::Event &event,
+                                      runtime::Interest interest)
     -> io::IoResult<void> {
   epoll_event epoll_event{.events = static_cast<uint32_t>(to_sys(interest)),
                           .data = {.ptr = &event}};
@@ -56,8 +56,8 @@ auto net::NetRegistry::Register(runtime::Event &event,
   return result;
 }
 
-auto net::NetRegistry::reregister(runtime::Event &event,
-                                  runtime::Interest interest)
+auto xyco::net::NetRegistry::reregister(runtime::Event &event,
+                                        runtime::Interest interest)
     -> io::IoResult<void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
   epoll_event.data.ptr = &event;
@@ -72,8 +72,8 @@ auto net::NetRegistry::reregister(runtime::Event &event,
   return result;
 }
 
-auto net::NetRegistry::deregister(runtime::Event &event,
-                                  runtime::Interest interest)
+auto xyco::net::NetRegistry::deregister(runtime::Event &event,
+                                        runtime::Interest interest)
     -> io::IoResult<void> {
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
   epoll_event.data.ptr = &event;
@@ -88,7 +88,7 @@ auto net::NetRegistry::deregister(runtime::Event &event,
   return result;
 }
 
-auto net::NetRegistry::select(runtime::Events &events, int timeout)
+auto xyco::net::NetRegistry::select(runtime::Events &events, int timeout)
     -> io::IoResult<void> {
   auto final_timeout = timeout;
   auto final_max_events = MAX_EVENTS;
@@ -112,13 +112,13 @@ auto net::NetRegistry::select(runtime::Events &events, int timeout)
   return io::IoResult<void>::ok();
 }
 
-net::NetRegistry::NetRegistry() : epfd_(epoll_create(1)) {
+xyco::net::NetRegistry::NetRegistry() : epfd_(epoll_create(1)) {
   if (epfd_ == -1) {
     panic();
   }
 }
 
-net::NetRegistry::~NetRegistry() {
+xyco::net::NetRegistry::~NetRegistry() {
   // FIXME(dongxiaoyu): replace global epoll with per worker epoll
   close(epfd_);
 }

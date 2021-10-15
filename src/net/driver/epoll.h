@@ -3,7 +3,7 @@
 
 #include "runtime/registry.h"
 
-namespace net {
+namespace xyco::net {
 class NetRegistry : public runtime::Registry {
  public:
   static const int MAX_TIMEOUT_MS = 2;
@@ -36,6 +36,6 @@ class NetRegistry : public runtime::Registry {
  private:
   int epfd_;
 };
-}  // namespace net
+}  // namespace xyco::net
 
 #endif  // XYCO_NET_EPOLL_H_

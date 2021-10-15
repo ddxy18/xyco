@@ -7,7 +7,7 @@
 
 #include "spdlog/fmt/fmt.h"
 
-namespace net {
+namespace xyco::net {
 class SocketAddrV4 {
   friend class SocketAddr;
 
@@ -85,19 +85,19 @@ class Socket {
  private:
   int fd_;
 };
-}  // namespace net
+}  // namespace xyco::net
 
 template <>
-struct fmt::formatter<net::SocketAddr> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::net::SocketAddr> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const net::SocketAddr& addr, FormatContext& ctx) const
+  auto format(const xyco::net::SocketAddr& addr, FormatContext& ctx) const
       -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<net::Socket> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::net::Socket> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const net::Socket& socket, FormatContext& ctx) const
+  auto format(const xyco::net::Socket& socket, FormatContext& ctx) const
       -> decltype(ctx.out());
 };
 

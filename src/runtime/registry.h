@@ -3,7 +3,7 @@
 
 #include "io/utils.h"
 
-namespace runtime {
+namespace xyco::runtime {
 class FutureBase;
 class Registry;
 class Event;
@@ -90,27 +90,28 @@ class GlobalRegistry : public Registry {
   [[nodiscard]] auto select(Events &events, int timeout)
       -> io::IoResult<void> override = 0;
 };
-}  // namespace runtime
+}  // namespace xyco::runtime
 
 template <>
-struct fmt::formatter<runtime::Event> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::runtime::Event> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const runtime::Event &event, FormatContext &ctx) const
+  auto format(const xyco::runtime::Event &event, FormatContext &ctx) const
       -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<runtime::IoExtra> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::runtime::IoExtra> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const runtime::IoExtra &extra, FormatContext &ctx) const
+  auto format(const xyco::runtime::IoExtra &extra, FormatContext &ctx) const
       -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<runtime::AsyncFutureExtra> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::runtime::AsyncFutureExtra>
+    : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const runtime::AsyncFutureExtra &extra, FormatContext &ctx) const
-      -> decltype(ctx.out());
+  auto format(const xyco::runtime::AsyncFutureExtra &extra,
+              FormatContext &ctx) const -> decltype(ctx.out());
 };
 
 #endif  // XYCO_RUNTIME_REGISTRY_H_

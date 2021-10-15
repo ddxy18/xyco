@@ -4,7 +4,7 @@
 #include "spdlog/fmt/fmt.h"
 #include "utils/result.h"
 
-namespace io {
+namespace xyco::io {
 class IoError;
 
 template <typename T>
@@ -19,12 +19,12 @@ class IoError {
 };
 
 auto into_sys_result(int return_value) -> IoResult<int>;
-}  // namespace io
+}  // namespace xyco::io
 
 template <>
-struct fmt::formatter<io::IoError> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::io::IoError> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const io::IoError& err, FormatContext& ctx) const
+  auto format(const xyco::io::IoError& err, FormatContext& ctx) const
       -> decltype(ctx.out());
 };
 

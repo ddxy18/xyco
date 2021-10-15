@@ -7,16 +7,15 @@
 #include "poll.h"
 #include "runtime.h"
 
-namespace runtime {
+namespace xyco::runtime {
 template <typename Return>
-class AsyncFuture : public runtime::Future<Return> {
+class AsyncFuture : public Future<Return> {
  public:
-  [[nodiscard]] auto poll(runtime::Handle<void> self)
-      -> runtime::Poll<Return> override {
+  [[nodiscard]] auto poll(Handle<void> self) -> Poll<Return> override {
     if (!ready_) {
       ready_ = true;
       auto res = RuntimeCtx::get_ctx()->blocking_handle()->Register(
-          event_, runtime::Interest::All);
+          event_, Interest::All);
       return Pending();
     }
 
@@ -36,7 +35,7 @@ class AsyncFuture : public runtime::Future<Return> {
           event_.extra_ = extra;
         }),
         ready_(false),
-        event_(runtime::Event{
+        event_(xyco::runtime::Event{
             .future_ = this, .extra_ = AsyncFutureExtra{.before_extra_ = f_}}) {
   }
 
@@ -53,8 +52,8 @@ class AsyncFuture : public runtime::Future<Return> {
  private:
   bool ready_;
   std::function<void()> f_;
-  runtime::Event event_;
+  Event event_;
 };
-}  // namespace runtime
+}  // namespace xyco::runtime
 
 #endif  // XYCO_RUNTIME_ASYNC_H_

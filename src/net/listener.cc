@@ -9,9 +9,9 @@
 #include "runtime/async_future.h"
 
 template <typename T>
-using Future = runtime::Future<T>;
+using Future = xyco::runtime::Future<T>;
 
-auto net::TcpSocket::bind(SocketAddr addr) -> Future<io::IoResult<void>> {
+auto xyco::net::TcpSocket::bind(SocketAddr addr) -> Future<io::IoResult<void>> {
   auto bind_result = co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
     return io::into_sys_result(
         ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
@@ -23,7 +23,7 @@ auto net::TcpSocket::bind(SocketAddr addr) -> Future<io::IoResult<void>> {
   co_return bind_result;
 }
 
-auto net::TcpSocket::connect(SocketAddr addr)
+auto xyco::net::TcpSocket::connect(SocketAddr addr)
     -> Future<io::IoResult<TcpStream>> {
   using CoOutput = io::IoResult<TcpStream>;
 
@@ -81,7 +81,8 @@ auto net::TcpSocket::connect(SocketAddr addr)
   co_return co_await Future(addr, socket_);
 }
 
-auto net::TcpSocket::listen(int backlog) -> Future<io::IoResult<TcpListener>> {
+auto xyco::net::TcpSocket::listen(int backlog)
+    -> Future<io::IoResult<TcpListener>> {
   auto listen_result = co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
     return io::into_sys_result(::listen(socket_.into_c_fd(), backlog));
   });
@@ -91,29 +92,29 @@ auto net::TcpSocket::listen(int backlog) -> Future<io::IoResult<TcpListener>> {
   co_return io::IoResult<TcpListener>::ok(TcpListener(std::move(socket_)));
 }
 
-auto net::TcpSocket::set_reuseaddr(bool reuseaddr) -> io::IoResult<void> {
+auto xyco::net::TcpSocket::set_reuseaddr(bool reuseaddr) -> io::IoResult<void> {
   return io::into_sys_result(::setsockopt(
       socket_.into_c_fd(), SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(bool)));
 }
 
-auto net::TcpSocket::set_reuseport(bool reuseport) -> io::IoResult<void> {
+auto xyco::net::TcpSocket::set_reuseport(bool reuseport) -> io::IoResult<void> {
   return io::into_sys_result(::setsockopt(
       socket_.into_c_fd(), SOL_SOCKET, SO_REUSEADDR, &reuseport, sizeof(bool)));
 }
 
-auto net::TcpSocket::new_v4() -> io::IoResult<TcpSocket> {
+auto xyco::net::TcpSocket::new_v4() -> io::IoResult<TcpSocket> {
   return io::into_sys_result(::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0))
       .map([](auto fd) { return TcpSocket(fd); });
 }
 
-auto net::TcpSocket::new_v6() -> io::IoResult<TcpSocket> {
+auto xyco::net::TcpSocket::new_v6() -> io::IoResult<TcpSocket> {
   return io::into_sys_result(::socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, 0))
       .map([](auto fd) { return TcpSocket(fd); });
 }
 
-net::TcpSocket::TcpSocket(Socket &&socket) : socket_(std::move(socket)) {}
+xyco::net::TcpSocket::TcpSocket(Socket &&socket) : socket_(std::move(socket)) {}
 
-auto net::TcpStream::connect(SocketAddr addr)
+auto xyco::net::TcpStream::connect(SocketAddr addr)
     -> Future<io::IoResult<TcpStream>> {
   auto socket = addr.is_v4() ? TcpSocket::new_v4() : TcpSocket::new_v6();
   if (socket.is_err()) {
@@ -122,11 +123,11 @@ auto net::TcpStream::connect(SocketAddr addr)
   co_return co_await socket.unwrap().connect(addr);
 }
 
-auto net::TcpStream::flush() -> Future<io::IoResult<void>> {
+auto xyco::net::TcpStream::flush() -> Future<io::IoResult<void>> {
   co_return io::IoResult<void>::ok();
 }
 
-auto net::TcpStream::shutdown(io::Shutdown shutdown) const
+auto xyco::net::TcpStream::shutdown(io::Shutdown shutdown) const
     -> Future<io::IoResult<void>> {
   ASYNC_TRY(co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
     return io::into_sys_result(::shutdown(
@@ -138,7 +139,7 @@ auto net::TcpStream::shutdown(io::Shutdown shutdown) const
   co_return io::IoResult<void>::ok();
 }
 
-net::TcpStream::~TcpStream() {
+xyco::net::TcpStream::~TcpStream() {
   if (socket_.into_c_fd() != -1) {
     runtime::RuntimeCtx::get_ctx()
         ->io_handle()
@@ -147,7 +148,7 @@ net::TcpStream::~TcpStream() {
   }
 }
 
-net::TcpStream::TcpStream(Socket &&socket, runtime::IoExtra::State state)
+xyco::net::TcpStream::TcpStream(Socket &&socket, xyco::runtime::IoExtra::State state)
     : socket_(std::move(socket)),
       event_(std::make_unique<runtime::Event>(
           runtime::Event{.extra_ = runtime::IoExtra{
@@ -163,7 +164,7 @@ net::TcpStream::TcpStream(Socket &&socket, runtime::IoExtra::State state)
   }
 }
 
-auto net::TcpListener::bind(SocketAddr addr)
+auto xyco::net::TcpListener::bind(SocketAddr addr)
     -> Future<io::IoResult<TcpListener>> {
   using runtime::Handle;
   using runtime::Ready;
@@ -182,7 +183,7 @@ auto net::TcpListener::bind(SocketAddr addr)
   co_return co_await tcp_socket.listen(max_pending_connection);
 }
 
-auto net::TcpListener::accept()
+auto xyco::net::TcpListener::accept()
     -> Future<io::IoResult<std::pair<TcpStream, SocketAddr>>> {
   using CoOutput = io::IoResult<std::pair<TcpStream, SocketAddr>>;
 
@@ -242,7 +243,7 @@ auto net::TcpListener::accept()
   co_return res;
 }
 
-net::TcpListener::~TcpListener() {
+xyco::net::TcpListener::~TcpListener() {
   if (socket_.into_c_fd() != -1 && event_ != nullptr) {
     runtime::RuntimeCtx::get_ctx()
         ->io_handle()
@@ -251,41 +252,42 @@ net::TcpListener::~TcpListener() {
   }
 }
 
-net::TcpListener::TcpListener(Socket &&socket) : socket_(std::move(socket)) {}
+xyco::net::TcpListener::TcpListener(Socket &&socket)
+    : socket_(std::move(socket)) {}
 
 template <typename FormatContext>
-auto fmt::formatter<net::TcpSocket>::format(const net::TcpSocket &tcp_socket,
-                                            FormatContext &ctx) const
+auto fmt::formatter<xyco::net::TcpSocket>::format(
+    const xyco::net::TcpSocket &tcp_socket, FormatContext &ctx) const
     -> decltype(ctx.out()) {
   return format_to(ctx.out(), "TcpSocket{{socket_={}}}", tcp_socket.socket_);
 }
 
 template <typename FormatContext>
-auto fmt::formatter<net::TcpStream>::format(const net::TcpStream &tcp_stream,
-                                            FormatContext &ctx) const
+auto fmt::formatter<xyco::net::TcpStream>::format(
+    const xyco::net::TcpStream &tcp_stream, FormatContext &ctx) const
     -> decltype(ctx.out()) {
   return format_to(ctx.out(), "TcpStream{{socket_={}}}", tcp_stream.socket_);
 }
 
 template <typename FormatContext>
-auto fmt::formatter<net::TcpListener>::format(
-    const net::TcpListener &tcp_listener, FormatContext &ctx) const
+auto fmt::formatter<xyco::net::TcpListener>::format(
+    const xyco::net::TcpListener &tcp_listener, FormatContext &ctx) const
     -> decltype(ctx.out()) {
   return format_to(ctx.out(), "TcpListener{{socket_={}}}",
                    tcp_listener.socket_);
 }
 
-template auto fmt::formatter<net::TcpSocket>::format(
-    const net::TcpSocket &tcp_socket,
+template auto fmt::formatter<xyco::net::TcpSocket>::format(
+    const xyco::net::TcpSocket &tcp_socket,
     fmt::basic_format_context<fmt::appender, char> &ctx) const
     -> decltype(ctx.out());
 
-template auto fmt::formatter<net::TcpStream>::format(
-    const net::TcpStream &tcp_stream,
+template auto fmt::formatter<xyco::net::TcpStream>::format(
+    const xyco::net::TcpStream &tcp_stream,
     fmt::basic_format_context<fmt::appender, char> &ctx) const
     -> decltype(ctx.out());
 
-template auto fmt::formatter<net::TcpListener>::format(
-    const net::TcpListener &tcp_listener,
+template auto fmt::formatter<xyco::net::TcpListener>::format(
+    const xyco::net::TcpListener &tcp_listener,
     fmt::basic_format_context<fmt::appender, char> &ctx) const
     -> decltype(ctx.out());
