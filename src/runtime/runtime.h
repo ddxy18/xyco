@@ -10,6 +10,11 @@
 #include "future.h"
 #include "net/driver/mod.h"
 
+namespace xyco::sync::oneshot {
+template <typename Value>
+class Sender;
+}
+
 namespace runtime {
 class Runtime;
 
@@ -40,6 +45,8 @@ class Runtime {
   friend class Worker;
   friend class Builder;
   friend class io::IoRegistry;
+  template <typename Value>
+  friend class xyco::sync::oneshot::Sender;
 
   class Privater {};
 
