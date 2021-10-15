@@ -18,25 +18,25 @@
 class TestRuntimeCtxGuard {
  public:
   TestRuntimeCtxGuard(
-      gsl::owner<std::function<runtime::Future<void>()> *> co_wrapper,
+      gsl::owner<std::function<xyco::runtime::Future<void>()> *> co_wrapper,
       bool in_runtime);
 
   ~TestRuntimeCtxGuard();
 
  private:
-  gsl::owner<std::function<runtime::Future<void>()> *> co_wrapper_;
+  gsl::owner<std::function<xyco::runtime::Future<void>()> *> co_wrapper_;
 };
 
 class TestRuntimeCtx {
  public:
   // run until co finished
-  static auto co_run(std::function<runtime::Future<void>()> &&co) -> void;
+  static auto co_run(std::function<xyco::runtime::Future<void>()> &&co) -> void;
 
-  static auto co_run_no_wait(std::function<runtime::Future<void>()> &&co)
+  static auto co_run_no_wait(std::function<xyco::runtime::Future<void>()> &&co)
       -> TestRuntimeCtxGuard;
 
   static auto co_run_without_runtime(
-      std::function<runtime::Future<void>()> &&co) -> TestRuntimeCtxGuard;
+      std::function<xyco::runtime::Future<void>()> &&co) -> TestRuntimeCtxGuard;
 };
 
 #endif  // XYWEBSERVER_TEST_UTILS_H_

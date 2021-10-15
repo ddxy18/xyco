@@ -6,7 +6,7 @@
 #include <optional>
 #include <variant>
 
-namespace runtime {
+namespace xyco::runtime {
 class Runtime;
 
 template <typename T>
@@ -245,6 +245,6 @@ class Future<void> : public FutureBase {
   Handle<promise_type> self_;
   Handle<void> waiting_;
 };
-}  // namespace runtime
+}  // namespace xyco::runtime
 
 #endif  // XYCO_RUNTIME_FUTURE_H_

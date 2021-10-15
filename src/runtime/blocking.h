@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-namespace runtime {
+namespace xyco::runtime {
 class Task {
  public:
   auto operator()() -> void;
@@ -53,6 +53,6 @@ class BlockingPool {
   std::vector<BlockingWorker> workers_;
   std::vector<std::thread> worker_ctx_;
 };
-}  // namespace runtime
+}  // namespace xyco::runtime
 
 #endif  // XYCO_RUNTIME_BLOCKING_H_

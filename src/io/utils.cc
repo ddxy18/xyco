@@ -3,13 +3,13 @@
 #include <cerrno>
 #include <string>
 
-auto io::IoError::from_sys_error() -> IoError {
+auto xyco::io::IoError::from_sys_error() -> IoError {
   auto err = IoError{};
   err.errno_ = errno;
   return err;
 }
 
-auto io::into_sys_result(int return_value) -> io::IoResult<int> {
+auto xyco::io::into_sys_result(int return_value) -> io::IoResult<int> {
   if (return_value == -1) {
     return io::IoResult<int>::err(io::IoError::from_sys_error());
   }
@@ -17,14 +17,14 @@ auto io::into_sys_result(int return_value) -> io::IoResult<int> {
 }
 
 template <typename FormatContext>
-auto fmt::formatter<io::IoError>::format(const io::IoError& err,
-                                         FormatContext& ctx) const
+auto fmt::formatter<xyco::io::IoError>::format(const xyco::io::IoError& err,
+                                               FormatContext& ctx) const
     -> decltype(ctx.out()) {
   return format_to(ctx.out(), "{{errno={}, info={}}}", err.errno_,
                    fmt::join(err.info_, ""));
 }
 
-template auto fmt::formatter<io::IoError>::format(
-    const io::IoError& err,
+template auto fmt::formatter<xyco::io::IoError>::format(
+    const xyco::io::IoError& err,
     fmt::basic_format_context<fmt::appender, char>& ctx) const
     -> decltype(ctx.out());

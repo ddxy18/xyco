@@ -3,7 +3,7 @@
 
 #include "runtime/registry.h"
 
-namespace io {
+namespace xyco::io {
 class IoRegistry : public runtime::GlobalRegistry {
  public:
   [[nodiscard]] auto Register(runtime::Event& ev, runtime::Interest interest)
@@ -30,5 +30,5 @@ class IoRegistry : public runtime::GlobalRegistry {
   [[nodiscard]] auto select(runtime::Events& events, int timeout)
       -> IoResult<void> override;
 };
-}  // namespace io
+}  // namespace xyco::io
 #endif  // XYCO_IO_DRIVER_H_

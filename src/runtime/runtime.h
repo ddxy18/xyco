@@ -15,7 +15,7 @@ template <typename Value>
 class Sender;
 }
 
-namespace runtime {
+namespace xyco::runtime {
 class Runtime;
 
 class Worker {
@@ -46,7 +46,7 @@ class Runtime {
   friend class Builder;
   friend class io::IoRegistry;
   template <typename Value>
-  friend class xyco::sync::oneshot::Sender;
+  friend class sync::oneshot::Sender;
 
   class Privater {};
 
@@ -70,11 +70,11 @@ class Runtime {
     }());
   }
 
-  auto wake(runtime::Events &events) -> void;
+  auto wake(Events &events) -> void;
 
-  auto io_handle() -> runtime::GlobalRegistry *;
+  auto io_handle() -> GlobalRegistry *;
 
-  auto blocking_handle() -> runtime::Registry *;
+  auto blocking_handle() -> Registry *;
 
   Runtime(Privater priv);
 
@@ -145,6 +145,6 @@ class Builder {
   bool io_;
   bool time_;
 };
-}  // namespace runtime
+}  // namespace xyco::runtime
 
 #endif  // XYCO_RUNTIME_RUNTIME_H_

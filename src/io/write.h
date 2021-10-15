@@ -6,7 +6,7 @@
 #include "io/utils.h"
 #include "runtime/future.h"
 
-namespace io {
+namespace xyco::io {
 enum class Shutdown { Read, Write, All };
 
 template <typename Writer, typename Iterator>
@@ -56,6 +56,6 @@ class WriteExt {
     co_return IoResult<void>::ok();
   }
 };
-}  // namespace io
+}  // namespace xyco::io
 
 #endif  // XYCO_IO_WRITE_H_

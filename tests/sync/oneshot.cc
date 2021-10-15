@@ -5,7 +5,7 @@
 #include "utils.h"
 
 TEST(OneshotTest, success) {
-  TestRuntimeCtx::co_run({[]() -> runtime::Future<void> {
+  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
     auto send_result = co_await sender.send(1);
     auto value = (co_await receiver.receive()).unwrap();
@@ -16,7 +16,7 @@ TEST(OneshotTest, success) {
 }
 
 TEST(OneshotTest, sender_close) {
-  TestRuntimeCtx::co_run({[]() -> runtime::Future<void> {
+  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
     sender.xyco::sync::oneshot::Sender<int>::~Sender();
     auto value = (co_await receiver.receive());
@@ -26,7 +26,7 @@ TEST(OneshotTest, sender_close) {
 }
 
 TEST(OneshotTest, receiver_close) {
-  TestRuntimeCtx::co_run({[]() -> runtime::Future<void> {
+  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
     receiver.xyco::sync::oneshot::Receiver<int>::~Receiver();
     auto send_result = co_await sender.send(1);
@@ -36,7 +36,7 @@ TEST(OneshotTest, receiver_close) {
 }
 
 TEST(OneshotTest, send_twice) {
-  TestRuntimeCtx::co_run({[]() -> runtime::Future<void> {
+  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
     co_await sender.send(1);
     auto send_twice_result = co_await sender.send(1);
@@ -46,7 +46,7 @@ TEST(OneshotTest, send_twice) {
 }
 
 TEST(OneshotTest, receive_twice) {
-  TestRuntimeCtx::co_run({[]() -> runtime::Future<void> {
+  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
     co_await sender.send(1);
     co_await receiver.receive();

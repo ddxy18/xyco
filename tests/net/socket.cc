@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 TEST(SocketTest, into_c_fd) {
-  net::Socket socket(-1);  // prevent destructor closing the fd
+  xyco::net::Socket socket(-1);  // prevent destructor closing the fd
 
   ASSERT_EQ(socket.into_c_fd(), -1);
 }
@@ -13,7 +13,7 @@ TEST(SocketTest, new_v4) {
   const auto http_port = 80;
 
   auto sock_addr =
-      net::SocketAddr::new_v4(net::Ipv4Addr(local_host), http_port);
+      xyco::net::SocketAddr::new_v4(xyco::net::Ipv4Addr(local_host), http_port);
   const auto *raw_addr = static_cast<const sockaddr_in *>(
       static_cast<const void *>(sock_addr.into_c_addr()));
 
@@ -26,7 +26,7 @@ TEST(SocketTest, new_v6) {
   const auto http_port = 80;
 
   auto sock_addr =
-      net::SocketAddr::new_v6(net::Ipv6Addr(local_host), http_port);
+      xyco::net::SocketAddr::new_v6(xyco::net::Ipv6Addr(local_host), http_port);
   const auto *raw_addr = static_cast<const sockaddr_in6 *>(
       static_cast<const void *>(sock_addr.into_c_addr()));
 
@@ -37,10 +37,11 @@ TEST(SocketTest, new_v6) {
 TEST(SocketTest, is_v4) {
   const auto http_port = 80;
 
-  auto sock_addrv4 =
-      net::SocketAddr::new_v4(net::Ipv4Addr("127.0.0.1"), http_port);
+  auto sock_addrv4 = xyco::net::SocketAddr::new_v4(
+      xyco::net::Ipv4Addr("127.0.0.1"), http_port);
   ASSERT_EQ(sock_addrv4.is_v4(), true);
 
-  auto sock_addrv6 = net::SocketAddr::new_v6(net::Ipv6Addr("::1"), http_port);
+  auto sock_addrv6 =
+      xyco::net::SocketAddr::new_v6(xyco::net::Ipv6Addr("::1"), http_port);
   ASSERT_EQ(sock_addrv6.is_v4(), false);
 }

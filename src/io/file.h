@@ -5,12 +5,12 @@
 
 #include "io/utils.h"
 
-namespace io {
+namespace xyco::io {
 class File {
  public:
   auto open(std::filesystem::path path) -> IoResult<File>;
   auto create(std::filesystem::path path) -> IoResult<File>;
 };
-}  // namespace io
+}  // namespace xyco::io
 
 #endif  // XYCO_IO_FILE_H_
