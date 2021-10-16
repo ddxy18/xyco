@@ -69,7 +69,7 @@ class TcpStream {
           auto n = ::read(self_->socket_.into_c_fd(), &*begin_,
                           std::distance(begin_, end_));
           if (n != -1) {
-            INFO("read {} bytes from {}\n", n, self_->socket_);
+            INFO("read {} bytes from {}", n, self_->socket_);
             return runtime::Ready<CoOutput>{CoOutput::ok(n)};
           }
           if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -113,7 +113,7 @@ class TcpStream {
                            std::distance(begin_, end_));
           auto nbytes = io::into_sys_result(n).map(
               [](auto n) -> uintptr_t { return static_cast<uintptr_t>(n); });
-          INFO("write {} bytes to {}\n", n, self_->socket_);
+          INFO("write {} bytes to {}", n, self_->socket_);
           return runtime::Ready<CoOutput>{nbytes};
         }
         extra.clear_writeable();

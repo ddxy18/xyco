@@ -3,6 +3,6 @@
 #include "logger.h"
 
 auto panic() -> void {
-  TRACE("panic!\n");
+  TRACE("panic!");
   throw std::runtime_error("panic");
 }

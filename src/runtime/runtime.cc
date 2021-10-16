@@ -57,7 +57,7 @@ auto runtime::Worker::run_loop_once(Runtime *runtime) -> void {
   epoll_registry_.select(events, net::NetRegistry::MAX_TIMEOUT_MS).unwrap();
   for (runtime::Event &ev : events) {
     if (ev.future_ != nullptr) {
-      TRACE("process {}\n", ev);
+      TRACE("process {}", ev);
       std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
       handles_.emplace(handles_.begin(), ev.future_->get_handle(), ev.future_);
     }
@@ -68,7 +68,7 @@ auto runtime::Worker::run_loop_once(Runtime *runtime) -> void {
 auto runtime::Runtime::wake(runtime::Events &events) -> void {
   for (runtime::Event &ev : events) {
     if (ev.future_ != nullptr) {
-      TRACE("process {}\n", ev);
+      TRACE("process {}", ev);
       register_future(ev.future_);
     }
   }
