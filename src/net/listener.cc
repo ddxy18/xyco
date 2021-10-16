@@ -33,8 +33,10 @@ auto net::TcpSocket::connect(SocketAddr addr)
         : runtime::Future<CoOutput>(nullptr), socket_(socket), addr_(addr) {}
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      if (event_.fd_ == 0) {
-        event_ = runtime::Event{.fd_ = socket_.into_c_fd(), .future_ = this};
+      if (event_.future_ == nullptr) {
+        event_ = runtime::Event{
+            .future_ = this,
+            .extra_ = runtime::IoExtra{.fd_ = socket_.into_c_fd()}};
         auto register_result =
             runtime::RuntimeCtx::get_ctx()->io_handle()->Register(
                 event_, runtime::Interest::All);
@@ -52,8 +54,9 @@ auto net::TcpSocket::connect(SocketAddr addr)
             io::IoError{ret, strerror_l(ret, uselocale(nullptr))})};
       }
       INFO("{} connect to {}\n", socket_, addr_);
-      return runtime::Ready<CoOutput>{
-          CoOutput::ok(TcpStream(std::move(socket_), event_.state_))};
+      return runtime::Ready<CoOutput>{CoOutput::ok(
+          TcpStream(std::move(socket_),
+                    std::get<runtime::IoExtra>(event_.extra_).state_))};
     }
 
    private:
@@ -68,7 +71,7 @@ auto net::TcpSocket::connect(SocketAddr addr)
   });
   if (connect_result.is_ok()) {
     co_return CoOutput::ok(
-        TcpStream(std::move(socket_), runtime::Event::State::Writable));
+        TcpStream(std::move(socket_), runtime::IoExtra::State::Writable));
   }
   auto err = connect_result.unwrap_err().errno_;
   if (err != EINPROGRESS && err != EAGAIN) {
@@ -144,10 +147,11 @@ net::TcpStream::~TcpStream() {
   }
 }
 
-net::TcpStream::TcpStream(Socket &&socket, runtime::Event::State state)
+net::TcpStream::TcpStream(Socket &&socket, runtime::IoExtra::State state)
     : socket_(std::move(socket)),
       event_(std::make_unique<runtime::Event>(
-          runtime::Event{.state_ = state, .fd_ = socket_.into_c_fd()})) {
+          runtime::Event{.extra_ = runtime::IoExtra{
+                             .state_ = state, .fd_ = socket_.into_c_fd()}})) {
   auto *io_handle = runtime::RuntimeCtx::get_ctx()->io_handle();
   auto register_result =
       io_handle->register_local(*event_, runtime::Interest::All);
@@ -189,8 +193,9 @@ auto net::TcpListener::accept()
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
       if (self_->event_ == nullptr) {
-        self_->event_ = std::make_unique<runtime::Event>(
-            runtime::Event{.fd_ = self_->socket_.into_c_fd(), .future_ = this});
+        self_->event_ = std::make_unique<runtime::Event>(runtime::Event{
+            .future_ = this,
+            .extra_ = runtime::IoExtra{.fd_ = self_->socket_.into_c_fd()}});
         auto res = runtime::RuntimeCtx::get_ctx()->io_handle()->Register(
             *self_->event_, runtime::Interest::Read);
         if (res.is_err()) {
@@ -198,7 +203,8 @@ auto net::TcpListener::accept()
         }
       }
 
-      if (self_->event_->readable()) {
+      auto extra = std::get<runtime::IoExtra>(self_->event_->extra_);
+      if (extra.readable()) {
         sockaddr_in addr_in{};
         socklen_t addrlen = sizeof(addr_in);
         auto accept_result = io::into_sys_result(
@@ -208,7 +214,7 @@ auto net::TcpListener::accept()
         if (accept_result.is_err()) {
           auto err = accept_result.unwrap_err();
           if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK) {
-            self_->event_->state_ = runtime::Event::State::Pending;
+            extra.state_ = runtime::IoExtra::State::Pending;
             return runtime::Pending();
           }
           return runtime::Ready<CoOutput>{CoOutput::err(err)};
@@ -222,7 +228,7 @@ auto net::TcpListener::accept()
         INFO("accept from {} new connect={{{}, addr:{}}}\n", self_->socket_,
              socket, sock_addr);
         return runtime::Ready<CoOutput>{CoOutput::ok(
-            TcpStream(std::move(socket), runtime::Event::State::Writable),
+            TcpStream(std::move(socket), runtime::IoExtra::State::Writable),
             sock_addr)};
       }
       return runtime::Pending();

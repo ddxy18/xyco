@@ -12,7 +12,7 @@ using Events = std::vector<std::reference_wrapper<Event>>;
 
 enum class Interest { Read, Write, All };
 
-class Event {
+class IoExtra {
  public:
   enum class State { Pending, Readable, Writable, All };
 
@@ -24,11 +24,20 @@ class Event {
 
   auto clear_writeable() -> void;
 
-  State state_{};
-  int fd_{};
-  runtime::FutureBase *future_{};
+  State state_;
+  int fd_;
+};
+
+class AsyncFutureExtra {
+ public:
   std::function<void()> before_extra_;
   void *after_extra_{};
+};
+
+class Event {
+ public:
+  runtime::FutureBase *future_{};
+  std::variant<AsyncFutureExtra, IoExtra> extra_;
 };
 
 class Registry {
@@ -82,5 +91,26 @@ class GlobalRegistry : public Registry {
       -> io::IoResult<void> override = 0;
 };
 }  // namespace runtime
+
+template <>
+struct fmt::formatter<runtime::Event> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const runtime::Event &event, FormatContext &ctx) const
+      -> decltype(ctx.out());
+};
+
+template <>
+struct fmt::formatter<runtime::IoExtra> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const runtime::IoExtra &extra, FormatContext &ctx) const
+      -> decltype(ctx.out());
+};
+
+template <>
+struct fmt::formatter<runtime::AsyncFutureExtra> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const runtime::AsyncFutureExtra &extra, FormatContext &ctx) const
+      -> decltype(ctx.out());
+};
 
 #endif  // XYCO_RUNTIME_REGISTRY_H_

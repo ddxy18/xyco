@@ -14,20 +14,31 @@ auto to_sys(runtime::Interest interest) -> int {
   }
 }
 
-auto to_state(uint32_t events) -> runtime::Event::State {
+auto to_state(uint32_t events) -> runtime::IoExtra::State {
   if ((events & EPOLLIN) != 0U) {
     if ((events & EPOLLOUT) != 0U) {
-      return runtime::Event::State::All;
+      return runtime::IoExtra::State::All;
     }
   }
   if ((events & EPOLLIN) != 0U) {
-    return runtime::Event::State::Readable;
+    return runtime::IoExtra::State::Readable;
   }
   if ((events & EPOLLOUT) != 0U) {
-    return runtime::Event::State::Writable;
+    return runtime::IoExtra::State::Writable;
   }
-  return runtime::Event::State::Pending;
+  return runtime::IoExtra::State::Pending;
 }
+
+template <>
+struct fmt::formatter<epoll_event> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const epoll_event &event, FormatContext &ctx) const
+      -> decltype(ctx.out()) {
+    return format_to(ctx.out(), "epoll_event{{events={:x},data={}}}",
+                     event.events,
+                     *static_cast<runtime::Event *>(event.data.ptr));
+  }
+};
 
 auto net::NetRegistry::Register(runtime::Event &event,
                                 runtime::Interest interest)
@@ -35,10 +46,11 @@ auto net::NetRegistry::Register(runtime::Event &event,
   epoll_event epoll_event{.events = static_cast<uint32_t>(to_sys(interest)),
                           .data = {.ptr = &event}};
 
-  auto result = io::into_sys_result(
-      epoll_ctl(epfd_, EPOLL_CTL_ADD, event.fd_, &epoll_event));
+  auto fd = std::get<runtime::IoExtra>(event.extra_).fd_;
+  auto result =
+      io::into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &epoll_event));
   if (result.is_ok()) {
-    TRACE("register fd:{}\n", event.fd_, epoll_event.data.ptr);
+    TRACE("epoll_ctl add:{}\n", epoll_event);
   }
 
   return result;
@@ -50,10 +62,11 @@ auto net::NetRegistry::reregister(runtime::Event &event,
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
   epoll_event.data.ptr = &event;
 
-  auto result = io::into_sys_result(
-      epoll_ctl(epfd_, EPOLL_CTL_MOD, event.fd_, &epoll_event));
+  auto fd = std::get<runtime::IoExtra>(event.extra_).fd_;
+  auto result =
+      io::into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &epoll_event));
   if (result.is_ok()) {
-    TRACE("reregister fd:{}\n", event.fd_, epoll_event.data.ptr);
+    TRACE("epoll_ctl mod:{}\n", epoll_event);
   }
 
   return result;
@@ -65,10 +78,11 @@ auto net::NetRegistry::deregister(runtime::Event &event,
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
   epoll_event.data.ptr = &event;
 
-  auto result = io::into_sys_result(
-      epoll_ctl(epfd_, EPOLL_CTL_DEL, event.fd_, &epoll_event));
+  auto fd = std::get<runtime::IoExtra>(event.extra_).fd_;
+  auto result =
+      io::into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, &epoll_event));
   if (result.is_ok()) {
-    TRACE("deregister fd:{}\n", event.fd_, epoll_event.data.ptr);
+    TRACE("epoll_ctl del:{}\n", epoll_event);
   }
 
   return result;
@@ -91,7 +105,8 @@ auto net::NetRegistry::select(runtime::Events &events, int timeout)
   for (auto i = 0; i < ready_len; i++) {
     auto &ready_ev =
         *static_cast<runtime::Event *>((epoll_events.at(i).data.ptr));
-    ready_ev.state_ = to_state(epoll_events.at(i).events);
+    std::get<runtime::IoExtra>(ready_ev.extra_).state_ =
+        to_state(epoll_events.at(i).events);
     events.push_back(ready_ev);
   }
   return io::IoResult<void>::ok();

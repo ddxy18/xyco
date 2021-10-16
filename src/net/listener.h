@@ -64,7 +64,8 @@ class TcpStream {
 
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
-        if (self_->event_->readable()) {
+        auto extra = std::get<runtime::IoExtra>(self_->event_->extra_);
+        if (extra.readable()) {
           auto n = ::read(self_->socket_.into_c_fd(), &*begin_,
                           std::distance(begin_, end_));
           if (n != -1) {
@@ -76,7 +77,7 @@ class TcpStream {
                 CoOutput::err(io::into_sys_result(-1).unwrap_err())};
           }
         }
-        self_->event_->clear_readable();
+        extra.clear_readable();
         self_->event_->future_ = this;
         return runtime::Pending();
       }
@@ -106,7 +107,8 @@ class TcpStream {
 
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
-        if (self_->event_->writeable()) {
+        auto extra = std::get<runtime::IoExtra>(self_->event_->extra_);
+        if (extra.writeable()) {
           auto n = ::write(self_->socket_.into_c_fd(), &*begin_,
                            std::distance(begin_, end_));
           auto nbytes = io::into_sys_result(n).map(
@@ -114,7 +116,7 @@ class TcpStream {
           INFO("write {} bytes to {}\n", n, self_->socket_);
           return runtime::Ready<CoOutput>{nbytes};
         }
-        self_->event_->clear_writeable();
+        extra.clear_writeable();
         self_->event_->future_ = this;
         return runtime::Pending();
       }
@@ -146,7 +148,7 @@ class TcpStream {
   ~TcpStream();
 
  private:
-  explicit TcpStream(Socket &&socket, runtime::Event::State state);
+  explicit TcpStream(Socket &&socket, runtime::IoExtra::State state);
 
   Socket socket_;
   std::unique_ptr<runtime::Event> event_;
