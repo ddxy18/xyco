@@ -17,7 +17,7 @@ auto net::TcpSocket::bind(SocketAddr addr) -> Future<io::IoResult<void>> {
         ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
   });
   if (bind_result.is_ok()) {
-    INFO("{} bind to {}\n", socket_, addr);
+    INFO("{} bind to {}", socket_, addr);
   }
 
   co_return bind_result;
@@ -53,7 +53,7 @@ auto net::TcpSocket::connect(SocketAddr addr)
         return runtime::Ready<CoOutput>{CoOutput::err(
             io::IoError{ret, strerror_l(ret, uselocale(nullptr))})};
       }
-      INFO("{} connect to {}\n", socket_, addr_);
+      INFO("{} connect to {}", socket_, addr_);
       return runtime::Ready<CoOutput>{CoOutput::ok(
           TcpStream(std::move(socket_),
                     std::get<runtime::IoExtra>(event_.extra_).state_))};
@@ -86,7 +86,7 @@ auto net::TcpSocket::listen(int backlog) -> Future<io::IoResult<TcpListener>> {
     return io::into_sys_result(::listen(socket_.into_c_fd(), backlog));
   });
   ASYNC_TRY(listen_result.map([&](auto n) { return TcpListener(Socket(-1)); }));
-  INFO("{} listening\n", socket_);
+  INFO("{} listening", socket_);
 
   co_return io::IoResult<TcpListener>::ok(TcpListener(std::move(socket_)));
 }
@@ -133,7 +133,7 @@ auto net::TcpStream::shutdown(io::Shutdown shutdown) const
         socket_.into_c_fd(),
         static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
   }));
-  INFO("shutdown {}\n", socket_);
+  INFO("shutdown {}", socket_);
 
   co_return io::IoResult<void>::ok();
 }
@@ -225,7 +225,7 @@ auto net::TcpListener::accept()
                                ip.size())),
             addr_in.sin_port);
         auto socket = Socket(accept_result.unwrap());
-        INFO("accept from {} new connect={{{}, addr:{}}}\n", self_->socket_,
+        INFO("accept from {} new connect={{{}, addr:{}}}", self_->socket_,
              socket, sock_addr);
         return runtime::Ready<CoOutput>{CoOutput::ok(
             TcpStream(std::move(socket), runtime::IoExtra::State::Writable),

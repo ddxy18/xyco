@@ -13,7 +13,7 @@ auto start_server() -> Future<void> {
       net::SocketAddr::new_v4(net::Ipv4Addr("127.0.0.1"), SERVER_PORT));
   if (res.is_err()) {
     auto err = res.unwrap_err();
-    ERROR("bind error:{}\n", err);
+    ERROR("bind error:{}", err);
     co_return;
   }
   auto listener = res.unwrap();
@@ -21,7 +21,7 @@ auto start_server() -> Future<void> {
     auto [connection, addr] = (co_await listener.accept()).unwrap();
     auto buf = std::vector<char>({'a', 'b', 'c'});
     (co_await io::WriteExt<net::TcpStream>::write(connection, buf)).unwrap();
-    INFO("success send \"{}\" to {}\n", fmt::join(buf, ""), connection);
+    INFO("success send \"{}\" to {}", fmt::join(buf, ""), connection);
   }
   co_return;
 }
@@ -41,7 +41,7 @@ auto start_client() -> Future<void> {
   auto c = connection.unwrap();
   auto buf = std::vector<char>(max_buf_size);
   (co_await io::ReadExt<net::TcpStream>::read(c, buf)).unwrap();
-  INFO("success read \"{}\" from {}\n", fmt::join(buf, ""), c);
+  INFO("success read \"{}\" from {}", fmt::join(buf, ""), c);
 }
 
 auto main(int /*unused*/, char** /*unused*/) -> int {

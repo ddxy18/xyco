@@ -41,8 +41,23 @@ template <typename FormatContext>
 auto fmt::formatter<runtime::IoExtra>::format(const runtime::IoExtra &extra,
                                               FormatContext &ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "IoExtra{{fd_={}, state_={}}}", extra.fd_,
-                   extra.state_);
+  std::string state;
+  switch (extra.state_) {
+    case runtime::IoExtra::State::Pending:
+      state = "Pending";
+      break;
+    case runtime::IoExtra::State::Readable:
+      state = "Readable";
+      break;
+    case runtime::IoExtra::State::Writable:
+      state = "Writable";
+      break;
+    case runtime::IoExtra::State::All:
+      state = "All";
+      break;
+  }
+
+  return format_to(ctx.out(), "IoExtra{{fd_={}, state_={}}}", extra.fd_, state);
 }
 
 template <typename FormatContext>

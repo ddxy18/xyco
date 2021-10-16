@@ -50,7 +50,7 @@ auto net::NetRegistry::Register(runtime::Event &event,
   auto result =
       io::into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &epoll_event));
   if (result.is_ok()) {
-    TRACE("epoll_ctl add:{}\n", epoll_event);
+    TRACE("epoll_ctl add:{}", epoll_event);
   }
 
   return result;
@@ -66,7 +66,7 @@ auto net::NetRegistry::reregister(runtime::Event &event,
   auto result =
       io::into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &epoll_event));
   if (result.is_ok()) {
-    TRACE("epoll_ctl mod:{}\n", epoll_event);
+    TRACE("epoll_ctl mod:{}", epoll_event);
   }
 
   return result;
@@ -82,7 +82,7 @@ auto net::NetRegistry::deregister(runtime::Event &event,
   auto result =
       io::into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, &epoll_event));
   if (result.is_ok()) {
-    TRACE("epoll_ctl del:{}\n", epoll_event);
+    TRACE("epoll_ctl del:{}", epoll_event);
   }
 
   return result;
@@ -100,7 +100,7 @@ auto net::NetRegistry::select(runtime::Events &events, int timeout)
 
   auto ready_len = TRY(io::into_sys_result(
       epoll_wait(epfd_, epoll_events.data(), final_max_events, final_timeout)));
-  TRACE("epoll_wait:{}\n", ready_len);
+  TRACE("epoll_wait:{}", ready_len);
 
   for (auto i = 0; i < ready_len; i++) {
     auto &ready_ev =

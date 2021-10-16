@@ -71,9 +71,9 @@ class Result {
   auto unwrap() -> T requires(Printable<E> || std::is_void_v<E>) {
     if (inner_.index() == 1) {
       if constexpr (std::is_same_v<E, void>) {
-        TRACE("unwrap err:{E=void}\n");
+        TRACE("unwrap err:{E=void}");
       } else {
-        TRACE("unwrap err:{}\n", std::get<1>(inner_).inner_);
+        TRACE("unwrap err:{}", std::get<1>(inner_).inner_);
       }
       panic();
     }
@@ -85,9 +85,9 @@ class Result {
   auto unwrap_err() -> E requires(Printable<T> || std::is_void_v<T>) {
     if (inner_.index() == 0) {
       if constexpr (std::is_same_v<T, void>) {
-        TRACE("unwrap_err err:{T=void}\n");
+        TRACE("unwrap_err err:{T=void}");
       } else {
-        TRACE("unwrap_err err:{}\n", std::get<0>(inner_).inner_);
+        TRACE("unwrap_err err:{}", std::get<0>(inner_).inner_);
       }
       panic();
     }
