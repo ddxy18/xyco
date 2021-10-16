@@ -20,10 +20,10 @@ class AsyncFuture : public runtime::Future<Return> {
       return Pending();
     }
 
-    auto result = std::move(*static_cast<Return *>(
-        std::get<AsyncFutureExtra>(event_.extra_).after_extra_));
-    delete gsl::owner<Return *>(
+    gsl::owner<Return *> ret = gsl::owner<Return *>(
         std::get<AsyncFutureExtra>(event_.extra_).after_extra_);
+    auto result = std::move(*ret);
+    delete ret;
 
     return Ready<Return>{result};
   }
