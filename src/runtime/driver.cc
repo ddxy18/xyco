@@ -14,7 +14,8 @@ auto runtime::BlockingRegistry::Register(runtime::Event& ev,
     std::scoped_lock<std::mutex> lock_guard(mutex_);
     events_.push_back(ev);
   }
-  pool_.spawn(runtime::Task(ev.before_extra_));
+  pool_.spawn(
+      runtime::Task(std::get<AsyncFutureExtra>(ev.extra_).before_extra_));
   return io::IoResult<void>::ok();
 }
 
@@ -37,11 +38,15 @@ auto runtime::BlockingRegistry::select(runtime::Events& events, int timeout)
 
   std::scoped_lock<std::mutex> lock_guard(mutex_);
   std::copy_if(std::begin(events_), std::end(events_),
-               std::back_inserter(new_events),
-               [](runtime::Event& ev) { return ev.after_extra_ == nullptr; });
+               std::back_inserter(new_events), [](runtime::Event& ev) {
+                 return std::get<AsyncFutureExtra>(ev.extra_).after_extra_ ==
+                        nullptr;
+               });
   std::copy_if(std::begin(events_), std::end(events_),
-               std::back_inserter(events),
-               [](runtime::Event& ev) { return ev.after_extra_ != nullptr; });
+               std::back_inserter(events), [](runtime::Event& ev) {
+                 return std::get<AsyncFutureExtra>(ev.extra_).after_extra_ !=
+                        nullptr;
+               });
   events_ = new_events;
 
   return io::IoResult<void>::ok();

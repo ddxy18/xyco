@@ -20,8 +20,10 @@ class AsyncFuture : public runtime::Future<Return> {
       return Pending();
     }
 
-    auto result = std::move(*static_cast<Return *>(event_.after_extra_));
-    delete static_cast<Return *>(event_.after_extra_);
+    auto result = std::move(*static_cast<Return *>(
+        std::get<AsyncFutureExtra>(event_.extra_).after_extra_));
+    delete gsl::owner<Return *>(
+        std::get<AsyncFutureExtra>(event_.extra_).after_extra_);
 
     return Ready<Return>{result};
   }
@@ -30,11 +32,13 @@ class AsyncFuture : public runtime::Future<Return> {
   explicit AsyncFuture(Fn &&f) requires(std::is_invocable_r_v<Return, Fn>)
       : Future<Return>(nullptr),
         f_([&]() {
-          event_.after_extra_ = gsl::owner<Return *>((new Return(f())));
+          auto extra = AsyncFutureExtra{.after_extra_ = new Return(f())};
+          event_.extra_ = extra;
         }),
         ready_(false),
-        event_(
-            runtime::Event{.fd_ = -1, .future_ = this, .before_extra_ = f_}) {}
+        event_(runtime::Event{
+            .future_ = this, .extra_ = AsyncFutureExtra{.before_extra_ = f_}}) {
+  }
 
   AsyncFuture(const AsyncFuture<Return> &) = delete;
 
