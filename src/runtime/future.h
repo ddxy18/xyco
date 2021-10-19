@@ -184,7 +184,7 @@ class Future : public FutureBase {
   }
 
  private:
-  Output return_;
+  std::optional<Output> return_;
   Handle<promise_type> self_;
   Handle<void> waiting_;
 };
