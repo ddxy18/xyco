@@ -47,7 +47,7 @@ auto xyco::runtime::Future<void>::Awaitable::await_suspend(
 }
 
 auto xyco::runtime::Future<void>::Awaitable::await_resume() -> void {
-  auto ptr = future_.self_.promise().exception_ptr_;
+  auto ptr = future_.self_ ? future_.self_.promise().exception_ptr_ : nullptr;
   if (ptr) {
     std::rethrow_exception(ptr);
   }
