@@ -85,6 +85,10 @@ auto xyco::runtime::Runtime::io_handle() -> GlobalRegistry * {
   return driver_->net_handle();
 }
 
+auto xyco::runtime::Runtime::time_handle() -> Registry * {
+  return driver_->time_handle();
+}
+
 auto xyco::runtime::Runtime::blocking_handle() -> Registry * {
   return driver_->blocking_handle();
 }

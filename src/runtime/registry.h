@@ -1,6 +1,8 @@
 #ifndef XYCO_RUNTIME_REGISTRY_H_
 #define XYCO_RUNTIME_REGISTRY_H_
 
+#include <chrono>
+
 #include "io/utils.h"
 
 namespace xyco::runtime {
@@ -28,6 +30,11 @@ class IoExtra {
   int fd_;
 };
 
+class TimeExtra {
+ public:
+  std::chrono::time_point<std::chrono::system_clock> expire_time_;
+};
+
 class AsyncFutureExtra {
  public:
   std::function<void()> before_extra_;
@@ -37,7 +44,7 @@ class AsyncFutureExtra {
 class Event {
  public:
   runtime::FutureBase *future_{};
-  std::variant<AsyncFutureExtra, IoExtra> extra_;
+  std::variant<AsyncFutureExtra, IoExtra, TimeExtra> extra_;
 };
 
 class Registry {
@@ -93,16 +100,16 @@ class GlobalRegistry : public Registry {
 }  // namespace xyco::runtime
 
 template <>
-struct fmt::formatter<xyco::runtime::Event> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::runtime::IoExtra> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::runtime::Event &event, FormatContext &ctx) const
+  auto format(const xyco::runtime::IoExtra &extra, FormatContext &ctx) const
       -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<xyco::runtime::IoExtra> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::runtime::TimeExtra> : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::runtime::IoExtra &extra, FormatContext &ctx) const
+  auto format(const xyco::runtime::TimeExtra &extra, FormatContext &ctx) const
       -> decltype(ctx.out());
 };
 
@@ -112,6 +119,13 @@ struct fmt::formatter<xyco::runtime::AsyncFutureExtra>
   template <typename FormatContext>
   auto format(const xyco::runtime::AsyncFutureExtra &extra,
               FormatContext &ctx) const -> decltype(ctx.out());
+};
+
+template <>
+struct fmt::formatter<xyco::runtime::Event> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const xyco::runtime::Event &event, FormatContext &ctx) const
+      -> decltype(ctx.out());
 };
 
 #endif  // XYCO_RUNTIME_REGISTRY_H_

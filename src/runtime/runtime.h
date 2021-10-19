@@ -74,6 +74,8 @@ class Runtime {
 
   auto io_handle() -> GlobalRegistry *;
 
+  auto time_handle() -> Registry *;
+
   auto blocking_handle() -> Registry *;
 
   Runtime(Privater priv);

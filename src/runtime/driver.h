@@ -4,6 +4,7 @@
 #include "blocking.h"
 #include "io/driver.h"
 #include "registry.h"
+#include "time/driver.h"
 
 namespace xyco::runtime {
 class BlockingRegistry : public runtime::Registry {
@@ -34,12 +35,15 @@ class Driver {
 
   auto net_handle() -> io::IoRegistry*;
 
+  auto time_handle() -> time::TimeRegistry*;
+
   auto blocking_handle() -> BlockingRegistry*;
 
   explicit Driver(uintptr_t blocking_num);
 
  private:
   io::IoRegistry io_registry_;
+  time::TimeRegistry time_registry_;
   BlockingRegistry blocking_registry_;
 };
 }  // namespace xyco::runtime

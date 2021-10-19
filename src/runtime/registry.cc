@@ -27,17 +27,6 @@ auto xyco::runtime::IoExtra::clear_writeable() -> void {
 }
 
 template <typename FormatContext>
-auto fmt::formatter<xyco::runtime::Event>::format(
-    const xyco::runtime::Event &event, FormatContext &ctx) const
-    -> decltype(ctx.out()) {
-  if (event.extra_.index() == 0) {
-    return format_to(ctx.out(), "Event{{extra_={}}}",
-                     std::get<0>(event.extra_));
-  }
-  return format_to(ctx.out(), "Event{{extra_={}}}", std::get<1>(event.extra_));
-}
-
-template <typename FormatContext>
 auto fmt::formatter<xyco::runtime::IoExtra>::format(
     const xyco::runtime::IoExtra &extra, FormatContext &ctx) const
     -> decltype(ctx.out()) {
@@ -61,23 +50,47 @@ auto fmt::formatter<xyco::runtime::IoExtra>::format(
 }
 
 template <typename FormatContext>
+auto fmt::formatter<xyco::runtime::TimeExtra>::format(
+    const xyco::runtime::TimeExtra &extra, FormatContext &ctx) const
+    -> decltype(ctx.out()) {
+  return format_to(ctx.out(), "TimeExtra{{expire_time_={}}}",
+                   extra.expire_time_);
+}
+
+template <typename FormatContext>
 auto fmt::formatter<xyco::runtime::AsyncFutureExtra>::format(
     const xyco::runtime::AsyncFutureExtra &extra, FormatContext &ctx) const
     -> decltype(ctx.out()) {
   return format_to(ctx.out(), "AsyncFutureExtra{{}}");
 }
 
-template auto fmt::formatter<xyco::runtime::Event>::format(
-    const xyco::runtime::Event &event,
-    fmt::basic_format_context<fmt::appender, char> &ctx) const
-    -> decltype(ctx.out());
+template <typename FormatContext>
+auto fmt::formatter<xyco::runtime::Event>::format(
+    const xyco::runtime::Event &event, FormatContext &ctx) const
+    -> decltype(ctx.out()) {
+  if (event.extra_.index() == 0) {
+    return format_to(ctx.out(), "Event{{extra_={}}}",
+                     std::get<0>(event.extra_));
+  }
+  return format_to(ctx.out(), "Event{{extra_={}}}", std::get<1>(event.extra_));
+}
 
 template auto fmt::formatter<xyco::runtime::IoExtra>::format(
     const xyco::runtime::IoExtra &extra,
     fmt::basic_format_context<fmt::appender, char> &ctx) const
     -> decltype(ctx.out());
 
+template auto fmt::formatter<xyco::runtime::TimeExtra>::format(
+    const xyco::runtime::TimeExtra &extra,
+    fmt::basic_format_context<fmt::appender, char> &ctx) const
+    -> decltype(ctx.out());
+
 template auto fmt::formatter<xyco::runtime::AsyncFutureExtra>::format(
     const xyco::runtime::AsyncFutureExtra &extra,
+    fmt::basic_format_context<fmt::appender, char> &ctx) const
+    -> decltype(ctx.out());
+
+template auto fmt::formatter<xyco::runtime::Event>::format(
+    const xyco::runtime::Event &event,
     fmt::basic_format_context<fmt::appender, char> &ctx) const
     -> decltype(ctx.out());

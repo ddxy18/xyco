@@ -29,7 +29,7 @@ FetchContent_MakeAvailable(spdlog)
 include_directories(src)
 
 file(GLOB_RECURSE xyco_src_lib "src/io/*.cc"
-     "src/net/*.cc" "src/runtime/*.cc" "src/sync/*.cc" "src/utils/*.cc")
+     "src/net/*.cc" "src/runtime/*.cc" "src/sync/*.cc" "src/time/*.cc" "src/utils/*.cc")
 
 add_subdirectory(src)
 
