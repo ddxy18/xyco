@@ -22,7 +22,7 @@ class Shared {
   static constexpr char sender_closed = 1;
   static constexpr char receiver_closed = 2;
 
-  std::atomic_char state_;
+  std::atomic_char state_{};
   std::optional<Value> value_;
   runtime::FutureBase *receiver_{};
 };

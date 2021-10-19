@@ -148,7 +148,8 @@ xyco::net::TcpStream::~TcpStream() {
   }
 }
 
-xyco::net::TcpStream::TcpStream(Socket &&socket, xyco::runtime::IoExtra::State state)
+xyco::net::TcpStream::TcpStream(Socket &&socket,
+                                xyco::runtime::IoExtra::State state)
     : socket_(std::move(socket)),
       event_(std::make_unique<runtime::Event>(
           runtime::Event{.extra_ = runtime::IoExtra{
