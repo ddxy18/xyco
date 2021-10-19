@@ -111,6 +111,10 @@ struct fmt::formatter<xyco::runtime::TimeExtra> : public fmt::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::runtime::TimeExtra &extra, FormatContext &ctx) const
       -> decltype(ctx.out());
+
+  template <typename FormatContext>
+  auto format(const xyco::runtime::AsyncFutureExtra &extra,
+              FormatContext &ctx) const -> decltype(ctx.out());
 };
 
 template <>

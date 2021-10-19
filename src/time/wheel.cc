@@ -1,6 +1,6 @@
 #include "wheel.h"
 
-#include <chrono>
+xyco::time::Level::Level() : current_it_(events_.begin()) {}
 
 auto xyco::time::Wheel::insert_event(runtime::Event &event) -> void {
   auto expire_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -13,12 +13,17 @@ auto xyco::time::Wheel::insert_event(runtime::Event &event) -> void {
   }
 
   auto *slot_it = levels_.at(level).current_it_ + 1;
+  if (slot_it == levels_.at(level).events_.end()) {
+    slot_it = levels_.at(level).events_.begin();
+  }
   if (level == 0) {
     auto steps = expire_time_ms.count() / interval_ms_;
-    slot_it = levels_.at(0).current_it_ + steps;
-    if (std::distance(levels_.at(0).current_it_, levels_.at(0).events_.end()) >
+    slot_it = levels_.at(0).current_it_;
+    if (std::distance(levels_.at(0).current_it_, levels_.at(0).events_.end()) <
         steps) {
-      slot_it -= Level::slot_num_;
+      std::advance(slot_it, steps - Level::slot_num_);
+    } else {
+      std::advance(slot_it, steps);
     }
   }
   slot_it->push_back(event);
@@ -26,10 +31,10 @@ auto xyco::time::Wheel::insert_event(runtime::Event &event) -> void {
 
 auto xyco::time::Wheel::expire(runtime::Events &events) -> void {
   auto now = std::chrono::system_clock::now();
-  auto *it = levels_[0].current_it_;
   while (now > now_) {
-    events.insert(events.end(), it->begin(), it->end());
-    it->clear();
+    events.insert(events.end(), levels_[0].current_it_->begin(),
+                  levels_[0].current_it_->end());
+    levels_[0].current_it_->clear();
     now_ += std::chrono::milliseconds(interval_ms_);
     levels_[0].current_it_++;
     if (levels_[0].current_it_ == levels_[0].events_.end()) {
@@ -38,6 +43,10 @@ auto xyco::time::Wheel::expire(runtime::Events &events) -> void {
     }
   }
 }
+
+xyco::time::Wheel::Wheel()
+    : now_(std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now().time_since_epoch())) {}
 
 auto xyco::time::Wheel::reinsert_level(int level) -> void {
   if (level == level_num_ - 1) {

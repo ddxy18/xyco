@@ -11,6 +11,9 @@ namespace xyco::time {
 class Level {
   friend class Wheel;
 
+ public:
+  Level();
+
  private:
   constexpr static int slot_num_ = 60;
 
@@ -24,6 +27,8 @@ class Wheel {
   auto insert_event(runtime::Event &event) -> void;
 
   auto expire(runtime::Events &events) -> void;
+
+  Wheel();
 
  private:
   auto reinsert_level(int level) -> void;
