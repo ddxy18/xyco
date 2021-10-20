@@ -10,11 +10,6 @@
 #include "future.h"
 #include "net/driver/mod.h"
 
-namespace xyco::sync::oneshot {
-template <typename Value>
-class Sender;
-}
-
 namespace xyco::runtime {
 class Runtime;
 
@@ -45,8 +40,6 @@ class Runtime {
   friend class Worker;
   friend class Builder;
   friend class io::IoRegistry;
-  template <typename Value>
-  friend class sync::oneshot::Sender;
 
   class Privater {};
 
@@ -69,6 +62,8 @@ class Runtime {
       co_return co_await AsyncFuture<Return>([=]() { return f(); });
     }());
   }
+
+  auto register_future(FutureBase *future) -> void;
 
   auto wake(Events &events) -> void;
 
@@ -111,8 +106,6 @@ class Runtime {
       workers_.erase(pos);
     }
   }
-
-  auto register_future(FutureBase *future) -> void;
 
   std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
   std::mutex worker_mutex_;

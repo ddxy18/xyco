@@ -66,6 +66,11 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
   runtime->driver_->poll();
 }
 
+auto xyco::runtime::Runtime::register_future(FutureBase *future) -> void {
+  std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
+  this->handles_.emplace(handles_.begin(), future->get_handle(), future);
+}
+
 auto xyco::runtime::Runtime::wake(Events &events) -> void {
   for (Event &ev : events) {
     if (ev.future_ != nullptr) {
@@ -74,11 +79,6 @@ auto xyco::runtime::Runtime::wake(Events &events) -> void {
     }
   }
   events.clear();
-}
-
-auto xyco::runtime::Runtime::register_future(FutureBase *future) -> void {
-  std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
-  this->handles_.emplace(handles_.begin(), future->get_handle(), future);
 }
 
 auto xyco::runtime::Runtime::io_handle() -> GlobalRegistry * {
