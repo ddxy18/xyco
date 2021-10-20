@@ -2,17 +2,9 @@
 #define XYCO_RUNTIME_UTILS_SELECT_H
 
 #include "runtime/runtime.h"
+#include "type_wrapper.h"
 
 namespace xyco::runtime {
-template <typename T>
-class TypeWrapper {
- public:
-  T inner_;
-};
-
-template <>
-class TypeWrapper<void> {};
-
 // FIXME(dongxiaoyu): cancel another future
 template <typename T1, typename T2>
 class SelectFuture
