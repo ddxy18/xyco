@@ -32,3 +32,16 @@ TEST(TimeoutTest, timeout) {
     CO_ASSERT_EQ(result.is_err(), true);
   }});
 }
+
+TEST(TimeoutTest, void_future) {
+  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+    constexpr std::chrono::milliseconds timeout_ms =
+        std::chrono::milliseconds(10);
+
+    auto co_inner = []() -> xyco::runtime::Future<void> { co_return; };
+
+    auto result = co_await xyco::time::timeout(timeout_ms, co_inner());
+
+    CO_ASSERT_EQ(result.is_ok(), true);
+  }});
+}

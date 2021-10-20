@@ -13,8 +13,15 @@ auto timeout(std::chrono::duration<Rep, Ratio> duration,
 
   auto result = co_await runtime::select(future, sleep(duration));
 
-  co_return result.index() == 0 ? CoOutput::ok(std::get<0>(result).inner_)
-                                : CoOutput::err();
+  if (result.index() == 1) {
+    co_return CoOutput::err();
+  }
+
+  if constexpr (std::is_same_v<T, void>) {
+    co_return CoOutput::ok();
+  } else {
+    co_return CoOutput::ok(std::get<0>(result).inner_);
+  }
 }
 }  // namespace xyco::time
 

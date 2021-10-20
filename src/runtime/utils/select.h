@@ -20,8 +20,11 @@ class SelectFuture
       return Pending();
     }
 
-    return result_.index() == 0 ? Ready<CoOutput>{std::get<0>(result_)}
-                                : Ready<CoOutput>{std::get<1>(result_)};
+    return result_.index() == 0
+               ? Ready<CoOutput>{CoOutput(std::in_place_index<0>,
+                                          std::get<0>(result_))}
+               : Ready<CoOutput>{
+                     CoOutput(std::in_place_index<1>, std::get<1>(result_))};
   }
 
   SelectFuture(Future<T1> &future1, Future<T2> &future2)
