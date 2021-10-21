@@ -5,9 +5,12 @@
 #include <experimental/coroutine>
 #include <optional>
 #include <variant>
+#include <vector>
 
 namespace xyco::runtime {
 class Runtime;
+template <typename Output>
+class Future;
 
 template <typename T>
 using Handle = std::experimental::coroutine_handle<T>;
@@ -48,6 +51,8 @@ class FutureBase {
   // async function--self
   // Future object--the co_awaiter
   virtual auto get_handle() -> Handle<void> = 0;
+
+  virtual auto pending_future() -> FutureBase * = 0;
 };
 
 class InitFuture {
@@ -78,6 +83,80 @@ class FinalAwaitable {
   const bool ready_;
 };
 
+class PromiseBase {
+  template <typename Output>
+  friend class Awaitable;
+
+ private:
+  virtual auto set_waited(FutureBase *future) -> void = 0;
+};
+
+template <typename Output>
+class Awaitable {
+  friend class Future<Output>;
+
+ public:
+  [[nodiscard]] auto await_ready() const noexcept -> bool {
+    return future_.self_ ? future_.self_.done() : false;
+  }
+
+  auto await_suspend(Handle<void> waiting_coroutine) noexcept -> bool {
+    future_.waiting_ = waiting_coroutine;
+    if (waiting_coroutine) {
+      Handle<PromiseBase>::from_address(waiting_coroutine.address())
+          .promise()
+          .set_waited(&future_);
+    }
+    // async function's return type
+    if (future_.self_) {
+      return true;
+    }
+
+    // Future object
+    auto res = future_.poll(waiting_coroutine);
+    if constexpr (std::is_same_v<Output, void>) {
+      return std::holds_alternative<Pending>(res);
+    } else {
+      if (std::holds_alternative<Pending>(res)) {
+        return true;
+      }
+      future_.return_ = std::get<Ready<Output>>(std::move(res)).inner_;
+      return false;
+    }
+  }
+
+  auto await_resume() -> Output requires(!std::is_same_v<Output, void>) {
+    if (future_.waiting_) {
+      Handle<PromiseBase>::from_address(future_.waiting_.address())
+          .promise()
+          .set_waited(nullptr);
+    }
+
+    auto return_v = std::move(future_.return_);
+    if (!return_v.has_value()) {
+      std::rethrow_exception(std::current_exception());
+    }
+    return std::move(return_v.value());
+  }
+
+  auto await_resume() -> void requires(std::is_same_v<Output, void>) {
+    if (future_.waiting_) {
+      Handle<PromiseBase>::from_address(future_.waiting_.address())
+          .promise()
+          .set_waited(nullptr);
+    }
+
+    auto ptr = future_.self_ ? future_.exception_ptr_ : nullptr;
+    if (ptr) {
+      std::rethrow_exception(ptr);
+    }
+  }
+
+ private : explicit Awaitable(Future<Output> &future) noexcept
+     : future_(future) {}
+  Future<Output> &future_;
+};
+
 // Future<Output> can be used in 2 different mode:
 // - Use it as the return type of async functions
 // Just declare it as the function's return type. The caller coroutine will be
@@ -92,13 +171,14 @@ class FinalAwaitable {
 // reactor.
 template <typename Output>
 class Future : public FutureBase {
+  friend class Awaitable<Output>;
+
  public:
   class PromiseType;
-  class Awaitable;
   using promise_type = PromiseType;
 
-  class PromiseType {
-    friend class Future::Awaitable;
+  class PromiseType : public PromiseBase {
+    friend class Future<Output>;
 
    public:
     auto get_return_object() -> Future<Output> {
@@ -107,67 +187,31 @@ class Future : public FutureBase {
 
     auto initial_suspend() noexcept -> InitFuture { return {}; }
 
-    auto final_suspend() noexcept -> FinalAwaitable { return {waiting_}; }
+    auto final_suspend() noexcept -> FinalAwaitable {
+      return {future_->waiting_};
+    }
 
     auto unhandled_exception() -> void {}
 
     auto return_value(Output &&value) -> void {
-      return_ = std::forward<Output>(value);
+      future_->return_ = std::forward<Output>(value);
     }
 
    private:
-    std::optional<Output> return_;
-    Handle<void> waiting_;
+    auto set_waited(FutureBase *future) -> void override {
+      future_->waited_ = future;
+    }
+
+    Future<Output> *future_;
   };
 
-  class Awaitable {
-   public:
-    explicit Awaitable(Future<Output> &future) noexcept : future_(future) {}
-
-    [[nodiscard]] auto await_ready() const noexcept -> bool {
-      if (future_.self_) {
-        return future_.self_.done();
-      }
-      return false;
-    }
-
-    auto await_suspend(Handle<void> waiting_coroutine) noexcept -> bool {
-      future_.waiting_ = waiting_coroutine;
-      // async function's return type
-      if (future_.self_) {
-        future_.self_.promise().waiting_ = waiting_coroutine;
-        return true;
-      }
-      // Future object
-      auto res = future_.poll(waiting_coroutine);
-      if (std::holds_alternative<Pending>(res)) {
-        return true;
-      }
-      future_.return_ = std::get<Ready<Output>>(std::move(res)).inner_;
-      return false;
-    }
-
-    auto await_resume() -> Output {
-      auto return_v = future_.self_ ? std::move(future_.self_.promise().return_)
-                                    : std::move(future_.return_);
-
-      if (!return_v.has_value()) {
-        std::rethrow_exception(std::current_exception());
-      }
-      return std::move(return_v.value());
-    }
-
-   private:
-    Future<Output> &future_;
-  };
-
-  auto operator co_await() -> Awaitable { return Awaitable(*this); }
+  auto operator co_await() -> Awaitable<Output> { return Awaitable(*this); }
 
   [[nodiscard]] virtual auto poll(Handle<void> self) -> Poll<Output> {
     return Pending();
   }
 
-  [[nodiscard]] auto poll_wrapper() -> bool override {
+  auto poll_wrapper() -> bool override {
     auto result = poll(waiting_);
     if (std::holds_alternative<Pending>(result)) {
       return false;
@@ -177,11 +221,20 @@ class Future : public FutureBase {
   }
 
   inline auto get_handle() -> Handle<void> override {
-    return self_ == nullptr ? waiting_ : self_;
+    return self_ == nullptr ? Handle<void>::from_address(waiting_.address())
+                            : self_;
+  }
+
+  auto pending_future() -> FutureBase * override {
+    return waited_ != nullptr ? waited_->pending_future() : this;
   }
 
   // co_await Future object should pass nullptr
-  explicit Future(Handle<promise_type> self) : self_(self), return_() {}
+  explicit Future(Handle<promise_type> self) : self_(self) {
+    if (self_) {
+      self_.promise().future_ = this;
+    }
+  }
 
   Future(const Future<Output> &future) = delete;
 
@@ -190,38 +243,41 @@ class Future : public FutureBase {
   auto operator=(const Future<Output> &future) -> Future<Output> & = delete;
 
   auto operator=(Future<Output> &&future) noexcept -> Future<Output> & {
-    return_ = std::move(return_);
+    return_ = std::move(future.return_);
     self_ = future.self_;
     future.self_ = nullptr;
     waiting_ = future.waiting_;
     future.waiting_ = nullptr;
+    waited_ = future.waited_;
+    future.waited_ = nullptr;
+    self_.promise().future_ = this;
 
     return *this;
   }
 
   ~Future() {
-    // Outer coroutine is destroyed immediately when finishing so we ignore it
-    // here.
-    if (self_ && waiting_) {
+    if (self_) {
       self_.destroy();
     }
   }
 
  private:
-  std::optional<Output> return_;
+  std::optional<Output> return_{};
   Handle<promise_type> self_;
   Handle<void> waiting_;
+  FutureBase *waited_{};
 };
 
 template <>
 class Future<void> : public FutureBase {
+  friend class Awaitable<void>;
+
  public:
   class PromiseType;
-  class Awaitable;
   using promise_type = PromiseType;
 
-  class PromiseType {
-    friend class Future::Awaitable;
+  class PromiseType : public PromiseBase {
+    friend class Future<void>;
 
    public:
     auto get_return_object() -> Future<void>;
@@ -235,33 +291,23 @@ class Future<void> : public FutureBase {
     auto return_void() -> void;
 
    private:
-    std::exception_ptr exception_ptr_;
-    Handle<void> waiting_;
+    auto set_waited(FutureBase *future) -> void override;
+
+    Future<void> *future_{};
   };
 
-  class Awaitable {
-   public:
-    explicit Awaitable(Future<void> &future) noexcept;
-
-    [[nodiscard]] auto await_ready() const noexcept -> bool;
-
-    auto await_suspend(Handle<void> waiting_coroutine) noexcept -> bool;
-
-    auto await_resume() -> void;
-
-   private:
-    Future<void> &future_;
-  };
-
-  auto operator co_await() -> Awaitable;
+  auto operator co_await() -> Awaitable<void>;
 
   [[nodiscard]] virtual auto poll(Handle<void> self) -> Poll<void>;
 
   [[nodiscard]] auto poll_wrapper() -> bool override;
 
   inline auto get_handle() -> Handle<void> override {
-    return self_ == nullptr ? waiting_ : self_;
+    return self_ == nullptr ? Handle<void>::from_address(waiting_.address())
+                            : self_;
   }
+
+  auto pending_future() -> FutureBase * override;
 
   explicit Future(Handle<promise_type> self);
 
@@ -276,8 +322,10 @@ class Future<void> : public FutureBase {
   ~Future();
 
  private:
+  std::exception_ptr exception_ptr_;
   Handle<promise_type> self_;
   Handle<void> waiting_;
+  FutureBase *waited_{};
 };
 }  // namespace xyco::runtime
 
