@@ -161,9 +161,6 @@ class Future : public FutureBase {
     Future<Output> &future_;
   };
 
-  // co_await Future object should pass nullptr
-  explicit Future(Handle<promise_type> self) : self_(self), return_() {}
-
   auto operator co_await() -> Awaitable { return Awaitable(*this); }
 
   [[nodiscard]] virtual auto poll(Handle<void> self) -> Poll<Output> {
@@ -181,6 +178,33 @@ class Future : public FutureBase {
 
   inline auto get_handle() -> Handle<void> override {
     return self_ == nullptr ? waiting_ : self_;
+  }
+
+  // co_await Future object should pass nullptr
+  explicit Future(Handle<promise_type> self) : self_(self), return_() {}
+
+  Future(const Future<Output> &future) = delete;
+
+  Future(Future<Output> &&future) noexcept { *this = std::move(future); }
+
+  auto operator=(const Future<Output> &future) -> Future<Output> & = delete;
+
+  auto operator=(Future<Output> &&future) noexcept -> Future<Output> & {
+    return_ = std::move(return_);
+    self_ = future.self_;
+    future.self_ = nullptr;
+    waiting_ = future.waiting_;
+    future.waiting_ = nullptr;
+
+    return *this;
+  }
+
+  ~Future() {
+    // Outer coroutine is destroyed immediately when finishing so we ignore it
+    // here.
+    if (self_ && waiting_) {
+      self_.destroy();
+    }
   }
 
  private:
@@ -229,8 +253,6 @@ class Future<void> : public FutureBase {
     Future<void> &future_;
   };
 
-  explicit Future(Handle<promise_type> self);
-
   auto operator co_await() -> Awaitable;
 
   [[nodiscard]] virtual auto poll(Handle<void> self) -> Poll<void>;
@@ -240,6 +262,18 @@ class Future<void> : public FutureBase {
   inline auto get_handle() -> Handle<void> override {
     return self_ == nullptr ? waiting_ : self_;
   }
+
+  explicit Future(Handle<promise_type> self);
+
+  Future(const Future<void> &future) = delete;
+
+  Future(Future<void> &&future) noexcept;
+
+  auto operator=(const Future<void> &future) -> Future<void> & = delete;
+
+  auto operator=(Future<void> &&future) noexcept -> Future<void> &;
+
+  ~Future();
 
  private:
   Handle<promise_type> self_;

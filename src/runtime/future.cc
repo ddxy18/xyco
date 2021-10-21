@@ -53,8 +53,6 @@ auto xyco::runtime::Future<void>::Awaitable::await_resume() -> void {
   }
 }
 
-xyco::runtime::Future<void>::Future(Handle<promise_type> self) : self_(self) {}
-
 auto xyco::runtime::Future<void>::operator co_await() -> Awaitable {
   return Awaitable(*this);
 }
@@ -66,4 +64,26 @@ auto xyco::runtime::Future<void>::operator co_await() -> Awaitable {
 
 [[nodiscard]] auto xyco::runtime::Future<void>::poll_wrapper() -> bool {
   return !std::holds_alternative<Pending>(poll(waiting_));
+}
+
+xyco::runtime::Future<void>::Future(Handle<promise_type> self) : self_(self) {}
+
+xyco::runtime::Future<void>::Future(Future<void> &&future) noexcept {
+  *this = std::move(future);
+}
+
+auto xyco::runtime::Future<void>::operator=(Future<void> &&future) noexcept
+    -> Future<void> & {
+  self_ = future.self_;
+  future.self_ = nullptr;
+  waiting_ = future.waiting_;
+  future.waiting_ = nullptr;
+
+  return *this;
+}
+
+xyco::runtime::Future<void>::~Future() {
+  if (self_ && waiting_) {
+    self_.destroy();
+  }
 }

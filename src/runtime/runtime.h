@@ -47,10 +47,11 @@ class Runtime {
   template <typename T>
   auto spawn(Future<T> future) -> void {
     // resume once to skip initial_suspend
-    spawn_catch_exception(future).get_handle().resume();
-    if (future.get_handle()) {
+    auto handle = future.get_handle();
+    spawn_catch_exception(std::move(future)).get_handle().resume();
+    if (handle) {
       std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
-      handles_.insert(handles_.begin(), {future.get_handle(), nullptr});
+      handles_.insert(handles_.begin(), {handle, nullptr});
     }
   }
 
