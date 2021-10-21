@@ -15,8 +15,8 @@ class SelectFuture
   auto poll(Handle<void> self) -> Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
-      future_wrapper<T1, 0>(future1_);
-      future_wrapper<T2, 1>(future2_);
+      future_wrapper<T1, 0>(std::move(future1_));
+      future_wrapper<T2, 1>(std::move(future2_));
       return Pending();
     }
 
@@ -27,11 +27,11 @@ class SelectFuture
                      CoOutput(std::in_place_index<1>, std::get<1>(result_))};
   }
 
-  SelectFuture(Future<T1> &future1, Future<T2> &future2)
+  SelectFuture(Future<T1> &&future1, Future<T2> &&future2)
       : Future<CoOutput>(nullptr),
         ready_(false),
-        future1_(future1),
-        future2_(future2),
+        future1_(std::move(future1)),
+        future2_(std::move(future2)),
         result_(std::in_place_index<2>, true) {}
 
  private:
@@ -59,14 +59,15 @@ class SelectFuture
 
   bool ready_;
   std::variant<TypeWrapper<T1>, TypeWrapper<T2>, bool> result_;
-  Future<T1> &future1_;
-  Future<T2> &future2_;
+  Future<T1> &&future1_;
+  Future<T2> &&future2_;
 };
 
 template <typename T1, typename T2>
 auto select(Future<T1> future1, Future<T2> future2)
     -> Future<std::variant<TypeWrapper<T1>, TypeWrapper<T2>>> {
-  co_return co_await SelectFuture<T1, T2>(future1, future2);
+  co_return co_await SelectFuture<T1, T2>(std::move(future1),
+                                          std::move(future2));
 }
 }  // namespace xyco::runtime
 
