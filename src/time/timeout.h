@@ -5,7 +5,6 @@
 #include "sleep.h"
 
 namespace xyco::time {
-// FIXME(dongxiaoyu): Cancel the future if timeout.
 template <typename T, typename Rep, typename Ratio>
 auto timeout(std::chrono::duration<Rep, Ratio> duration,
              runtime::Future<T> future) -> runtime::Future<Result<T, void>> {

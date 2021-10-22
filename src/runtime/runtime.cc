@@ -1,5 +1,7 @@
 #include "runtime.h"
 
+#include <gsl/pointers>
+
 thread_local xyco::runtime::Runtime *xyco::runtime::RuntimeCtx::runtime_ =
     nullptr;
 
@@ -30,6 +32,26 @@ auto xyco::runtime::Worker::get_epoll_registry() -> net::NetRegistry & {
 }
 
 auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
+  // cancel future
+  {
+    std::scoped_lock<std::mutex> lock_guard(runtime->cancel_futures_mutex_);
+    decltype(runtime->cancel_futures_) cancel_fail_futures;
+    for (auto &cancel_future : runtime->cancel_futures_) {
+      auto handle = cancel_future->get_handle();
+      if (runtime->deregister_future(
+              cancel_future->pending_future()->get_handle()) != nullptr ||
+          (handle != nullptr && handle.done())) {
+        handle.destroy();
+        gsl::owner<FutureBase *> p{cancel_future};
+        delete p;
+      } else {
+        cancel_fail_futures.push_back(cancel_future);
+      }
+    }
+    runtime->cancel_futures_ = cancel_fail_futures;
+  }
+
+  // resume local future
   {
     std::unique_lock<std::mutex> lock_guard(handle_mutex_);
     while (!handles_.empty()) {
@@ -42,6 +64,7 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
       lock_guard.lock();
     }
   }
+  // resume global future
   {
     std::unique_lock<std::mutex> lock_guard(runtime->handle_mutex_);
     while (!runtime->handles_.empty()) {
@@ -54,6 +77,8 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
       lock_guard.lock();
     }
   }
+
+  // drive both local and global registry
   Events events;
   epoll_registry_.select(events, net::NetRegistry::MAX_TIMEOUT_MS).unwrap();
   for (Event &ev : events) {
@@ -69,6 +94,11 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
 auto xyco::runtime::Runtime::register_future(FutureBase *future) -> void {
   std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
   this->handles_.emplace(handles_.begin(), future->get_handle(), future);
+}
+
+auto xyco::runtime::Runtime::cancel_future(FutureBase *future) -> void {
+  std::scoped_lock<std::mutex> lock_guard(cancel_futures_mutex_);
+  cancel_futures_.push_back(future);
 }
 
 auto xyco::runtime::Runtime::wake(Events &events) -> void {
@@ -99,6 +129,32 @@ xyco::runtime::Runtime::~Runtime() {
   for (const auto &[tid, worker] : workers_) {
     worker->stop();
   }
+}
+
+auto xyco::runtime::Runtime::deregister_future(Handle<void> future)
+    -> Handle<void> {
+  {
+    std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
+    auto pos = std::remove_if(std::begin(handles_), std::end(handles_),
+                              [=](auto pair) { return pair.first == future; });
+    if (pos != std::end(handles_)) {
+      handles_.erase(pos, handles_.end());
+      return future;
+    }
+  }
+
+  for (auto &[id, worker] : workers_) {
+    std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
+    auto handles = worker->handles_;
+    auto pos = std::remove_if(std::begin(handles), std::end(handles),
+                              [=](auto pair) { return pair.first == future; });
+    if (pos != std::end(handles)) {
+      handles.erase(pos, handles_.end());
+      return future;
+    }
+  }
+
+  return nullptr;
 }
 
 auto xyco::runtime::Builder::new_multi_thread() -> Builder { return {}; }

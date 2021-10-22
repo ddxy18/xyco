@@ -1,11 +1,13 @@
 #ifndef XYCO_RUNTIME_UTILS_SELECT_H
 #define XYCO_RUNTIME_UTILS_SELECT_H
 
+#include <gsl/pointers>
+#include <utility>
+
 #include "runtime/runtime.h"
 #include "type_wrapper.h"
 
 namespace xyco::runtime {
-// FIXME(dongxiaoyu): cancel another future
 template <typename T1, typename T2>
 class SelectFuture
     : public Future<std::variant<TypeWrapper<T1>, TypeWrapper<T2>>> {
@@ -15,24 +17,31 @@ class SelectFuture
   auto poll(Handle<void> self) -> Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
-      future_wrapper<T1, 0>(std::move(future1_));
-      future_wrapper<T2, 1>(std::move(future2_));
+      wrappers_ = {future_wrapper<T1, 0>(std::move(futures_.first)),
+                   future_wrapper<T2, 1>(std::move(futures_.second))};
       return Pending();
     }
 
-    return result_.index() == 0
-               ? Ready<CoOutput>{CoOutput(std::in_place_index<0>,
-                                          std::get<0>(result_))}
-               : Ready<CoOutput>{
-                     CoOutput(std::in_place_index<1>, std::get<1>(result_))};
+    gsl::owner<Future<void> *> cancel_future = nullptr;
+    if (result_.index() == 0) {
+      cancel_future = new Future<void>(std::move(wrappers_.second));
+      RuntimeCtx::get_ctx()->cancel_future(cancel_future);
+      return Ready<CoOutput>{
+          CoOutput(std::in_place_index<0>, std::get<0>(result_))};
+    }
+
+    cancel_future = new Future<void>(std::move(wrappers_.first));
+    RuntimeCtx::get_ctx()->cancel_future(cancel_future);
+    return Ready<CoOutput>{
+        CoOutput(std::in_place_index<1>, std::get<1>(result_))};
   }
 
   SelectFuture(Future<T1> &&future1, Future<T2> &&future2)
       : Future<CoOutput>(nullptr),
         ready_(false),
-        future1_(std::move(future1)),
-        future2_(std::move(future2)),
-        result_(std::in_place_index<2>, true) {}
+        result_(std::in_place_index<2>, true),
+        futures_(std::move(future1), std::move(future2)),
+        wrappers_(Future<void>(nullptr), Future<void>(nullptr)) {}
 
  private:
   template <typename T, int Index>
@@ -59,8 +68,8 @@ class SelectFuture
 
   bool ready_;
   std::variant<TypeWrapper<T1>, TypeWrapper<T2>, bool> result_;
-  Future<T1> &&future1_;
-  Future<T2> &&future2_;
+  std::pair<Future<T1>, Future<T2>> futures_;
+  std::pair<Future<void>, Future<void>> wrappers_;
 };
 
 template <typename T1, typename T2>

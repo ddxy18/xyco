@@ -66,7 +66,9 @@ auto xyco::runtime::Future<void>::operator=(Future<void> &&future) noexcept
   future.waiting_ = nullptr;
   waited_ = future.waited_;
   future.waited_ = nullptr;
-  self_.promise().future_ = this;
+  if (self_) {
+    self_.promise().future_ = this;
+  }
 
   return *this;
 }
