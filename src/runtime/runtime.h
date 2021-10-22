@@ -66,6 +66,12 @@ class Runtime {
 
   auto register_future(FutureBase *future) -> void;
 
+  // Try to cancel the future and waited futures.
+  // Futures may be cancelled when suspended or run to the end so the cancel
+  // point is not fixed.
+  // Only guarantee the coroutine will not be destroyed when executing.
+  auto cancel_future(FutureBase *future) -> void;
+
   auto wake(Events &events) -> void;
 
   auto io_handle() -> GlobalRegistry *;
@@ -108,6 +114,8 @@ class Runtime {
     }
   }
 
+  auto deregister_future(Handle<void> future) -> Handle<void>;
+
   std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
   std::mutex worker_mutex_;
   // (handle, nullptr) -> initial_suspend of a spawned async function
@@ -115,6 +123,9 @@ class Runtime {
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
   std::mutex handle_mutex_;
   std::unique_ptr<Driver> driver_;
+
+  std::vector<FutureBase *> cancel_futures_;
+  std::mutex cancel_futures_mutex_;
 };
 
 class Builder {

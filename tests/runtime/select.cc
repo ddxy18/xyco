@@ -19,25 +19,31 @@ TEST(SelectTest, select_immediate_ready) {
 
 TEST(SelectTest, select_delay) {
   TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
-    auto co1 = []() -> xyco::runtime::Future<int> {
-      constexpr auto sleep_ms = std::chrono::milliseconds(20);
+    constexpr auto sleep_ms = std::chrono::milliseconds(10);
 
-      co_await xyco::time::sleep(sleep_ms);
+    auto common_value = -1;
+    auto co1 = [&]() -> xyco::runtime::Future<int> {
+      co_await xyco::time::sleep(sleep_ms + sleep_ms);
+
+      common_value = 1;
 
       co_return 1;
     };
 
-    auto co2 = []() -> xyco::runtime::Future<std::string> {
-      constexpr auto sleep_ms = std::chrono::milliseconds(10);
-
+    auto co2 = [&]() -> xyco::runtime::Future<std::string> {
       co_await xyco::time::sleep(sleep_ms);
+
+      common_value = 2;
 
       co_return "abc";
     };
 
     auto result = co_await xyco::runtime::select(co1(), co2());
 
+    co_await xyco::time::sleep(std::chrono::milliseconds(sleep_ms + sleep_ms));
+
     CO_ASSERT_EQ(std::get<1>(result).inner_, "abc");
+    CO_ASSERT_EQ(common_value, 2);  // co1 is cancelled
   }});
 }
 

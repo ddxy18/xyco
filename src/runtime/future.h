@@ -53,6 +53,18 @@ class FutureBase {
   virtual auto get_handle() -> Handle<void> = 0;
 
   virtual auto pending_future() -> FutureBase * = 0;
+
+  FutureBase() = default;
+
+  FutureBase(const FutureBase &future_base) = delete;
+
+  FutureBase(FutureBase &&future_base) = delete;
+
+  auto operator=(const FutureBase &future_base) -> const FutureBase & = delete;
+
+  auto operator=(FutureBase &&future_base) -> const FutureBase & = delete;
+
+  virtual ~FutureBase() = default;
 };
 
 class InitFuture {
@@ -250,12 +262,14 @@ class Future : public FutureBase {
     future.waiting_ = nullptr;
     waited_ = future.waited_;
     future.waited_ = nullptr;
-    self_.promise().future_ = this;
+    if (self_) {
+      self_.promise().future_ = this;
+    }
 
     return *this;
   }
 
-  ~Future() {
+  ~Future() override {
     if (self_) {
       self_.destroy();
     }
@@ -319,7 +333,7 @@ class Future<void> : public FutureBase {
 
   auto operator=(Future<void> &&future) noexcept -> Future<void> &;
 
-  ~Future();
+  ~Future() override;
 
  private:
   std::exception_ptr exception_ptr_;
