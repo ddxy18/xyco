@@ -7,10 +7,12 @@ thread_local xyco::runtime::Runtime *xyco::runtime::RuntimeCtx::runtime_ =
 
 auto xyco::runtime::Worker::lanuch(Runtime *runtime) -> void {
   ctx_ = std::thread([=]() {
+    runtime->on_start_f_();
     RuntimeCtx::set_ctx(runtime);
     while (!end_) {
       run_loop_once(runtime);
     }
+    runtime->on_stop_f_();
   });
 }
 
@@ -157,7 +159,12 @@ auto xyco::runtime::Runtime::deregister_future(Handle<void> future)
   return nullptr;
 }
 
-auto xyco::runtime::Builder::new_multi_thread() -> Builder { return {}; }
+auto xyco::runtime::Builder::new_multi_thread() -> Builder {
+  Builder builder{};
+  builder.on_start_f_ = default_f;
+  builder.on_stop_f_ = default_f;
+  return builder;
+}
 
 auto xyco::runtime::Builder::worker_threads(uintptr_t val) -> Builder & {
   worker_num_ = val;
@@ -169,9 +176,21 @@ auto xyco::runtime::Builder::max_blocking_threads(uintptr_t val) -> Builder & {
   return *this;
 }
 
+auto xyco::runtime::Builder::on_worker_start(auto (*f)()->void) -> Builder & {
+  on_start_f_ = f;
+  return *this;
+}
+
+auto xyco::runtime::Builder::on_worker_stop(auto (*f)()->void) -> Builder & {
+  on_stop_f_ = f;
+  return *this;
+}
+
 auto xyco::runtime::Builder::build() const
     -> io::IoResult<std::unique_ptr<Runtime>> {
   auto runtime = std::make_unique<Runtime>(Runtime::Privater());
+  runtime->on_start_f_ = on_start_f_;
+  runtime->on_stop_f_ = on_stop_f_;
   runtime->driver_ = std::make_unique<Driver>(blocking_num_);
   for (auto i = 0; i < worker_num_; i++) {
     auto worker = std::make_unique<Worker>();
@@ -181,3 +200,5 @@ auto xyco::runtime::Builder::build() const
 
   return io::IoResult<std::unique_ptr<Runtime>>::ok(std::move(runtime));
 }
+
+auto xyco::runtime::Builder::default_f() -> void {}
