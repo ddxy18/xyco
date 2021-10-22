@@ -126,6 +126,9 @@ class Runtime {
 
   std::vector<FutureBase *> cancel_futures_;
   std::mutex cancel_futures_mutex_;
+
+  auto (*on_start_f_)() -> void{};
+  auto (*on_stop_f_)() -> void{};
 };
 
 class Builder {
@@ -136,21 +139,20 @@ class Builder {
 
   auto max_blocking_threads(uintptr_t val) -> Builder &;
 
-  auto enable_io() -> Builder &;
+  auto on_worker_start(auto (*f)()->void) -> Builder &;
 
-  auto enable_time() -> Builder &;
-
-  auto on_thread_start(auto (*f)()->void) -> Builder &;
-
-  auto on_thread_stop(auto (*f)()->void) -> Builder &;
+  auto on_worker_stop(auto (*f)()->void) -> Builder &;
 
   [[nodiscard]] auto build() const -> io::IoResult<std::unique_ptr<Runtime>>;
 
  private:
+  static auto default_f() -> void;
+
   uintptr_t worker_num_;
   uintptr_t blocking_num_;
-  bool io_;
-  bool time_;
+
+  auto (*on_start_f_)() -> void;
+  auto (*on_stop_f_)() -> void;
 };
 }  // namespace xyco::runtime
 
