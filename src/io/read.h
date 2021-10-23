@@ -71,6 +71,40 @@ class ReadExt {
     co_return IoResult<std::vector<char>>::ok(dst);
   }
 };
+
+template <typename Reader>
+class BufferReadExt {
+ public:
+  static auto read_until(Reader &reader, char c)
+      -> runtime::Future<IoResult<std::string>>
+  requires(BufferReadable<Reader, std::string::iterator>) {
+    std::string line;
+
+    while (true) {
+      auto [begin, end] = (co_await reader.fill_buffer()).unwrap();
+      if (begin == end) {
+        co_return IoResult<std::string>::ok(line);
+      }
+      auto pos = std::find(begin, end, c);
+      if (pos != end) {
+        line.insert(line.end(), begin, pos + 1);
+        reader.consume(std::distance(begin, pos + 1));
+        co_return IoResult<std::string>::ok(line);
+      }
+      reader.consume(std::distance(begin, pos));
+      line.insert(line.end(), begin, pos);
+    }
+  }
+
+  static auto read_line(Reader &reader)
+      -> runtime::Future<IoResult<std::string>>
+  requires(BufferReadable<Reader, std::string::iterator>) {
+    co_return(co_await read_until(reader, '\n')).map([](auto line) {
+      line.erase(line.end() - 1);
+      return line;
+    });
+  }
+};
 }  // namespace xyco::io
 
 #endif  // XYCO_IO_READ_H_
