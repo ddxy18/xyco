@@ -14,6 +14,15 @@ concept Readable = requires(Reader reader, Iterator begin, Iterator end) {
     } -> std::same_as<runtime::Future<IoResult<uintptr_t>>>;
 };
 
+template <typename Reader, typename Iterator>
+concept BufferReadable = requires(Reader reader, Iterator begin, Iterator end) {
+  {
+    reader.fill_buffer()
+    } -> std::same_as<runtime::Future<io::IoResult<
+        std::pair<std::vector<char>::iterator, std::vector<char>::iterator>>>>;
+  { reader.consume(0) } -> std::same_as<void>;
+};
+
 template <typename Reader>
 class ReadExt {
  public:
@@ -28,20 +37,21 @@ class ReadExt {
   requires(Readable<Reader, std::vector<char>::iterator>) {
     const int dst_init_size = 32;
 
-    std::vector<char> dst;
-    dst.reserve(dst_init_size);
+    std::vector<char> dst(dst_init_size);
     auto next_it = dst.begin();
     auto end_it = next_it + dst_init_size;
-    decltype(dst.size()) dst_size = 0;
+    auto dst_size = 0;
     IoResult<uintptr_t> read_result;
 
     while (true) {
       read_result =
           (co_await reader.read(next_it, end_it)).map([&](auto nbytes) {
             dst_size += nbytes;
-            dst.reserve(dst_size + nbytes);
-            next_it = dst.end();
-            end_it = next_it + nbytes;
+            if (dst_size == dst.size()) {
+              dst.resize(3 * dst_size / 2);
+            }
+            next_it = dst.begin() + dst_size;
+            end_it = dst.end();
 
             return nbytes;
           });
