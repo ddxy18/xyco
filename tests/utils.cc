@@ -2,62 +2,13 @@
 
 #include <gtest/gtest.h>
 
-#include <condition_variable>
-#include <exception>
-#include <mutex>
-#include <stdexcept>
-
-#include "utils/result.h"
-
-// co_outer's lifetime is managed by the caller to avoid being destroyed
-// automatically before resumed.
-auto TestRuntimeCtx::co_run(std::function<xyco::runtime::Future<void>()> &&co)
-    -> void {
-  auto run = []() {
-    return xyco::runtime::Builder::new_multi_thread()
+std::unique_ptr<xyco::runtime::Runtime> TestRuntimeCtx::runtime_(
+    xyco::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .max_blocking_threads(1)
         .build()
-        .unwrap();
-  };
-
-  static auto runtime = run();
-
-  std::mutex mutex;
-  std::unique_lock<std::mutex> lock_guard(mutex);
-  std::condition_variable cv;
-
-  auto co_outer = [&]() -> xyco::runtime::Future<void> {
-    try {
-      co_await co();
-      cv.notify_one();
-    } catch (std::exception e) {
-      auto f = [&]() { ASSERT_NO_THROW(throw e); };
-      f();
-      cv.notify_one();
-    }
-  };
-  runtime->spawn(co_outer());
-  cv.wait(lock_guard);
-}
-
-auto TestRuntimeCtx::co_run_no_wait(
-    std::function<xyco::runtime::Future<void>()> &&co) -> TestRuntimeCtxGuard {
-  auto *co_outer = gsl::owner<std::function<xyco::runtime::Future<void>()> *>(
-      new std::function<xyco::runtime::Future<void>()>(
-          [=]() -> xyco::runtime::Future<void> { co_await co(); }));
-
-  return {co_outer, true};
-}
-
-auto TestRuntimeCtx::co_run_without_runtime(
-    std::function<xyco::runtime::Future<void>()> &&co) -> TestRuntimeCtxGuard {
-  auto *co_outer = gsl::owner<std::function<xyco::runtime::Future<void>()> *>(
-      new std::function<xyco::runtime::Future<void>()>(
-          [=]() -> xyco::runtime::Future<void> { co_await co(); }));
-
-  return {co_outer, false};
-}
+        .unwrap());
+;
 
 TestRuntimeCtxGuard::TestRuntimeCtxGuard(
     gsl::owner<std::function<xyco::runtime::Future<void>()> *> co_wrapper,

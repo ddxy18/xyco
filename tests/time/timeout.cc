@@ -5,7 +5,7 @@
 #include "utils.h"
 
 TEST(TimeoutTest, no_timeout) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     constexpr std::chrono::milliseconds timeout_ms =
         std::chrono::milliseconds(10);
 
@@ -14,11 +14,11 @@ TEST(TimeoutTest, no_timeout) {
     auto result = co_await xyco::time::timeout(timeout_ms, co_inner());
 
     CO_ASSERT_EQ(result.unwrap(), 1);
-  }});
+  });
 }
 
 TEST(TimeoutTest, timeout) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     constexpr std::chrono::milliseconds timeout_ms =
         std::chrono::milliseconds(10);
 
@@ -30,11 +30,11 @@ TEST(TimeoutTest, timeout) {
     auto result = co_await xyco::time::timeout(timeout_ms, co_inner());
 
     CO_ASSERT_EQ(result.is_err(), true);
-  }});
+  });
 }
 
 TEST(TimeoutTest, void_future) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     constexpr std::chrono::milliseconds timeout_ms =
         std::chrono::milliseconds(10);
 
@@ -43,5 +43,5 @@ TEST(TimeoutTest, void_future) {
     auto result = co_await xyco::time::timeout(timeout_ms, co_inner());
 
     CO_ASSERT_EQ(result.is_ok(), true);
-  }});
+  });
 }

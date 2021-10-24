@@ -5,7 +5,7 @@
 #include "utils.h"
 
 TEST(SleepTest, sleep_accuracy) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     constexpr std::chrono::milliseconds timeout_ms =
         std::chrono::milliseconds(10);
 
@@ -25,5 +25,5 @@ TEST(SleepTest, sleep_accuracy) {
                 timeout_ms + std::chrono::milliseconds(3))
                 .count(),
         true);
-  }});
+  });
 }

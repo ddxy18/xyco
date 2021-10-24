@@ -12,7 +12,7 @@ class ListenerTest : public ::testing::Test {
 // TODO(dongxiaoyu): add failure cases
 
 TEST_F(ListenerTest, bind_same_addr) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8080;
 
@@ -26,11 +26,11 @@ TEST_F(ListenerTest, bind_same_addr) {
 
     CO_ASSERT_EQ(result1.is_ok(), true);
     CO_ASSERT_EQ(result2.is_err(), true);
-  }});
+  });
 }
 
 TEST_F(ListenerTest, TcpSocket_connect) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8081;
 
@@ -41,11 +41,11 @@ TEST_F(ListenerTest, TcpSocket_connect) {
         xyco::net::SocketAddr::new_v4(ip, port));
 
     CO_ASSERT_EQ(client.is_ok(), true);
-  }});
+  });
 }
 
 TEST_F(ListenerTest, TcpSocket_listen) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8082;
 
@@ -55,7 +55,7 @@ TEST_F(ListenerTest, TcpSocket_listen) {
     auto listener = co_await tcp_socket.listen(10);
 
     CO_ASSERT_EQ(listener.is_ok(), true);
-  }});
+  });
 }
 
 TEST_F(ListenerTest, TcpSocket_new_v6) {
@@ -63,7 +63,7 @@ TEST_F(ListenerTest, TcpSocket_new_v6) {
 }
 
 TEST_F(ListenerTest, TcpStream_connect) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8083;
 
@@ -74,11 +74,11 @@ TEST_F(ListenerTest, TcpStream_connect) {
         xyco::net::SocketAddr::new_v4(ip, port));
 
     CO_ASSERT_EQ(client.is_ok(), true);
-  }});
+  });
 }
 
 TEST_F(ListenerTest, TcpStream_rw) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8084;
 
@@ -103,11 +103,11 @@ TEST_F(ListenerTest, TcpStream_rw) {
 
     CO_ASSERT_EQ(w_nbytes, w_buf.size());
     CO_ASSERT_EQ(r_nbytes, r_buf.size());
-  }});
+  });
 }
 
 TEST_F(ListenerTest, TcpListener_bind) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8085;
 
@@ -115,11 +115,11 @@ TEST_F(ListenerTest, TcpListener_bind) {
         xyco::net::SocketAddr::new_v4(ip, port));
 
     CO_ASSERT_EQ(result.is_ok(), true);
-  }});
+  });
 }
 
 TEST_F(ListenerTest, TcpListener_accept) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8086;
 
@@ -136,5 +136,5 @@ TEST_F(ListenerTest, TcpListener_accept) {
         static_cast<const void *>(addr.into_c_addr()));
 
     CO_ASSERT_EQ(raw_addr->sin_addr.s_addr, inet_addr(ip));
-  }});
+  });
 }
