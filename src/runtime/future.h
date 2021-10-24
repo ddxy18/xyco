@@ -15,18 +15,6 @@ class Future;
 template <typename T>
 using Handle = std::experimental::coroutine_handle<T>;
 
-class RuntimeCtx {
- public:
-  static auto is_in_ctx() -> bool { return runtime_ != nullptr; }
-
-  static auto set_ctx(Runtime *runtime) -> void { runtime_ = runtime; }
-
-  static auto get_ctx() -> Runtime * { return runtime_; }
-
- private:
-  thread_local static Runtime *runtime_;
-};
-
 class Pending {};
 
 template <typename T>
@@ -41,6 +29,22 @@ class Ready<void> {};
 template <typename T>
 using Poll = std::variant<Ready<T>, Pending>;
 
+class PromiseBase {
+  template <typename Output>
+  friend class Awaitable;
+
+ public:
+  virtual auto pending_future() -> Handle<void> = 0;
+
+  // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+  auto initial_suspend() noexcept -> std::experimental::suspend_always {
+    return {};
+  }
+
+ private:
+  virtual auto set_waited(Handle<PromiseBase> future) -> void = 0;
+};
+
 class FutureBase {
  public:
   // Returns
@@ -50,9 +54,7 @@ class FutureBase {
   // Returns
   // async function--self
   // Future object--the co_awaiter
-  virtual auto get_handle() -> Handle<void> = 0;
-
-  virtual auto pending_future() -> FutureBase * = 0;
+  virtual auto get_handle() -> Handle<PromiseBase> = 0;
 
   FutureBase() = default;
 
@@ -65,16 +67,6 @@ class FutureBase {
   auto operator=(FutureBase &&future_base) -> const FutureBase & = delete;
 
   virtual ~FutureBase() = default;
-};
-
-class InitFuture {
- public:
-  // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-  auto await_ready() -> bool { return RuntimeCtx::is_in_ctx(); }
-
-  auto await_suspend(Handle<void> h) const -> void {}
-
-  auto await_resume() const -> void {}
 };
 
 class FinalAwaitable {
@@ -95,14 +87,6 @@ class FinalAwaitable {
   const bool ready_;
 };
 
-class PromiseBase {
-  template <typename Output>
-  friend class Awaitable;
-
- private:
-  virtual auto set_waited(FutureBase *future) -> void = 0;
-};
-
 template <typename Output>
 class Awaitable {
   friend class Future<Output>;
@@ -117,10 +101,12 @@ class Awaitable {
     if (waiting_coroutine) {
       Handle<PromiseBase>::from_address(waiting_coroutine.address())
           .promise()
-          .set_waited(&future_);
+          .set_waited(
+              Handle<PromiseBase>::from_address(future_.self_.address()));
     }
     // async function's return type
     if (future_.self_) {
+      future_.self_.resume();
       return true;
     }
 
@@ -197,8 +183,6 @@ class Future : public FutureBase {
       return Future(Handle<promise_type>::from_promise(*this));
     }
 
-    auto initial_suspend() noexcept -> InitFuture { return {}; }
-
     auto final_suspend() noexcept -> FinalAwaitable {
       return {future_->waiting_};
     }
@@ -209,8 +193,14 @@ class Future : public FutureBase {
       future_->return_ = std::forward<Output>(value);
     }
 
+    auto pending_future() -> Handle<void> override {
+      return future_->waited_ != nullptr
+                 ? future_->waited_.promise().pending_future()
+                 : future_->self_;
+    }
+
    private:
-    auto set_waited(FutureBase *future) -> void override {
+    auto set_waited(Handle<PromiseBase> future) -> void override {
       future_->waited_ = future;
     }
 
@@ -232,13 +222,10 @@ class Future : public FutureBase {
     return true;
   }
 
-  inline auto get_handle() -> Handle<void> override {
-    return self_ == nullptr ? Handle<void>::from_address(waiting_.address())
-                            : self_;
-  }
-
-  auto pending_future() -> FutureBase * override {
-    return waited_ != nullptr ? waited_->pending_future() : this;
+  inline auto get_handle() -> Handle<PromiseBase> override {
+    return self_ == nullptr
+               ? Handle<PromiseBase>::from_address(waiting_.address())
+               : Handle<PromiseBase>::from_address(self_.address());
   }
 
   // co_await Future object should pass nullptr
@@ -279,7 +266,7 @@ class Future : public FutureBase {
   std::optional<Output> return_{};
   Handle<promise_type> self_;
   Handle<void> waiting_;
-  FutureBase *waited_{};
+  Handle<PromiseBase> waited_;
 };
 
 template <>
@@ -296,16 +283,16 @@ class Future<void> : public FutureBase {
    public:
     auto get_return_object() -> Future<void>;
 
-    auto initial_suspend() noexcept -> InitFuture;
-
     auto final_suspend() noexcept -> FinalAwaitable;
 
     auto unhandled_exception() -> void;
 
     auto return_void() -> void;
 
+    auto pending_future() -> Handle<void> override;
+
    private:
-    auto set_waited(FutureBase *future) -> void override;
+    auto set_waited(Handle<PromiseBase> future) -> void override;
 
     Future<void> *future_{};
   };
@@ -316,12 +303,11 @@ class Future<void> : public FutureBase {
 
   [[nodiscard]] auto poll_wrapper() -> bool override;
 
-  inline auto get_handle() -> Handle<void> override {
-    return self_ == nullptr ? Handle<void>::from_address(waiting_.address())
-                            : self_;
+  inline auto get_handle() -> Handle<PromiseBase> override {
+    return self_ == nullptr
+               ? Handle<PromiseBase>::from_address(waiting_.address())
+               : Handle<PromiseBase>::from_address(self_.address());
   }
-
-  auto pending_future() -> FutureBase * override;
 
   explicit Future(Handle<promise_type> self);
 
@@ -339,7 +325,7 @@ class Future<void> : public FutureBase {
   std::exception_ptr exception_ptr_;
   Handle<promise_type> self_;
   Handle<void> waiting_;
-  FutureBase *waited_{};
+  Handle<PromiseBase> waited_;
 };
 }  // namespace xyco::runtime
 

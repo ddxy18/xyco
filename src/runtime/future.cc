@@ -5,12 +5,6 @@ auto xyco::runtime::Future<void>::PromiseType::get_return_object()
   return Future(Handle<promise_type>::from_promise(*this));
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-auto xyco::runtime::Future<void>::PromiseType::initial_suspend() noexcept
-    -> InitFuture {
-  return {};
-}
-
 auto xyco::runtime::Future<void>::PromiseType::final_suspend() noexcept
     -> FinalAwaitable {
   // 'future_ == nullptr' means:
@@ -25,8 +19,15 @@ auto xyco::runtime::Future<void>::PromiseType::unhandled_exception() -> void {
 
 auto xyco::runtime::Future<void>::PromiseType::return_void() -> void {}
 
-auto xyco::runtime::Future<void>::PromiseType::set_waited(FutureBase *future)
-    -> void {
+auto xyco::runtime::Future<void>::PromiseType::pending_future()
+    -> Handle<void> {
+  return future_->waited_ != nullptr
+             ? future_->waited_.promise().pending_future()
+             : future_->self_;
+}
+
+auto xyco::runtime::Future<void>::PromiseType::set_waited(
+    Handle<PromiseBase> future) -> void {
   if (future_ != nullptr) {
     future_->waited_ = future;
   }
@@ -42,10 +43,6 @@ auto xyco::runtime::Future<void>::poll(Handle<void> self) -> Poll<void> {
 
 auto xyco::runtime::Future<void>::poll_wrapper() -> bool {
   return !std::holds_alternative<Pending>(poll(waiting_));
-}
-
-auto xyco::runtime::Future<void>::pending_future() -> FutureBase * {
-  return waited_ != nullptr ? waited_->pending_future() : this;
 }
 
 xyco::runtime::Future<void>::Future(Handle<promise_type> self) : self_(self) {

@@ -36,21 +36,19 @@ auto xyco::runtime::Worker::get_epoll_registry() -> net::NetRegistry & {
 auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
   // cancel future
   {
-    std::scoped_lock<std::mutex> lock_guard(runtime->cancel_futures_mutex_);
-    decltype(runtime->cancel_futures_) cancel_fail_futures;
-    for (auto &cancel_future : runtime->cancel_futures_) {
-      auto handle = cancel_future->get_handle();
-      if (runtime->deregister_future(
-              cancel_future->pending_future()->get_handle()) != nullptr ||
+    std::scoped_lock<std::mutex> lock_guard(
+        runtime->cancel_future_handles_mutex_);
+    decltype(runtime->cancel_future_handles_) cancel_fail_futures;
+    for (auto &handle : runtime->cancel_future_handles_) {
+      if (runtime->deregister_future(handle.promise().pending_future()) !=
+              nullptr ||
           (handle != nullptr && handle.done())) {
         handle.destroy();
-        gsl::owner<FutureBase *> p{cancel_future};
-        delete p;
       } else {
-        cancel_fail_futures.push_back(cancel_future);
+        cancel_fail_futures.push_back(handle);
       }
     }
-    runtime->cancel_futures_ = cancel_fail_futures;
+    runtime->cancel_future_handles_ = cancel_fail_futures;
   }
 
   // resume local future
@@ -98,9 +96,9 @@ auto xyco::runtime::Runtime::register_future(FutureBase *future) -> void {
   this->handles_.emplace(handles_.begin(), future->get_handle(), future);
 }
 
-auto xyco::runtime::Runtime::cancel_future(FutureBase *future) -> void {
-  std::scoped_lock<std::mutex> lock_guard(cancel_futures_mutex_);
-  cancel_futures_.push_back(future);
+auto xyco::runtime::Runtime::cancel_future(Handle<PromiseBase> handle) -> void {
+  std::scoped_lock<std::mutex> lock_guard(cancel_future_handles_mutex_);
+  cancel_future_handles_.push_back(handle);
 }
 
 auto xyco::runtime::Runtime::wake(Events &events) -> void {

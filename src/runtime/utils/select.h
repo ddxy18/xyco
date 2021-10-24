@@ -17,21 +17,22 @@ class SelectFuture
   auto poll(Handle<void> self) -> Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
-      wrappers_ = {future_wrapper<T1, 0>(std::move(futures_.first)),
-                   future_wrapper<T2, 1>(std::move(futures_.second))};
+      auto [wrapper1, wrapper2] = std::pair<Future<void>, Future<void>>(
+          future_wrapper<T1, 0>(std::move(futures_.first)),
+          future_wrapper<T2, 1>(std::move(futures_.second)));
+      wrappers_ = {wrapper1.get_handle(), wrapper2.get_handle()};
+      RuntimeCtx::get_ctx()->spawn(std::move(wrapper1));
+      RuntimeCtx::get_ctx()->spawn(std::move(wrapper2));
       return Pending();
     }
 
-    gsl::owner<Future<void> *> cancel_future = nullptr;
     if (result_.index() == 0) {
-      cancel_future = new Future<void>(std::move(wrappers_.second));
-      RuntimeCtx::get_ctx()->cancel_future(cancel_future);
+      RuntimeCtx::get_ctx()->cancel_future(wrappers_.second);
       return Ready<CoOutput>{
           CoOutput(std::in_place_index<0>, std::get<0>(result_))};
     }
 
-    cancel_future = new Future<void>(std::move(wrappers_.first));
-    RuntimeCtx::get_ctx()->cancel_future(cancel_future);
+    RuntimeCtx::get_ctx()->cancel_future(wrappers_.first);
     return Ready<CoOutput>{
         CoOutput(std::in_place_index<1>, std::get<1>(result_))};
   }
@@ -40,8 +41,7 @@ class SelectFuture
       : Future<CoOutput>(nullptr),
         ready_(false),
         result_(std::in_place_index<2>, true),
-        futures_(std::move(future1), std::move(future2)),
-        wrappers_(Future<void>(nullptr), Future<void>(nullptr)) {}
+        futures_(std::move(future1), std::move(future2)) {}
 
  private:
   template <typename T, int Index>
@@ -69,7 +69,7 @@ class SelectFuture
   bool ready_;
   std::variant<TypeWrapper<T1>, TypeWrapper<T2>, bool> result_;
   std::pair<Future<T1>, Future<T2>> futures_;
-  std::pair<Future<void>, Future<void>> wrappers_;
+  std::pair<Handle<PromiseBase>, Handle<PromiseBase>> wrappers_;
 };
 
 template <typename T1, typename T2>
