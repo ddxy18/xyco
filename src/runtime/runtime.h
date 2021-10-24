@@ -13,6 +13,18 @@
 namespace xyco::runtime {
 class Runtime;
 
+class RuntimeCtx {
+ public:
+  static auto is_in_ctx() -> bool { return runtime_ != nullptr; }
+
+  static auto set_ctx(Runtime *runtime) -> void { runtime_ = runtime; }
+
+  static auto get_ctx() -> Runtime * { return runtime_; }
+
+ private:
+  thread_local static Runtime *runtime_;
+};
+
 class Worker {
   friend class Runtime;
 
@@ -46,9 +58,7 @@ class Runtime {
  public:
   template <typename T>
   auto spawn(Future<T> future) -> void {
-    // resume once to skip initial_suspend
-    auto handle = future.get_handle();
-    spawn_catch_exception(std::move(future)).get_handle().resume();
+    auto handle = spawn_catch_exception(std::move(future)).get_handle();
     if (handle) {
       std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
       handles_.insert(handles_.begin(), {handle, nullptr});
@@ -70,7 +80,7 @@ class Runtime {
   // Futures may be cancelled when suspended or run to the end so the cancel
   // point is not fixed.
   // Only guarantee the coroutine will not be destroyed when executing.
-  auto cancel_future(FutureBase *future) -> void;
+  auto cancel_future(Handle<PromiseBase> handle) -> void;
 
   auto wake(Events &events) -> void;
 
@@ -124,8 +134,8 @@ class Runtime {
   std::mutex handle_mutex_;
   std::unique_ptr<Driver> driver_;
 
-  std::vector<FutureBase *> cancel_futures_;
-  std::mutex cancel_futures_mutex_;
+  std::vector<Handle<PromiseBase>> cancel_future_handles_;
+  std::mutex cancel_future_handles_mutex_;
 
   auto (*on_start_f_)() -> void{};
   auto (*on_stop_f_)() -> void{};

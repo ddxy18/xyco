@@ -63,11 +63,10 @@ TestRuntimeCtxGuard::TestRuntimeCtxGuard(
     gsl::owner<std::function<xyco::runtime::Future<void>()> *> co_wrapper,
     bool in_runtime)
     : co_wrapper_(co_wrapper) {
-  auto rt = in_runtime
-                ? xyco::runtime::Builder::new_multi_thread().build().unwrap()
-                : nullptr;
-  xyco::runtime::RuntimeCtx::set_ctx(rt.get());
-  (*co_wrapper_)();
+  auto future = (*co_wrapper_)();
+  if (in_runtime) {
+    future.get_handle().resume();
+  }
 }
 
 TestRuntimeCtxGuard::~TestRuntimeCtxGuard() {
