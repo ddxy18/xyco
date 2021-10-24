@@ -41,7 +41,7 @@ jobs:
       - name: install essential packages
         run: |
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
-          apt update && apt install -y build-essential git wget cmake
+          apt update && apt install -y build-essential git cmake curl xz-utils
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
         with:
@@ -56,18 +56,20 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            ./llvm
-          key: ${{ runner.os }}-llvm-12
+            ./clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04
+          key: ${{ runner.os }}-llvm-13
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           default: true
-      - uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: "12"
-          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+      - name: install llvm toolchain
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        run: |
+          curl -SL https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz | tar -xJC ~
       - name: build
         run: |
+          export PATH=~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04/bin:$PATH
+          export LD_LIBRARY_PATH=~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04/lib:$LD_LIBRARY_PATH
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
           cmake --build ./build --config Release --target xyco
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy -s src -b build
@@ -80,21 +82,23 @@ jobs:
       - name: install essential packages
         run: |
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
-          apt update && apt install -y build-essential git cmake
+          apt update && apt install -y build-essential git cmake curl xz-utils
       - uses: actions/checkout@v2
       - name: cache llvm toolchain
         id: cache-llvm
         uses: actions/cache@v2
         with:
           path: |
-            ./llvm
-          key: ${{ runner.os }}-llvm-12
-      - uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: "12"
-          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
+            ./clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04
+          key: ${{ runner.os }}-llvm-13
+      - name: install llvm toolchain
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        run: |
+          curl -SL https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz | tar -xJC ~
       - name: test
         run: |
+          export PATH=~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04/bin:$PATH
+          export LD_LIBRARY_PATH=~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04/lib:$LD_LIBRARY_PATH
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
           cmake --build ./build --config Release --target xyco_test
           cd build && ctest -C Release -T test --output-on-failure
