@@ -7,23 +7,32 @@
 class BufferTest : public ::testing::Test {
  protected:
   static void SetUpTestSuite() {
-    TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+    TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
       listener_ = new xyco::net::TcpListener(
           (co_await xyco::net::TcpListener::bind(
                xyco::net::SocketAddr::new_v4(ip_, port_)))
               .unwrap());
-    }});
+    });
   }
 
   void SetUp() override {
-    TestRuntimeCtx::co_run({[&]() -> xyco::runtime::Future<void> {
+    TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
       client_ = new xyco::net::TcpStream(
           (co_await xyco::net::TcpStream::connect(
                xyco::net::SocketAddr::new_v4(ip_, port_)))
               .unwrap());
       server_ = new xyco::net::TcpStream(
           (co_await listener_->accept()).unwrap().first);
-    }});
+    });
+  }
+
+  void TearDown() override {
+    TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+      delete client_;
+      delete server_;
+      
+      co_return;
+    });
   }
 
   static gsl::owner<xyco::net::TcpListener *> listener_;
@@ -36,10 +45,10 @@ class BufferTest : public ::testing::Test {
 
 gsl::owner<xyco::net::TcpListener *> BufferTest::listener_;
 const char *BufferTest::ip_ = "127.0.0.1";
-const uint16_t BufferTest::port_ = 8087;
+const uint16_t BufferTest::port_ = 8088;
 
 TEST_F(BufferTest, buffer_read) {
-  TestRuntimeCtx::co_run({[&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
     auto write_bytes = {'a', 'b'};
     auto write_nbytes =
         (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(*client_,
@@ -55,11 +64,11 @@ TEST_F(BufferTest, buffer_read) {
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
     CO_ASSERT_EQ(std::string(readed.begin(), readed.end()),
                  std::string(write_bytes.begin(), write_bytes.end()));
-  }});
+  });
 }
 
 TEST_F(BufferTest, read_until) {
-  TestRuntimeCtx::co_run({[&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
     auto write_bytes = {'a', 'b', 'c'};
     auto write_nbytes =
         (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(*client_,
@@ -74,11 +83,11 @@ TEST_F(BufferTest, read_until) {
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
     CO_ASSERT_EQ(line, std::string("abc"));
-  }});
+  });
 }
 
 TEST_F(BufferTest, read_until_eof) {
-  TestRuntimeCtx::co_run({[&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
     auto write_bytes = {'a', 'b'};
     auto write_nbytes =
         (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(*client_,
@@ -93,11 +102,11 @@ TEST_F(BufferTest, read_until_eof) {
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
     CO_ASSERT_EQ(line, std::string("ab"));
-  }});
+  });
 }
 
 TEST_F(BufferTest, read_line) {
-  TestRuntimeCtx::co_run({[&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
     auto write_bytes = {'a', 'b', '\n', 'c'};
     auto stream =
         std::istringstream(std::string(write_bytes.begin(), write_bytes.end()));
@@ -116,5 +125,5 @@ TEST_F(BufferTest, read_line) {
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
     CO_ASSERT_EQ(line, w_line);
-  }});
+  });
 }

@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include <gsl/pointers>
-#include <memory>
 
 #include "runtime/runtime.h"
 #include "utils.h"
@@ -23,20 +22,20 @@ class NoRuntimeTest : public ::testing::Test {
 };
 
 TEST_F(InRuntimeTest, NoSuspend) {
-  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     int co_result = -1;
     auto co_innner = []() -> xyco::runtime::Future<int> { co_return 1; };
     co_result = co_await co_innner();
 
     CO_ASSERT_EQ(co_result, 1);
-  }});
+  });
 }
 
 TEST_F(InRuntimeTest, Suspend) {
   int co_result = -1;
   xyco::runtime::Future<int> *handle = nullptr;
   auto co_outer =
-      TestRuntimeCtx::co_run_no_wait({[&]() -> xyco::runtime::Future<void> {
+      TestRuntimeCtx::co_run_no_wait([&]() -> xyco::runtime::Future<void> {
         auto co_innner = [&]() -> xyco::runtime::Future<int> {
           class SuspendFuture : public xyco::runtime::Future<int> {
            public:
@@ -60,7 +59,7 @@ TEST_F(InRuntimeTest, Suspend) {
           co_return co_await SuspendFuture(handle);
         };
         co_result = co_await co_innner();
-      }});
+      });
   if (handle->poll_wrapper()) {
     handle->get_handle().resume();
   }
@@ -71,10 +70,10 @@ TEST_F(InRuntimeTest, Suspend) {
 TEST_F(NoRuntimeTest, NeverRun) {
   int co_result = -1;
   auto co_outer = TestRuntimeCtx::co_run_without_runtime(
-      {[&]() -> xyco::runtime::Future<void> {
+      [&]() -> xyco::runtime::Future<void> {
         auto co_innner = []() -> xyco::runtime::Future<int> { co_return 1; };
         co_result = co_await co_innner();
-      }});
+      });
 
   ASSERT_EQ(co_result, -1);
 }
