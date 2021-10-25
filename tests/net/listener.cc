@@ -82,9 +82,11 @@ TEST_F(ListenerTest, TcpStream_rw) {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8084;
 
-    auto server = (co_await xyco::net::TcpListener::bind(
-                       xyco::net::SocketAddr::new_v4(ip, port)))
-                      .unwrap();
+    auto socket = xyco::net::TcpSocket::new_v4().unwrap();
+    socket.set_reuseaddr(true).unwrap();
+    (co_await socket.bind(xyco::net::SocketAddr::new_v4(ip, port))).unwrap();
+    auto server = (co_await socket.listen(1)).unwrap();
+
     auto client = (co_await xyco::net::TcpStream::connect(
                        xyco::net::SocketAddr::new_v4(ip, port)))
                       .unwrap();
@@ -121,9 +123,11 @@ TEST_F(ListenerTest, TcpListener_accept) {
     const char *ip = "127.0.0.1";
     const uint16_t port = 8086;
 
-    auto server = (co_await xyco::net::TcpListener::bind(
-                       xyco::net::SocketAddr::new_v4(ip, port)))
-                      .unwrap();
+    auto socket = xyco::net::TcpSocket::new_v4().unwrap();
+    socket.set_reuseaddr(true).unwrap();
+    (co_await socket.bind(xyco::net::SocketAddr::new_v4(ip, port))).unwrap();
+    auto server = (co_await socket.listen(1)).unwrap();
+
     auto client = (co_await xyco::net::TcpSocket::new_v4().unwrap().connect(
                        xyco::net::SocketAddr::new_v4(ip, port)))
                       .unwrap();
