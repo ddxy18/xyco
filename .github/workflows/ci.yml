@@ -56,7 +56,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            ./clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04
+            ~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04
           key: ${{ runner.os }}-llvm-13
       - uses: actions-rs/toolchain@v1
         with:
@@ -89,7 +89,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: |
-            ./clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04
+            ~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04
           key: ${{ runner.os }}-llvm-13
       - name: install llvm toolchain
         if: steps.cache-llvm.outputs.cache-hit != 'true'
