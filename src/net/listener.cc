@@ -93,13 +93,15 @@ auto xyco::net::TcpSocket::listen(int backlog)
 }
 
 auto xyco::net::TcpSocket::set_reuseaddr(bool reuseaddr) -> io::IoResult<void> {
+  int optval = static_cast<int>(reuseaddr);
   return io::into_sys_result(::setsockopt(
-      socket_.into_c_fd(), SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(bool)));
+      socket_.into_c_fd(), SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
 }
 
 auto xyco::net::TcpSocket::set_reuseport(bool reuseport) -> io::IoResult<void> {
+  int optval = static_cast<int>(reuseport);
   return io::into_sys_result(::setsockopt(
-      socket_.into_c_fd(), SOL_SOCKET, SO_REUSEADDR, &reuseport, sizeof(bool)));
+      socket_.into_c_fd(), SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)));
 }
 
 auto xyco::net::TcpSocket::new_v4() -> io::IoResult<TcpSocket> {
