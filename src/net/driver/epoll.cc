@@ -98,8 +98,16 @@ auto xyco::net::NetRegistry::select(runtime::Events &events, int timeout)
 
   static auto epoll_events = std::array<epoll_event, MAX_EVENTS>();
 
-  auto ready_len = TRY(io::into_sys_result(
-      epoll_wait(epfd_, epoll_events.data(), final_max_events, final_timeout)));
+  auto select_result = io::into_sys_result(
+      epoll_wait(epfd_, epoll_events.data(), final_max_events, final_timeout));
+  if (select_result.is_err()) {
+    auto err = select_result.unwrap_err();
+    if (err.errno_ != EINTR) {
+      return io::IoResult<void>::err(err);
+    }
+    return io::IoResult<void>::ok();
+  }
+  auto ready_len = select_result.unwrap();
   TRACE("epoll_wait:{}", ready_len);
 
   for (auto i = 0; i < ready_len; i++) {
