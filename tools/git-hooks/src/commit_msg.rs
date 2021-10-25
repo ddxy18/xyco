@@ -89,7 +89,7 @@ struct Header<'a> {
 }
 
 impl CommitMessage {
-    pub fn check(&self) -> Result<()> {
+    pub fn check(self) -> Result<()> {
         let mut contents = String::new();
         fs::File::open(&self.path)?.read_to_string(&mut contents)?;
 

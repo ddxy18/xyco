@@ -1,7 +1,9 @@
 use std::{
-    io::Write,
+    io::{stdout, Write},
     path::PathBuf,
     process::{Command, Stdio},
+    sync::Arc,
+    thread,
 };
 
 use anyhow::{anyhow, Result};
@@ -13,53 +15,109 @@ pub enum SubCheck {
 }
 
 impl SubCheck {
-    pub fn check(&self) -> Result<()> {
+    pub fn check(self) -> Result<()> {
         match self {
-            SubCheck::ClangFormat(fmt) => fmt.check(),
-            SubCheck::ClangTidy(tidy) => tidy.check(),
+            SubCheck::ClangFormat(fmt) => ClangFmt::check(Arc::new(fmt)),
+            SubCheck::ClangTidy(tidy) => ClangTidy::check(Arc::new(tidy)),
         }
     }
 }
 
-pub trait FileCheck {
-    fn per_file_check(&self, path: PathBuf) -> Result<()>;
-
-    fn get_root_path(&self) -> PathBuf;
-
-    fn sub_dir_self(&self, path: PathBuf) -> Self;
-
-    fn check(&self) -> Result<()>
-    where
-        Self: Sized,
-    {
-        let errs = std::fs::read_dir(&self.get_root_path())?
+fn get_source_paths(root_path: PathBuf) -> Vec<PathBuf> {
+    if let Ok(dir) = std::fs::read_dir(&root_path) {
+        return dir
             .filter_map(|entry| {
                 if let Ok(entry) = entry {
                     if entry.file_type().ok()?.is_dir() {
-                        return self.sub_dir_self(entry.path()).check().err();
+                        return Some(get_source_paths(entry.path()));
                     } else if matches!(entry.path().extension()?.to_str()?, "cc" | "h") {
-                        return self.per_file_check(entry.path()).err();
+                        return Some(vec![entry.path()]);
                     }
                 }
                 None
             })
-            .fold(vec![], |mut acc, e| {
-                match e.downcast::<FileError>() {
-                    Ok(e) => {
-                        acc.push(e);
-                    }
-                    Err(e) => {
-                        acc.push(FileError {
-                            path: PathBuf::new(),
-                            err: ErrorType::Other(e),
-                        });
-                    }
-                };
+            .fold(vec![], |mut acc, mut v| {
+                acc.append(&mut v);
                 acc
             });
-        errs.is_empty()
-            .then_some(())
-            .ok_or_else(|| DiffsError { errs }.into())
+    }
+    vec![]
+}
+
+pub trait FileCheck {
+    fn per_file_check(me: Arc<Self>, path: PathBuf) -> Result<()>;
+
+    fn get_root_path(me: Arc<Self>) -> PathBuf;
+
+    fn sub_dir_self(me: Arc<Self>, path: PathBuf) -> Self;
+
+    fn check(me: Arc<Self>) -> Result<()>
+    where
+        Self: Sized,
+        Self: Sync,
+        Self: Send,
+        Self: 'static,
+    {
+        let paths = get_source_paths(Self::get_root_path(me.clone()));
+        let n = std::cmp::min(paths.len(), num_cpus::get());
+
+        let mut out = vec![];
+        let _ = write!(&mut out, "run with {} threads\n", n);
+
+        let _ = write!(&mut out, "check files:[\n");
+        for path in paths.iter() {
+            let _ = write!(&mut out, "{:?}\n", path);
+        }
+        let _ = write!(&mut out, "]\n");
+        let _ = stdout().write(out.as_slice());
+
+        let mut handles = vec![];
+
+        for i in 0..n {
+            let paths = if i == n - 1 {
+                paths[i * paths.len() / n..paths.len()].to_vec()
+            } else {
+                paths[i * paths.len() / n..(i + 1) * paths.len() / n].to_vec()
+            };
+            let me = me.clone();
+            let handle = thread::spawn(move || {
+                let mut errs = vec![];
+                for path in paths {
+                    if let Err(e) = Self::per_file_check(me.clone(), path.to_owned()) {
+                        match e.downcast::<FileError>() {
+                            Ok(e) => {
+                                errs.push(e);
+                            }
+                            Err(e) => {
+                                errs.push(FileError {
+                                    path: PathBuf::new(),
+                                    err: ErrorType::Other(e),
+                                });
+                            }
+                        };
+                    }
+                }
+                errs.is_empty()
+                    .then_some(())
+                    .ok_or_else(|| DiffsError { errs })
+            });
+            handles.push(handle);
+        }
+        handles
+            .into_iter()
+            .map(|handle| handle.join().unwrap())
+            .fold(Ok(()), |acc: Result<(), DiffsError>, r| {
+                if r.is_err() {
+                    if acc.is_err() {
+                        let mut errs = r.unwrap_err();
+                        errs.errs.append(&mut acc.unwrap_err().errs);
+                        return Err(errs);
+                    }
+                    return r;
+                }
+                acc
+            })
+            .map_err(|e| e.into())
     }
 }
 
@@ -80,7 +138,7 @@ pub struct ClangTidy {
 }
 
 impl FileCheck for ClangFmt {
-    fn per_file_check(&self, path: PathBuf) -> Result<()> {
+    fn per_file_check(_me: Arc<Self>, path: PathBuf) -> Result<()> {
         let clang_format = Command::new("clang-format")
             .arg("--Werror")
             .arg("--style=file")
@@ -114,26 +172,26 @@ impl FileCheck for ClangFmt {
         })
     }
 
-    fn get_root_path(&self) -> PathBuf {
-        self.path.clone()
+    fn get_root_path(me: Arc<Self>) -> PathBuf {
+        me.path.clone()
     }
 
-    fn sub_dir_self(&self, path: PathBuf) -> Self {
+    fn sub_dir_self(_me: Arc<Self>, path: PathBuf) -> Self {
         Self { path }
     }
 }
 
 impl FileCheck for ClangTidy {
-    fn per_file_check(&self, path: PathBuf) -> Result<()> {
+    fn per_file_check(me: Arc<Self>, path: PathBuf) -> Result<()> {
         let mut cmd = Command::new("clang-tidy");
         #[cfg(test)]
         let mut cmd = cmd.stdout(Stdio::null()).stderr(Stdio::null());
-        let cmd = if let Some(checks) = &self.checks {
+        let cmd = if let Some(checks) = &me.checks {
             cmd.arg(format!("--checks={}", checks))
         } else {
             &mut cmd
         };
-        cmd.arg(format!("-p={}", self.build_path.to_string_lossy()))
+        cmd.arg(format!("-p={}", me.build_path.to_string_lossy()))
             .arg("--warnings-as-errors")
             .arg("*")
             .arg(&path)
@@ -150,15 +208,15 @@ impl FileCheck for ClangTidy {
             })
     }
 
-    fn get_root_path(&self) -> PathBuf {
-        self.root_path.clone()
+    fn get_root_path(me: Arc<Self>) -> PathBuf {
+        me.root_path.clone()
     }
 
-    fn sub_dir_self(&self, path: PathBuf) -> Self {
+    fn sub_dir_self(me: Arc<Self>, path: PathBuf) -> Self {
         Self {
-            build_path: self.build_path.clone(),
+            build_path: me.build_path.clone(),
             root_path: path,
-            checks: self.checks.clone(),
+            checks: me.checks.clone(),
         }
     }
 }
@@ -259,8 +317,7 @@ mod tests {
         let pre_commit = ClangFmt {
             path: temp_dir.path().to_path_buf(),
         };
-        if let ErrorType::Diff(e) = &pre_commit
-            .check()
+        if let ErrorType::Diff(e) = &ClangFmt::check(Arc::new(pre_commit))
             .err()
             .unwrap()
             .downcast_ref::<DiffsError>()
@@ -285,7 +342,7 @@ mod tests {
             path: temp_dir.path().to_path_buf(),
         };
 
-        assert!(pre_commit.check().is_ok());
+        assert!(ClangFmt::check(Arc::new(pre_commit)).is_ok());
     }
 
     #[test]
@@ -310,7 +367,7 @@ mod tests {
             path: temp_dir.path().to_path_buf(),
         };
 
-        assert_matches!(pre_commit.check().err(),Some(err) if err.downcast_ref::<DiffsError>().unwrap().errs.len() == 2);
+        assert_matches!(ClangFmt::check(Arc::new(pre_commit)).err(),Some(err) if err.downcast_ref::<DiffsError>().unwrap().errs.len() == 2);
     }
 
     #[test]
@@ -332,7 +389,7 @@ mod tests {
         Command::new("cmake")
             .arg(temp_dir.path())
             .arg("-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE")
-            .arg("-DCMAKE_CXX_COMPILER:FILEPATH=/bin/clang++-11")
+            .arg("-DCMAKE_CXX_COMPILER:FILEPATH=clang++")
             .arg("-S")
             .arg(temp_dir.path())
             .arg("-B")
@@ -348,6 +405,6 @@ mod tests {
             build_path: temp_dir.path().join("build"),
             checks: Some(String::from("modernize-*")),
         };
-        assert_matches!(pre_commit.check().err(),Some(e) if e.downcast_ref::<DiffsError>().unwrap().errs.len() == 1);
+        assert_matches!(ClangTidy::check(Arc::new(pre_commit)).err(),Some(e) if e.downcast_ref::<DiffsError>().unwrap().errs.len() == 1);
     }
 }
