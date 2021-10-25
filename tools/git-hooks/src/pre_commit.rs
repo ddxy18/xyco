@@ -62,13 +62,13 @@ pub trait FileCheck {
         let n = std::cmp::min(paths.len(), num_cpus::get());
 
         let mut out = vec![];
-        let _ = write!(&mut out, "run with {} threads\n", n);
+        let _ = writeln!(&mut out, "run with {} threads", n);
 
-        let _ = write!(&mut out, "check files:[\n");
+        let _ = writeln!(&mut out, "check files:[");
         for path in paths.iter() {
-            let _ = write!(&mut out, "{:?}\n", path);
+            let _ = writeln!(&mut out, "{:?}", path);
         }
-        let _ = write!(&mut out, "]\n");
+        let _ = writeln!(&mut out, "]");
         let _ = stdout().write(out.as_slice());
 
         let mut handles = vec![];
@@ -97,9 +97,7 @@ pub trait FileCheck {
                         };
                     }
                 }
-                errs.is_empty()
-                    .then_some(())
-                    .ok_or_else(|| DiffsError { errs })
+                errs.is_empty().then_some(()).ok_or(DiffsError { errs })
             });
             handles.push(handle);
         }
@@ -107,13 +105,12 @@ pub trait FileCheck {
             .into_iter()
             .map(|handle| handle.join().unwrap())
             .fold(Ok(()), |acc: Result<(), DiffsError>, r| {
-                if r.is_err() {
-                    if acc.is_err() {
-                        let mut errs = r.unwrap_err();
-                        errs.errs.append(&mut acc.unwrap_err().errs);
+                if let Err(mut errs) = r {
+                    if let Err(mut acc_err) = acc {
+                        errs.errs.append(&mut acc_err.errs);
                         return Err(errs);
                     }
-                    return r;
+                    return Err(errs);
                 }
                 acc
             })
