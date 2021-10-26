@@ -1,6 +1,7 @@
+#include "time/sleep.h"
+
 #include <gtest/gtest.h>
 
-#include "time/sleep.h"
 #include "utils.h"
 
 TEST(SleepTest, sleep_accuracy) {
@@ -21,7 +22,7 @@ TEST(SleepTest, sleep_accuracy) {
     CO_ASSERT_EQ(
         interval <
             std::chrono::duration_cast<std::chrono::system_clock::duration>(
-                timeout_ms + std::chrono::milliseconds(1))
+                timeout_ms + std::chrono::milliseconds(3))
                 .count(),
         true);
   }});
