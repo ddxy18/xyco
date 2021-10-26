@@ -11,6 +11,48 @@ class ListenerTest : public ::testing::Test {
 
 // TODO(dongxiaoyu): add failure cases
 
+TEST_F(ListenerTest, reuseaddr) {
+  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+    const char *ip = "127.0.0.1";
+    const uint16_t port = 8088;
+
+    {
+      auto tcp_socket1 = xyco::net::TcpSocket::new_v4().unwrap();
+      tcp_socket1.set_reuseaddr(true).unwrap();
+      auto result1 =
+          co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4(ip, port));
+      CO_ASSERT_EQ(result1.is_ok(), true);
+    }
+    {
+      auto tcp_socket2 = xyco::net::TcpSocket::new_v4().unwrap();
+      tcp_socket2.set_reuseport(true).unwrap();
+      auto result2 =
+          co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4(ip, port));
+      CO_ASSERT_EQ(result2.is_ok(), true);
+    }
+  }});
+}
+
+TEST_F(ListenerTest, reuseport) {
+  TestRuntimeCtx::co_run({[]() -> xyco::runtime::Future<void> {
+    const char *ip = "127.0.0.1";
+    const uint16_t port = 8087;
+
+    auto tcp_socket1 = xyco::net::TcpSocket::new_v4().unwrap();
+    tcp_socket1.set_reuseport(true).unwrap();
+    auto result1 =
+        co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4(ip, port));
+
+    auto tcp_socket2 = xyco::net::TcpSocket::new_v4().unwrap();
+    tcp_socket2.set_reuseport(true).unwrap();
+    auto result2 =
+        co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4(ip, port));
+
+    CO_ASSERT_EQ(result1.is_ok(), true);
+    CO_ASSERT_EQ(result2.is_ok(), true);
+  }});
+}
+
 TEST_F(ListenerTest, bind_same_addr) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     const char *ip = "127.0.0.1";
