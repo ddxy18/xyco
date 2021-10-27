@@ -1,5 +1,6 @@
 #include "socket.h"
 
+#include <netinet/in.h>
 #include <unistd.h>
 
 #include "io/utils.h"
@@ -80,17 +81,26 @@ auto fmt::formatter<xyco::net::SocketAddr>::format(
     const xyco::net::SocketAddr& addr, FormatContext& ctx) const
     -> decltype(ctx.out()) {
   const auto* sock_addr = addr.into_c_addr();
-  std::string ip(INET_ADDRSTRLEN, 0);
-  inet_ntop(sock_addr->sa_family, static_cast<const char*>(sock_addr->sa_data),
-            ip.data(), ip.size());
-  uint16_t port = 0;
-  if (std::holds_alternative<xyco::net::SocketAddrV4>(addr.addr_)) {
-    port = std::get<xyco::net::SocketAddrV4>(addr.addr_).get_port();
+  std::string ip(INET6_ADDRSTRLEN, 0);
+  uint16_t port = -1;
+
+  if (addr.addr_.index() == 0) {
+    inet_ntop(sock_addr->sa_family,
+              static_cast<const void*>(&static_cast<const sockaddr_in*>(
+                                            static_cast<const void*>(sock_addr))
+                                            ->sin_addr),
+              ip.data(), ip.size());
+    port = std::get<0>(addr.addr_).get_port();
   } else {
-    port = std::get<xyco::net::SocketAddrV6>(addr.addr_).get_port();
+    inet_ntop(sock_addr->sa_family,
+              static_cast<const void*>(&static_cast<const sockaddr_in6*>(
+                                            static_cast<const void*>(sock_addr))
+                                            ->sin6_addr),
+              ip.data(), ip.size());
+    port = std::get<1>(addr.addr_).get_port();
   }
 
-  return format_to(ctx.out(), "{}:{}", ip.c_str(), port);
+  return format_to(ctx.out(), "SocketAddr{{ip={},port={}}}", ip.c_str(), port);
 }
 
 template <typename FormatContext>
