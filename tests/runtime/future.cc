@@ -77,3 +77,25 @@ TEST_F(NoRuntimeTest, NeverRun) {
 
   ASSERT_EQ(co_result, -1);
 }
+
+TEST(InRuntimeDeathTest, coroutine_exception) {
+  auto rt = xyco::runtime::Builder::new_multi_thread()
+                .worker_threads(2)
+                .max_blocking_threads(1)
+                .build()
+                .unwrap();
+  rt->spawn([]() -> xyco::runtime::Future<void> {
+    throw std::runtime_error("");
+    co_return;
+  }());
+
+  auto result = -1;
+  auto fut = [&]() -> xyco::runtime::Future<void> {
+    result = 1;
+    co_return;
+  };
+  rt->spawn(fut());
+  std::this_thread::sleep_for(std::chrono::milliseconds(3));
+
+  ASSERT_EQ(result, 1);
+}

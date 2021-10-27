@@ -112,15 +112,22 @@ class Runtime {
       co_await future;
     } catch (std::exception e) {
       auto tid = std::this_thread::get_id();
-      std::scoped_lock<std::mutex> lock_guard(worker_mutex_);
+
+      // try to lock strategy to avoid deadlock in situation:
+      // ~Runtime owns the lock
+      std::unique_lock<std::mutex> lock_guard(worker_mutex_,
+                                              std::try_to_lock_t{});
       auto pos = workers_.find(tid);
-      if (workers_.size() == 1) {
-        ERROR("unhandled coroutine exception, terminate the process");
-        std::terminate();
+      while (!pos->second->end_) {
+        if (lock_guard || lock_guard.try_lock()) {
+          if (workers_.size() == 1) {
+            ERROR("unhandled coroutine exception, terminate the process");
+            std::terminate();
+          }
+          ERROR("unhandled coroutine exception, kill current worker");
+          pos->second->stop();
+        }
       }
-      ERROR("unhandled coroutine exception, kill current worker");
-      pos->second->stop();
-      workers_.erase(pos);
     }
   }
 
@@ -128,6 +135,10 @@ class Runtime {
 
   std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
   std::mutex worker_mutex_;
+
+  std::vector<std::thread::id> idle_workers_;
+  std::mutex idle_workers_mutex_;
+
   // (handle, nullptr) -> initial_suspend of a spawned async function
   // (handle, future) -> co_await on a future object
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
