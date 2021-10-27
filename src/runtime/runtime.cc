@@ -13,17 +13,13 @@ auto xyco::runtime::Worker::lanuch(Runtime *runtime) -> void {
       run_loop_once(runtime);
     }
     runtime->on_stop_f_();
+
+    std::unique_lock<std::mutex> lock_guard(runtime->idle_workers_mutex_);
+    runtime->idle_workers_.push_back(std::this_thread::get_id());
   });
 }
 
-auto xyco::runtime::Worker::stop() -> void {
-  end_ = true;
-  if (std::this_thread::get_id() == get_native_id()) {
-    ctx_.detach();
-  } else {
-    ctx_.join();
-  }
-}
+auto xyco::runtime::Worker::stop() -> void { end_ = true; }
 
 auto xyco::runtime::Worker::get_native_id() const -> std::thread::id {
   return ctx_.get_id();
@@ -51,31 +47,28 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
     runtime->cancel_future_handles_ = cancel_fail_futures;
   }
 
-  // resume local future
-  {
-    std::unique_lock<std::mutex> lock_guard(handle_mutex_);
-    while (!handles_.empty()) {
-      auto [handle, future] = handles_.back();
-      handles_.pop_back();
-      lock_guard.unlock();
-      if (future->poll_wrapper()) {
-        handle.resume();
-      }
-      lock_guard.lock();
-    }
-  }
-  // resume global future
-  {
-    std::unique_lock<std::mutex> lock_guard(runtime->handle_mutex_);
-    while (!runtime->handles_.empty()) {
-      auto [handle, future] = runtime->handles_.back();
-      runtime->handles_.pop_back();
+  auto resume = [&end = this->end_](auto &handles, auto &handle_mutex) {
+    std::unique_lock<std::mutex> lock_guard(handle_mutex);
+    while (!end && !handles.empty()) {
+      auto [handle, future] = handles.back();
+      handles.pop_back();
       lock_guard.unlock();
       if (future == nullptr || future->poll_wrapper()) {
         handle.resume();
       }
       lock_guard.lock();
     }
+  };
+
+  // resume local future
+  resume(handles_, handle_mutex_);
+  if (end_) {
+    return;
+  }
+  // resume global future
+  resume(runtime->handles_, runtime->handle_mutex_);
+  if (end_) {
+    return;
   }
 
   // drive both local and global registry
@@ -89,6 +82,26 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
     }
   }
   runtime->driver_->poll();
+
+  // try to clear idle workers
+  {
+    // try to lock strategy to avoid deadlock in situation:
+    // ~Runtime owns the lock before current thread
+    std::unique_lock<std::mutex> worker_lock_guard(runtime->worker_mutex_,
+                                                   std::try_to_lock_t{});
+    if (worker_lock_guard) {
+      std::scoped_lock<std::mutex> idle_worker_lock_guard(
+          runtime->idle_workers_mutex_);
+      for (auto &tid : runtime->idle_workers_) {
+        auto pos = runtime->workers_.find(tid);
+        if (pos != std::end(runtime->workers_)) {
+          pos->second->ctx_.join();
+          runtime->workers_.erase(pos);
+        }
+      }
+      runtime->idle_workers_.clear();
+    }
+  }
 }
 
 auto xyco::runtime::Runtime::register_future(FutureBase *future) -> void {
@@ -126,8 +139,10 @@ auto xyco::runtime::Runtime::blocking_handle() -> Registry * {
 xyco::runtime::Runtime::Runtime(Privater priv) {}
 
 xyco::runtime::Runtime::~Runtime() {
+  std::unique_lock<std::mutex> lock_guard_(worker_mutex_);
   for (const auto &[tid, worker] : workers_) {
     worker->stop();
+    worker->ctx_.join();
   }
 }
 
