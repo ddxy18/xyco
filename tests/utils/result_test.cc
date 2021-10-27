@@ -39,12 +39,27 @@ TEST_F(ResultTest, Isok) {
 
 TEST_F(ResultTest, Unwrap) {
   ASSERT_EQ(no_void_ok_.unwrap(), 1);
+  EXPECT_THROW(no_void_ok_.unwrap_err(), std::runtime_error);
+
+  EXPECT_THROW(no_void_err_.unwrap(), std::runtime_error);
   ASSERT_EQ(no_void_err_.unwrap_err(), 1);
+
   ASSERT_NO_THROW(void_t_ok_.unwrap());
+  EXPECT_THROW(void_t_ok_.unwrap_err(), std::runtime_error);
+
+  EXPECT_THROW(void_t_err_.unwrap(), std::runtime_error);
   ASSERT_EQ(void_t_err_.unwrap_err(), 1);
+
   ASSERT_EQ(void_e_ok_.unwrap(), 1);
+  EXPECT_THROW(void_e_ok_.unwrap_err(), std::runtime_error);
+
+  EXPECT_THROW(void_e_err_.unwrap(), std::runtime_error);
   ASSERT_NO_THROW(void_e_err_.unwrap_err());
+
   ASSERT_NO_THROW(void_t_void_e_ok_.unwrap());
+  EXPECT_THROW(void_t_void_e_ok_.unwrap_err(), std::runtime_error);
+
+  EXPECT_THROW(void_t_void_e_err_.unwrap(), std::runtime_error);
   ASSERT_NO_THROW(void_t_void_e_err_.unwrap_err());
 }
 
