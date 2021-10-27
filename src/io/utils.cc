@@ -20,7 +20,7 @@ template <typename FormatContext>
 auto fmt::formatter<xyco::io::IoError>::format(const xyco::io::IoError& err,
                                                FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "{{errno={}, info={}}}", err.errno_,
+  return format_to(ctx.out(), "IoError{{errno={}, info={}}}", err.errno_,
                    fmt::join(err.info_, ""));
 }
 

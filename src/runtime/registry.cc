@@ -72,7 +72,11 @@ auto fmt::formatter<xyco::runtime::Event>::format(
     return format_to(ctx.out(), "Event{{extra_={}}}",
                      std::get<0>(event.extra_));
   }
-  return format_to(ctx.out(), "Event{{extra_={}}}", std::get<1>(event.extra_));
+  if (event.extra_.index() == 1) {
+    return format_to(ctx.out(), "Event{{extra_={}}}",
+                     std::get<1>(event.extra_));
+  }
+  return format_to(ctx.out(), "Event{{extra_={}}}", std::get<2>(event.extra_));
 }
 
 template auto fmt::formatter<xyco::runtime::IoExtra>::format(
