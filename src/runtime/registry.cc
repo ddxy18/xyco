@@ -1,5 +1,7 @@
 #include "registry.h"
 
+#include "spdlog/fmt/chrono.h"
+
 auto xyco::runtime::IoExtra::readable() const -> bool {
   return state_ == State::Readable || state_ == State::All;
 }

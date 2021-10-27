@@ -1,4 +1,9 @@
+#ifndef XYCO_TEST
+
 #include "logger.h"
+
+#include "spdlog/sinks/daily_file_sink.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 auto LoggerCtx::get_logger() -> std::shared_ptr<spdlog::logger> {
   auto f = []() {
@@ -20,3 +25,5 @@ auto LoggerCtx::get_logger() -> std::shared_ptr<spdlog::logger> {
 
   return console;
 }
+
+#endif
