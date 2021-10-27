@@ -3,6 +3,9 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
+#include <array>
+#include <vector>
+
 auto to_sys(xyco::runtime::Interest interest) -> int {
   switch (interest) {
     case xyco::runtime::Interest::Read:

@@ -1,5 +1,7 @@
 #include "panic.h"
 
+#include <stdexcept>
+
 #include "logger.h"
 
 auto panic() -> void {

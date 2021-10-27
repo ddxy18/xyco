@@ -1,8 +1,8 @@
 #ifndef XYCO_UTILS_LOGGER_H_
 #define XYCO_UTILS_LOGGER_H_
 
-#include "spdlog/sinks/daily_file_sink.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
+#ifndef XYCO_TEST
+
 #include "spdlog/spdlog.h"
 
 #undef SPDLOG_ACTIVE_LEVEL
@@ -15,7 +15,6 @@
 #undef WARN
 #undef ERROR
 
-#ifndef XYCO_TEST
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define TRACE(...) \
   SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::trace, __VA_ARGS__)
@@ -31,17 +30,20 @@
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
 #define ERROR(...) \
   SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::err, __VA_ARGS__)
-#else
-#define TRACE(...) (void)0
-#define DEBUG(...) (void)0
-#define INFO(...) (void)0
-#define WARN(...) (void)0
-#define ERROR(...) (void)0
-#endif
 
 class LoggerCtx {
  public:
   static auto get_logger() -> std::shared_ptr<spdlog::logger>;
 };
+
+#else
+
+#define TRACE(...) (void)0
+#define DEBUG(...) (void)0
+#define INFO(...) (void)0
+#define WARN(...) (void)0
+#define ERROR(...) (void)0
+
+#endif
 
 #endif  // XYCO_UTILS_LOGGER_H_
