@@ -19,7 +19,7 @@ auto xyco::time::Wheel::insert_event(runtime::Event &event) -> void {
   if (level == 0) {
     auto steps = expire_time_ms.count() / interval_ms_;
     slot_it = levels_.at(0).current_it_;
-    if (std::distance(levels_.at(0).current_it_, levels_.at(0).events_.end()) <
+    if (std::distance(levels_.at(0).current_it_, levels_.at(0).events_.end()) <=
         steps) {
       std::advance(slot_it, steps - Level::slot_num_);
     } else {
