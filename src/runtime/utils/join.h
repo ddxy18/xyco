@@ -1,7 +1,7 @@
 #ifndef XYCO_RUNTIME_UTILS_JOIN_H
 #define XYCO_RUNTIME_UTILS_JOIN_H
 
-#include <utility>
+#include <mutex>
 
 #include "runtime/runtime.h"
 #include "type_wrapper.h"
@@ -29,40 +29,42 @@ class JoinFuture : public Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
         ready_(false),
         future1_(std::move(future1)),
         future2_(std::move(future2)),
-        result_({}, {}) {}
+        result_({}, {}),
+        registered_(false) {}
 
  private:
   template <typename T, int Index>
-  auto future_wrapper(Future<T> future) -> Future<void>
-  requires(!std::is_same_v<T, void>) {
-    auto result = co_await future;
-    if constexpr (Index == 0) {
-      result_.first = TypeWrapper<T>{result};
+  auto future_wrapper(Future<T> future) -> Future<void> {
+    if constexpr (!std::is_same_v<T, void>) {
+      auto result = co_await future;
+      if constexpr (Index == 0) {
+        result_.first = TypeWrapper<T>{result};
+      } else {
+        result_.second = TypeWrapper<T>{result};
+      }
     } else {
-      result_.second = TypeWrapper<T>{result};
+      co_await future;
+      if constexpr (Index == 0) {
+        result_.first = TypeWrapper<T>();
+      } else {
+        result_.second = TypeWrapper<T>();
+      }
     }
-    if (result_.first.has_value() && result_.second.has_value()) {
-      RuntimeCtx::get_ctx()->register_future(this);
-    }
-  }
-
-  template <typename T, int Index>
-  auto future_wrapper(Future<T> future) -> Future<void>
-  requires(std::is_same_v<T, void>) {
-    co_await future;
-    if constexpr (Index == 0) {
-      result_.first = TypeWrapper<T>();
-    } else {
-      result_.second = TypeWrapper<T>();
-    }
-    if (result_.first.has_value() && result_.second.has_value()) {
-      RuntimeCtx::get_ctx()->register_future(this);
+    {
+      std::scoped_lock<std::mutex> lock_guard(mutex_);
+      if (!registered_ && result_.first.has_value() &&
+          result_.second.has_value()) {
+        registered_ = true;
+        RuntimeCtx::get_ctx()->register_future(this);
+      }
     }
   }
 
   bool ready_;
   std::pair<std::optional<TypeWrapper<T1>>, std::optional<TypeWrapper<T2>>>
       result_;
+  std::mutex mutex_;
+  bool registered_;
   Future<T1> &&future1_;
   Future<T2> &&future2_;
 };
