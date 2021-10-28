@@ -69,9 +69,9 @@ TEST(FmtTypeTest, SocketAddr_ipv6) {
 }
 
 TEST(FmtTypeTest, Socket) {
-  auto socket = xyco::net::Socket(4);
+  auto socket = xyco::net::Socket(-1);
 
   auto fmt_str = fmt::format("{}", socket);
 
-  ASSERT_EQ(fmt_str, "Socket{fd_=4}");
+  ASSERT_EQ(fmt_str, "Socket{fd_=-1}");
 }
