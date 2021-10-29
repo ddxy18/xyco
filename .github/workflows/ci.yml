@@ -101,7 +101,7 @@ jobs:
           export LD_LIBRARY_PATH=~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04/lib:$LD_LIBRARY_PATH
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
           cmake --build ./build --config Release --target xyco_test
-          LLVM_PROFILE_FILE="./build/tests/xyco_test.profraw" ./build/tests/xyco_test
+          LLVM_PROFILE_FILE="./build/tests/xyco_test.profraw" ./build/tests/xyco_test --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle --gtest_brief=1
           llvm-profdata merge -sparse ./build/tests/xyco_test.profraw -o ./build/tests/xyco_test.profdata
           llvm-cov show ./build/tests/xyco_test -instr-profile=./build/tests/xyco_test.profdata > ./build/tests/coverage.txt
       - name: upload coverage reports
