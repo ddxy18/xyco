@@ -109,24 +109,25 @@ class WithServerTest : public ::testing::Test {
       tcp_socket.set_reuseaddr(true).unwrap();
       (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4(ip_, port_)))
           .unwrap();
-      listener_ =
-          new xyco::net::TcpListener((co_await tcp_socket.listen(1)).unwrap());
+      listener_ = std::make_unique<xyco::net::TcpListener>(
+          xyco::net::TcpListener((co_await tcp_socket.listen(1)).unwrap()));
     });
   }
 
   static void TearDownTestSuite() {
     TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-      delete listener_;
+      listener_ = nullptr;
+
       co_return;
     });
   }
 
-  static gsl::owner<xyco::net::TcpListener *> listener_;
+  static std::unique_ptr<xyco::net::TcpListener> listener_;
   static const char *ip_;
   static const uint16_t port_;
 };
 
-gsl::owner<xyco::net::TcpListener *> WithServerTest::listener_;
+std::unique_ptr<xyco::net::TcpListener> WithServerTest::listener_;
 const char *WithServerTest::ip_ = "127.0.0.1";
 const uint16_t WithServerTest::port_ = 8080;
 

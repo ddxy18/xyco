@@ -8,10 +8,19 @@ class BufferTest : public ::testing::Test {
  protected:
   static void SetUpTestSuite() {
     TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-      listener_ = new xyco::net::TcpListener(
-          (co_await xyco::net::TcpListener::bind(
-               xyco::net::SocketAddr::new_v4(ip_, port_)))
-              .unwrap());
+      listener_ =
+          std::make_unique<xyco::net::TcpListener>(xyco::net::TcpListener(
+              (co_await xyco::net::TcpListener::bind(
+                   xyco::net::SocketAddr::new_v4(ip_, port_)))
+                  .unwrap()));
+    });
+  }
+
+  static void TearDownTestSuite() {
+    TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+      listener_ = nullptr;
+
+      co_return;
     });
   }
 
@@ -35,7 +44,7 @@ class BufferTest : public ::testing::Test {
     });
   }
 
-  static gsl::owner<xyco::net::TcpListener *> listener_;
+  static std::unique_ptr<xyco::net::TcpListener> listener_;
   static const char *ip_;
   static const uint16_t port_;
 
@@ -43,7 +52,7 @@ class BufferTest : public ::testing::Test {
   std::unique_ptr<xyco::net::TcpStream> server_;
 };
 
-gsl::owner<xyco::net::TcpListener *> BufferTest::listener_;
+std::unique_ptr<xyco::net::TcpListener> BufferTest::listener_;
 const char *BufferTest::ip_ = "127.0.0.1";
 const uint16_t BufferTest::port_ = 8088;
 
