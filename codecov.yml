@@ -14,3 +14,10 @@ coverage:
         if_ci_failed: error
         paths:
           - src/
+    patch:
+      default:
+        target: 90%
+        if_not_found: failure
+        if_ci_failed: error
+        paths:
+          - src/
