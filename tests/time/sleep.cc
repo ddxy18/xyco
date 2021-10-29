@@ -11,19 +11,13 @@ TEST(SleepTest, sleep_accuracy) {
 
     auto before_run = std::chrono::system_clock::now();
     co_await xyco::time::sleep(timeout_ms);
-    auto interval = (std::chrono::system_clock::now() - before_run).count();
+    auto interval = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::system_clock::now() - before_run)
+                        .count();
 
-    CO_ASSERT_EQ(
-        interval >=
-            std::chrono::duration_cast<std::chrono::system_clock::duration>(
-                timeout_ms)
-                .count(),
-        true);
-    CO_ASSERT_EQ(
-        interval <
-            std::chrono::duration_cast<std::chrono::system_clock::duration>(
-                timeout_ms + std::chrono::milliseconds(3))
-                .count(),
-        true);
+    // deviation less than 3ms
+    CO_ASSERT_EQ(interval >= timeout_ms.count() - 3 &&
+                     interval <= timeout_ms.count() + 3,
+                 true);
   });
 }
