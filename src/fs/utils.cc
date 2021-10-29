@@ -3,8 +3,8 @@
 #include "io/utils.h"
 #include "runtime/async_future.h"
 
-auto fs::rename(const std::filesystem::path& old_path,
-                const std::filesystem::path& new_path)
+auto xyco::fs::rename(const std::filesystem::path& old_path,
+                      const std::filesystem::path& new_path)
     -> runtime::Future<io::IoResult<void>> {
   co_return co_await runtime::AsyncFuture<io::IoResult<void>>([&]() {
     std::error_code error_code;
@@ -17,7 +17,7 @@ auto fs::rename(const std::filesystem::path& old_path,
   });
 }
 
-auto fs::remove(const std::filesystem::path& path)
+auto xyco::fs::remove(const std::filesystem::path& path)
     -> runtime::Future<io::IoResult<bool>> {
   co_return co_await runtime::AsyncFuture<io::IoResult<bool>>([&]() {
     std::error_code error_code;
@@ -30,9 +30,9 @@ auto fs::remove(const std::filesystem::path& path)
   });
 }
 
-auto fs::copy_file(const std::filesystem::path& from_path,
-                   const std::filesystem::path& to_path,
-                   std::filesystem::copy_options options)
+auto xyco::fs::copy_file(const std::filesystem::path& from_path,
+                         const std::filesystem::path& to_path,
+                         std::filesystem::copy_options options)
     -> runtime::Future<io::IoResult<bool>> {
   co_return co_await runtime::AsyncFuture<io::IoResult<bool>>([&]() {
     std::error_code error_code;

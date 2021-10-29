@@ -9,7 +9,7 @@
 #include "io/utils.h"
 #include "runtime/future.h"
 
-namespace fs {
+namespace xyco::fs {
 class File {
   friend class OpenOptions;
 
@@ -97,6 +97,6 @@ class OpenOptions {
   int32_t custom_flags_;
   mode_t mode_;
 };
-}  // namespace fs
+}  // namespace xyco::fs
 
 #endif  // XYCO_FS_FILE_H_
