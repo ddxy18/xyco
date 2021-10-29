@@ -7,28 +7,6 @@
 #include "time/driver.h"
 
 namespace xyco::runtime {
-class BlockingRegistry : public runtime::Registry {
- public:
-  explicit BlockingRegistry(uintptr_t woker_num);
-
-  [[nodiscard]] auto Register(runtime::Event& ev, runtime::Interest interest)
-      -> io::IoResult<void> override;
-
-  [[nodiscard]] auto reregister(runtime::Event& ev, runtime::Interest interest)
-      -> io::IoResult<void> override;
-
-  [[nodiscard]] auto deregister(runtime::Event& ev, runtime::Interest interest)
-      -> io::IoResult<void> override;
-
-  [[nodiscard]] auto select(runtime::Events& events, int timeout)
-      -> io::IoResult<void> override;
-
- private:
-  runtime::Events events_;
-  std::mutex mutex_;
-  runtime::BlockingPool pool_;
-};
-
 class Driver {
  public:
   auto poll() -> void;
