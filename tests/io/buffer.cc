@@ -17,20 +17,20 @@ class BufferTest : public ::testing::Test {
 
   void SetUp() override {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-      client_ = new xyco::net::TcpStream(
-          (co_await xyco::net::TcpStream::connect(
-               xyco::net::SocketAddr::new_v4(ip_, port_)))
-              .unwrap());
-      server_ = new xyco::net::TcpStream(
-          (co_await listener_->accept()).unwrap().first);
+      client_ = std::make_unique<xyco::net::TcpStream>(
+          xyco::net::TcpStream((co_await xyco::net::TcpStream::connect(
+                                    xyco::net::SocketAddr::new_v4(ip_, port_)))
+                                   .unwrap()));
+      server_ = std::make_unique<xyco::net::TcpStream>(
+          xyco::net::TcpStream((co_await listener_->accept()).unwrap().first));
     });
   }
 
   void TearDown() override {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-      delete client_;
-      delete server_;
-      
+      client_ = nullptr;
+      server_ = nullptr;
+
       co_return;
     });
   }
@@ -39,8 +39,8 @@ class BufferTest : public ::testing::Test {
   static const char *ip_;
   static const uint16_t port_;
 
-  gsl::owner<xyco::net::TcpStream *> client_;
-  gsl::owner<xyco::net::TcpStream *> server_;
+  std::unique_ptr<xyco::net::TcpStream> client_;
+  std::unique_ptr<xyco::net::TcpStream> server_;
 };
 
 gsl::owner<xyco::net::TcpListener *> BufferTest::listener_;
