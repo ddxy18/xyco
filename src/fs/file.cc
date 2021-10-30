@@ -4,6 +4,7 @@
 #include <__utility/to_underlying.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
+#include <unistd.h>
 
 #include <filesystem>
 #include <utility>
@@ -171,6 +172,24 @@ auto xyco::fs::File::seek(off64_t offset, int whence) const
     }
     return io::IoResult<off64_t>::ok(return_offset);
   });
+}
+
+xyco::fs::File::File(File&& file) noexcept : fd_(-1) {
+  *this = std::move(file);
+}
+
+auto xyco::fs::File::operator=(File&& file) noexcept -> File& {
+  fd_ = file.fd_;
+  path_ = file.path_;
+  file.fd_ = -1;
+
+  return *this;
+}
+
+xyco::fs::File::~File() {
+  if (fd_ != -1) {
+    ::close(fd_);
+  }
 }
 
 xyco::fs::File::File(int fd, std::filesystem::path&& path)
