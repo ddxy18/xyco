@@ -4,7 +4,6 @@
 #include <__utility/to_underlying.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
-#include <unistd.h>
 
 #include <filesystem>
 #include <utility>
@@ -108,11 +107,10 @@ auto xyco::fs::File::resize(uintmax_t size)
   co_return co_await runtime::AsyncFuture<io::IoResult<void>>([&]() {
     std::error_code error_code;
     std::filesystem::resize_file(path_, size, error_code);
-    if (error_code) {
-      return io::IoResult<void>::ok();
-    }
-    return io::IoResult<void>::err(io::IoError{.errno_ = error_code.value(),
-                                               .info_ = error_code.message()});
+    return !error_code ? io::IoResult<void>::ok()
+                       : io::IoResult<void>::err(
+                             io::IoError{.errno_ = error_code.value(),
+                                         .info_ = error_code.message()});
   });
 }
 
@@ -120,11 +118,10 @@ auto xyco::fs::File::size() const -> runtime::Future<io::IoResult<uintmax_t>> {
   co_return co_await runtime::AsyncFuture<io::IoResult<uintmax_t>>([&]() {
     std::error_code error_code;
     auto len = std::filesystem::file_size(path_, error_code);
-    if (error_code) {
-      return io::IoResult<uintmax_t>::ok(len);
-    }
-    return io::IoResult<uintmax_t>::err(io::IoError{
-        .errno_ = error_code.value(), .info_ = error_code.message()});
+    return !error_code ? io::IoResult<uintmax_t>::ok(len)
+                       : io::IoResult<uintmax_t>::err(
+                             io::IoError{.errno_ = error_code.value(),
+                                         .info_ = error_code.message()});
   });
 }
 
@@ -139,11 +136,10 @@ auto xyco::fs::File::status()
     } else {
       status = std::filesystem::status(path_, error_code);
     }
-    if (error_code) {
-      return io::IoResult<std::filesystem::file_status>::ok(status);
-    }
-    return io::IoResult<std::filesystem::file_status>::err(io::IoError{
-        .errno_ = error_code.value(), .info_ = error_code.message()});
+    return !error_code ? io::IoResult<std::filesystem::file_status>::ok(status)
+                       : io::IoResult<std::filesystem::file_status>::err(
+                             io::IoError{.errno_ = error_code.value(),
+                                         .info_ = error_code.message()});
   });
 }
 
@@ -153,28 +149,10 @@ auto xyco::fs::File::set_permissions(std::filesystem::perms prms,
   co_return co_await runtime::AsyncFuture<io::IoResult<void>>([&]() {
     std::error_code error_code;
     std::filesystem::permissions(path_, prms, opts, error_code);
-    if (error_code) {
-      return io::IoResult<void>::ok();
-    }
-    return io::IoResult<void>::err(io::IoError{.errno_ = error_code.value(),
-                                               .info_ = error_code.message()});
-  });
-}
-
-template <typename Iterator>
-auto xyco::fs::File::read(Iterator begin, Iterator end)
-    -> runtime::Future<io::IoResult<uintptr_t>> {
-  co_return co_await runtime::AsyncFuture<io::IoResult<uintptr_t>>([&]() {
-    return io::into_sys_result(::read(fd_, &*begin, std::distance(begin, end)));
-  });
-}
-
-template <typename Iterator>
-auto xyco::fs::File::write(Iterator begin, Iterator end)
-    -> runtime::Future<io::IoResult<uintptr_t>> {
-  co_return co_await runtime::AsyncFuture<io::IoResult<uintptr_t>>([&]() {
-    return io::into_sys_result(
-        ::write(fd_, &*begin, std::distance(begin, end)));
+    return !error_code ? io::IoResult<void>::ok()
+                       : io::IoResult<void>::err(
+                             io::IoError{.errno_ = error_code.value(),
+                                         .info_ = error_code.message()});
   });
 }
 
@@ -278,13 +256,13 @@ auto xyco::fs::OpenOptions::get_access_mode() const -> io::IoResult<int> {
 }
 
 auto xyco::fs::OpenOptions::get_creation_mode() const -> io::IoResult<int> {
-  if (write_ && !append_) {
+  if (!write_ && !append_) {
     if (truncate_ || create_ || create_new_) {
       return io::IoResult<int>::err(io::IoError{.errno_ = EINVAL});
     }
   }
   if (append_) {
-    if (truncate_ || create_new_) {
+    if (truncate_ && !create_new_) {
       return io::IoResult<int>::err(io::IoError{.errno_ = EINVAL});
     }
   }

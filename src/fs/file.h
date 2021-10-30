@@ -3,11 +3,12 @@
 
 #include <fcntl.h>
 #include <linux/stat.h>
+#include <unistd.h>
 
 #include <filesystem>
 
 #include "io/utils.h"
-#include "runtime/future.h"
+#include "runtime/async_future.h"
 
 namespace xyco::fs {
 class File {
@@ -41,11 +42,21 @@ class File {
 
   template <typename Iterator>
   auto read(Iterator begin, Iterator end)
-      -> runtime::Future<io::IoResult<uintptr_t>>;
+      -> runtime::Future<io::IoResult<uintptr_t>> {
+    co_return co_await runtime::AsyncFuture<io::IoResult<uintptr_t>>([&]() {
+      return io::into_sys_result(
+          ::read(fd_, &*begin, std::distance(begin, end)));
+    });
+  }
 
   template <typename Iterator>
   auto write(Iterator begin, Iterator end)
-      -> runtime::Future<io::IoResult<uintptr_t>>;
+      -> runtime::Future<io::IoResult<uintptr_t>> {
+    co_return co_await runtime::AsyncFuture<io::IoResult<uintptr_t>>([&]() {
+      return io::into_sys_result(
+          ::write(fd_, &*begin, std::distance(begin, end)));
+    });
+  }
 
   [[nodiscard]] auto flush() const -> runtime::Future<io::IoResult<void>>;
 

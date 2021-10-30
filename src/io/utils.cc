@@ -27,6 +27,7 @@ auto fmt::formatter<xyco::io::IoError>::format(const xyco::io::IoError& err,
   switch (err.errno_) {
     case std::__to_underlying(xyco::io::ErrorKind::Uncategorized):
       error_kind = std::string("Uncategorized");
+      break;
     case std::__to_underlying(xyco::io::ErrorKind::Unsupported):
       error_kind = std::string("Unsupported");
   }
