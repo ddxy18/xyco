@@ -15,6 +15,20 @@ TEST(FmtTypeTest, IoError) {
   ASSERT_EQ(fmt_str, "IoError{errno=4, info=}");
 }
 
+TEST(FmtTypeTest, file_IoError) {
+  auto io_error = xyco::io::IoError();
+  io_error.errno_ = std::__to_underlying(xyco::io::ErrorKind::Unsupported);
+
+  auto fmt_str = fmt::format("{}", io_error);
+
+  ASSERT_EQ(fmt_str, "IoError{error_kind=Unsupported, info=}");
+
+  io_error.errno_ = std::__to_underlying(xyco::io::ErrorKind::Uncategorized);
+  fmt_str = fmt::format("{}", io_error);
+
+  ASSERT_EQ(fmt_str, "IoError{error_kind=Uncategorized, info=}");
+}
+
 TEST(FmtTypeTest, IoExtra_Event) {
   auto event = xyco::runtime::Event{
       .extra_ = xyco::runtime::IoExtra{

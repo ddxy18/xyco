@@ -10,10 +10,10 @@ auto xyco::fs::rename(const std::filesystem::path& old_path,
     std::error_code error_code;
     std::filesystem::rename(old_path, new_path, error_code);
 
-    return error_code ? io::IoResult<void>::ok()
-                      : io::IoResult<void>::err(
-                            io::IoError{.errno_ = error_code.value(),
-                                        .info_ = error_code.message()});
+    return !error_code ? io::IoResult<void>::ok()
+                       : io::IoResult<void>::err(
+                             io::IoError{.errno_ = error_code.value(),
+                                         .info_ = error_code.message()});
   });
 }
 
@@ -23,10 +23,10 @@ auto xyco::fs::remove(const std::filesystem::path& path)
     std::error_code error_code;
     auto exist = std::filesystem::remove(path, error_code);
 
-    return error_code ? io::IoResult<bool>::ok(exist)
-                      : io::IoResult<bool>::err(
-                            io::IoError{.errno_ = error_code.value(),
-                                        .info_ = error_code.message()});
+    return !error_code ? io::IoResult<bool>::ok(exist)
+                       : io::IoResult<bool>::err(
+                             io::IoError{.errno_ = error_code.value(),
+                                         .info_ = error_code.message()});
   });
 }
 
@@ -39,9 +39,9 @@ auto xyco::fs::copy_file(const std::filesystem::path& from_path,
     auto ret =
         std::filesystem::copy_file(from_path, to_path, options, error_code);
 
-    return error_code ? io::IoResult<bool>::ok(ret)
-                      : io::IoResult<bool>::err(
-                            io::IoError{.errno_ = error_code.value(),
-                                        .info_ = error_code.message()});
+    return !error_code ? io::IoResult<bool>::ok(ret)
+                       : io::IoResult<bool>::err(
+                             io::IoError{.errno_ = error_code.value(),
+                                         .info_ = error_code.message()});
   });
 }
