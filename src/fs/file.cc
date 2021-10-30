@@ -161,6 +161,18 @@ auto xyco::fs::File::flush() const -> runtime::Future<io::IoResult<void>> {
       [=]() { return io::into_sys_result(::fsync(fd_)); });
 }
 
+auto xyco::fs::File::seek(off64_t offset, int whence) const
+    -> runtime::Future<io::IoResult<off64_t>> {
+  co_return co_await runtime::AsyncFuture<io::IoResult<off64_t>>([=]() {
+    auto return_offset = ::lseek64(fd_, offset, whence);
+    if (return_offset == -1) {
+      return io::into_sys_result(-1).map(
+          [](auto n) { return static_cast<off64_t>(n); });
+    }
+    return io::IoResult<off64_t>::ok(return_offset);
+  });
+}
+
 xyco::fs::File::File(int fd, std::filesystem::path&& path)
     : fd_(fd), path_(std::move(path)) {}
 
