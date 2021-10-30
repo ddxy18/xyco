@@ -60,6 +60,9 @@ class File {
 
   [[nodiscard]] auto flush() const -> runtime::Future<io::IoResult<void>>;
 
+  [[nodiscard]] auto seek(off64_t offset, int whence) const
+      -> runtime::Future<io::IoResult<off64_t>>;
+
  private:
   File(int fd, std::filesystem::path &&path);
 

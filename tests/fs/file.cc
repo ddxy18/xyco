@@ -284,7 +284,12 @@ TEST_F(FileTest, rw_file) {
     const char *path = "test_rw_file";
 
     auto file_path = (std::string(fs_root_).append(path));
-    auto file = (co_await xyco::fs::File::create(file_path)).unwrap();
+    auto file = (co_await xyco::fs::OpenOptions()
+                     .read(true)
+                     .write(true)
+                     .create_new(true)
+                     .open(file_path))
+                    .unwrap();
 
     auto write_content = std::string("abcd");
     auto write_result =
@@ -292,13 +297,29 @@ TEST_F(FileTest, rw_file) {
 
     CO_ASSERT_EQ(write_result.unwrap(), write_content.size());
 
-    auto read_file =
-        (co_await xyco::fs::OpenOptions().read(true).open(file_path)).unwrap();
+    (co_await file.seek(0, SEEK_DATA)).unwrap();
     auto read_content = std::string(write_content.size(), 0);
     auto read_result =
-        (co_await read_file.read(read_content.begin(), read_content.end()));
+        (co_await file.read(read_content.begin(), read_content.end()));
 
     CO_ASSERT_EQ(read_content, write_content);
+  });
+}
+
+TEST_F(FileTest, seek_invalid) {
+  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+    const char *path = "test_seek_invalid";
+
+    auto file_path = (std::string(fs_root_).append(path));
+    auto file = (co_await xyco::fs::File::create(file_path)).unwrap();
+
+    auto write_content = std::string("abcd");
+    auto write_result =
+        (co_await file.write(write_content.begin(), write_content.end()));
+
+    auto seek_result = (co_await file.seek(4, SEEK_DATA));
+
+    CO_ASSERT_EQ(seek_result.is_err(), true);
   });
 }
 
