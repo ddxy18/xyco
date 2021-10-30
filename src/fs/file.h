@@ -63,6 +63,16 @@ class File {
   [[nodiscard]] auto seek(off64_t offset, int whence) const
       -> runtime::Future<io::IoResult<off64_t>>;
 
+  File(const File &file) = delete;
+
+  File(File &&file) noexcept;
+
+  auto operator=(const File &file) = delete;
+
+  auto operator=(File &&file) noexcept -> File &;
+
+  ~File();
+
  private:
   File(int fd, std::filesystem::path &&path);
 

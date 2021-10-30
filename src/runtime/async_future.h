@@ -24,7 +24,7 @@ class AsyncFuture : public Future<Return> {
     auto result = std::move(*ret);
     delete ret;
 
-    return Ready<Return>{result};
+    return Ready<Return>{std::move(result)};
   }
 
   template <typename Fn>
