@@ -25,6 +25,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          profile: minimal
           default: true
           components: clippy
       - uses: actions-rs/cargo@v1
@@ -63,6 +64,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          profile: minimal
           default: true
       - name: build
         run: |
