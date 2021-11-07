@@ -70,7 +70,7 @@ jobs:
           cmake --build ./build --config Release --target xyco
           echo '[target.x86_64-unknown-linux-gnu]' >> $HOME/.cargo/config.toml
           echo 'rustflags = ["-C", "linker=clang"]' >> $HOME/.cargo/config.toml
-          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy -s src -b build
+          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source=src --build=build --extra-arg="-I/usr/lib/llvm-13/include/c++/v1/"
 
   cpp-test:
     runs-on: ubuntu-latest
