@@ -132,6 +132,8 @@ pub struct ClangTidy {
     root_path: PathBuf,
     #[structopt(long)]
     checks: Option<String>,
+    #[structopt(long)]
+    extra_arg: String,
 }
 
 impl FileCheck for ClangFmt {
@@ -191,6 +193,7 @@ impl FileCheck for ClangTidy {
         cmd.arg(format!("-p={}", me.build_path.to_string_lossy()))
             .arg("--warnings-as-errors")
             .arg("*")
+            .arg(format!("-extra-arg={}", me.extra_arg.as_str()))
             .arg(&path)
             .spawn()?
             .wait()?
@@ -214,6 +217,7 @@ impl FileCheck for ClangTidy {
             build_path: me.build_path.clone(),
             root_path: path,
             checks: me.checks.clone(),
+            extra_arg: me.extra_arg.clone(),
         }
     }
 }
@@ -401,6 +405,7 @@ mod tests {
             root_path: temp_dir.path().to_path_buf(),
             build_path: temp_dir.path().join("build"),
             checks: Some(String::from("modernize-*")),
+            extra_arg: String::from("-I/usr/lib/llvm-13/include/c++/v1/"),
         };
         assert_matches!(ClangTidy::check(Arc::new(pre_commit)).err(),Some(e) if e.downcast_ref::<DiffsError>().unwrap().errs.len() == 1);
     }
