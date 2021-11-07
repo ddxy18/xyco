@@ -6,6 +6,9 @@ on:
       - 'main'
       - 'build/*'
 
+env:
+  llvm_version: 13
+
 jobs:
   rust-tool:
     runs-on: ubuntu-latest
@@ -36,12 +39,18 @@ jobs:
   cpp-build:
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:hirsute
+      image: ubuntu:21.10
     steps:
       - name: install essential packages
         run: |
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
-          apt update && apt install -y build-essential git cmake curl xz-utils
+          apt-get -y update && apt-get -y upgrade
+          apt install -y binutils git cmake curl
+          apt install -y clang-$llvm_version clang-tidy-$llvm_version
+          apt install -y libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev
+          ln -s /usr/bin/clang-tidy-$llvm_version /usr/bin/clang-tidy
+          ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
+          ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
         with:
@@ -51,59 +60,39 @@ jobs:
             ~/.cargo/git/db/
             tools/target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-      - name: cache llvm toolchain
-        id: cache-llvm
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04
-          key: ${{ runner.os }}-llvm-13
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
           default: true
-      - name: install llvm toolchain
-        if: steps.cache-llvm.outputs.cache-hit != 'true'
-        run: |
-          curl -SL https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz | tar -xJC ~
       - name: build
         run: |
-          export PATH=~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04/bin:$PATH
-          export LD_LIBRARY_PATH=~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04/lib:$LD_LIBRARY_PATH
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
           cmake --build ./build --config Release --target xyco
+          echo '[target.x86_64-unknown-linux-gnu]' >> $HOME/.cargo/config.toml
+          echo 'rustflags = ["-C", "linker=clang"]' >> $HOME/.cargo/config.toml
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy -s src -b build
 
   cpp-test:
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:hirsute
+      image: ubuntu:21.10
     steps:
       - name: install essential packages
         run: |
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
-          apt update && apt install -y build-essential git cmake curl xz-utils
+          apt-get -y update && apt-get -y upgrade
+          apt install -y binutils git cmake \
+          clang-$llvm_version libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev
+          ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
+          ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
       - uses: actions/checkout@v2
-      - name: cache llvm toolchain
-        id: cache-llvm
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04
-          key: ${{ runner.os }}-llvm-13
-      - name: install llvm toolchain
-        if: steps.cache-llvm.outputs.cache-hit != 'true'
-        run: |
-          curl -SL https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz | tar -xJC ~
       - name: test
         run: |
-          export PATH=~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04/bin:$PATH
-          export LD_LIBRARY_PATH=~/clang+llvm-13.0.0-x86_64-linux-gnu-ubuntu-20.04/lib:$LD_LIBRARY_PATH
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
           cmake --build ./build --config Release --target xyco_test
           LLVM_PROFILE_FILE="./build/tests/xyco_test.profraw" ./build/tests/xyco_test --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle --gtest_brief=1
-          llvm-profdata merge -sparse ./build/tests/xyco_test.profraw -o ./build/tests/xyco_test.profdata
-          llvm-cov show ./build/tests/xyco_test -instr-profile=./build/tests/xyco_test.profdata > ./build/tests/coverage.txt
+          llvm-profdata-$llvm_version merge -sparse ./build/tests/xyco_test.profraw -o ./build/tests/xyco_test.profdata
+          llvm-cov-$llvm_version show ./build/tests/xyco_test -instr-profile=./build/tests/xyco_test.profdata > ./build/tests/coverage.txt
       - name: upload coverage reports
         uses: codecov/codecov-action@v2
         with:
