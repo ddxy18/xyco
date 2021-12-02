@@ -14,8 +14,7 @@ class AsyncFuture : public Future<Return> {
   [[nodiscard]] auto poll(Handle<void> self) -> Poll<Return> override {
     if (!ready_) {
       ready_ = true;
-      auto res = RuntimeCtx::get_ctx()->blocking_handle()->Register(
-          event_, Interest::All);
+      auto res = RuntimeCtx::get_ctx()->blocking_handle()->Register(event_);
       return Pending();
     }
 

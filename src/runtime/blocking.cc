@@ -63,8 +63,7 @@ xyco::runtime::BlockingRegistry::BlockingRegistry(uintptr_t woker_num)
   pool_.run(*this);
 }
 
-auto xyco::runtime::BlockingRegistry::Register(runtime::Event& ev,
-                                               runtime::Interest interest)
+auto xyco::runtime::BlockingRegistry::Register(runtime::Event& ev)
     -> io::IoResult<void> {
   {
     std::scoped_lock<std::mutex> lock_guard(mutex_);
@@ -75,14 +74,12 @@ auto xyco::runtime::BlockingRegistry::Register(runtime::Event& ev,
   return io::IoResult<void>::ok();
 }
 
-auto xyco::runtime::BlockingRegistry::reregister(runtime::Event& ev,
-                                                 runtime::Interest interest)
+auto xyco::runtime::BlockingRegistry::reregister(runtime::Event& ev)
     -> io::IoResult<void> {
   return io::IoResult<void>::ok();
 }
 
-auto xyco::runtime::BlockingRegistry::deregister(runtime::Event& ev,
-                                                 runtime::Interest interest)
+auto xyco::runtime::BlockingRegistry::deregister(runtime::Event& ev)
     -> io::IoResult<void> {
   return io::IoResult<void>::ok();
 }

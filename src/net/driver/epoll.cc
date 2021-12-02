@@ -6,13 +6,13 @@
 #include <array>
 #include <vector>
 
-auto to_sys(xyco::runtime::Interest interest) -> int {
+auto to_sys(xyco::runtime::IoExtra::Interest interest) -> int {
   switch (interest) {
-    case xyco::runtime::Interest::Read:
+    case xyco::runtime::IoExtra::Interest::Read:
       return EPOLLIN | EPOLLET;
-    case xyco::runtime::Interest::Write:
+    case xyco::runtime::IoExtra::Interest::Write:
       return EPOLLOUT | EPOLLET;
-    case xyco::runtime::Interest::All:
+    case xyco::runtime::IoExtra::Interest::All:
       return EPOLLIN | EPOLLOUT | EPOLLET;
   }
 }
@@ -43,15 +43,15 @@ struct fmt::formatter<epoll_event> : public fmt::formatter<bool> {
   }
 };
 
-auto xyco::net::NetRegistry::Register(runtime::Event &event,
-                                      runtime::Interest interest)
+auto xyco::net::NetRegistry::Register(runtime::Event &event)
     -> io::IoResult<void> {
-  epoll_event epoll_event{.events = static_cast<uint32_t>(to_sys(interest)),
-                          .data = {.ptr = &event}};
+  auto extra = std::get<runtime::IoExtra>(event.extra_);
+  epoll_event epoll_event{
+      .events = static_cast<uint32_t>(to_sys((extra.interest_))),
+      .data = {.ptr = &event}};
 
-  auto fd = std::get<runtime::IoExtra>(event.extra_).fd_;
-  auto result =
-      io::into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_ADD, fd, &epoll_event));
+  auto result = io::into_sys_result(
+      epoll_ctl(epfd_, EPOLL_CTL_ADD, extra.fd_, &epoll_event));
   if (result.is_ok()) {
     TRACE("epoll_ctl add:{}", epoll_event);
   }
@@ -59,15 +59,14 @@ auto xyco::net::NetRegistry::Register(runtime::Event &event,
   return result;
 }
 
-auto xyco::net::NetRegistry::reregister(runtime::Event &event,
-                                        runtime::Interest interest)
+auto xyco::net::NetRegistry::reregister(runtime::Event &event)
     -> io::IoResult<void> {
-  epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
+  auto extra = std::get<runtime::IoExtra>(event.extra_);
+  epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra.interest_))};
   epoll_event.data.ptr = &event;
 
-  auto fd = std::get<runtime::IoExtra>(event.extra_).fd_;
-  auto result =
-      io::into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_MOD, fd, &epoll_event));
+  auto result = io::into_sys_result(
+      epoll_ctl(epfd_, EPOLL_CTL_MOD, extra.fd_, &epoll_event));
   if (result.is_ok()) {
     TRACE("epoll_ctl mod:{}", epoll_event);
   }
@@ -75,15 +74,14 @@ auto xyco::net::NetRegistry::reregister(runtime::Event &event,
   return result;
 }
 
-auto xyco::net::NetRegistry::deregister(runtime::Event &event,
-                                        runtime::Interest interest)
+auto xyco::net::NetRegistry::deregister(runtime::Event &event)
     -> io::IoResult<void> {
-  epoll_event epoll_event{static_cast<uint32_t>(to_sys(interest))};
+  auto extra = std::get<runtime::IoExtra>(event.extra_);
+  epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra.interest_))};
   epoll_event.data.ptr = &event;
 
-  auto fd = std::get<runtime::IoExtra>(event.extra_).fd_;
-  auto result =
-      io::into_sys_result(epoll_ctl(epfd_, EPOLL_CTL_DEL, fd, &epoll_event));
+  auto result = io::into_sys_result(
+      epoll_ctl(epfd_, EPOLL_CTL_DEL, extra.fd_, &epoll_event));
   if (result.is_ok()) {
     TRACE("epoll_ctl del:{}", epoll_event);
   }

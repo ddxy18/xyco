@@ -48,7 +48,21 @@ auto fmt::formatter<xyco::runtime::IoExtra>::format(
       break;
   }
 
-  return format_to(ctx.out(), "IoExtra{{fd_={}, state_={}}}", extra.fd_, state);
+  std::string interest;
+  switch (extra.interest_) {
+    case xyco::runtime::IoExtra::Interest::Read:
+      interest = "Read";
+      break;
+    case xyco::runtime::IoExtra::Interest::Write:
+      interest = "Write";
+      break;
+    case xyco::runtime::IoExtra::Interest::All:
+      interest = "All";
+      break;
+  }
+
+  return format_to(ctx.out(), "IoExtra{{state_={}, interest_={}, fd_={}}}",
+                   state, interest, extra.fd_);
 }
 
 template <typename FormatContext>

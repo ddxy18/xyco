@@ -6,25 +6,19 @@
 namespace xyco::io {
 class IoRegistry : public runtime::GlobalRegistry {
  public:
-  [[nodiscard]] auto Register(runtime::Event& ev, runtime::Interest interest)
+  [[nodiscard]] auto Register(runtime::Event& ev) -> IoResult<void> override;
+
+  [[nodiscard]] auto reregister(runtime::Event& ev) -> IoResult<void> override;
+
+  [[nodiscard]] auto deregister(runtime::Event& ev) -> IoResult<void> override;
+
+  [[nodiscard]] auto register_local(runtime::Event& ev)
       -> IoResult<void> override;
 
-  [[nodiscard]] auto reregister(runtime::Event& ev, runtime::Interest interest)
+  [[nodiscard]] auto reregister_local(runtime::Event& ev)
       -> IoResult<void> override;
 
-  [[nodiscard]] auto deregister(runtime::Event& ev, runtime::Interest interest)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto register_local(runtime::Event& ev,
-                                    runtime::Interest interest)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto reregister_local(runtime::Event& ev,
-                                      runtime::Interest interest)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto deregister_local(runtime::Event& ev,
-                                      runtime::Interest interest)
+  [[nodiscard]] auto deregister_local(runtime::Event& ev)
       -> IoResult<void> override;
 
   [[nodiscard]] auto select(runtime::Events& events, int timeout)
