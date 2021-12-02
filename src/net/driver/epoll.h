@@ -9,13 +9,13 @@ class NetRegistry : public runtime::Registry {
   static const int MAX_TIMEOUT_MS = 2;
   static const int MAX_EVENTS = 10000;
 
-  [[nodiscard]] auto Register(runtime::Event &ev, runtime::Interest interest)
+  [[nodiscard]] auto Register(runtime::Event &ev)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto reregister(runtime::Event &ev, runtime::Interest interest)
+  [[nodiscard]] auto reregister(runtime::Event &ev)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto deregister(runtime::Event &ev, runtime::Interest interest)
+  [[nodiscard]] auto deregister(runtime::Event &ev)
       -> io::IoResult<void> override;
 
   [[nodiscard]] auto select(runtime::Events &events, int timeout)

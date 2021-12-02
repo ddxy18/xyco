@@ -60,13 +60,13 @@ class BlockingRegistry : public runtime::Registry {
  public:
   explicit BlockingRegistry(uintptr_t woker_num);
 
-  [[nodiscard]] auto Register(runtime::Event& ev, runtime::Interest interest)
+  [[nodiscard]] auto Register(runtime::Event& ev)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto reregister(runtime::Event& ev, runtime::Interest interest)
+  [[nodiscard]] auto reregister(runtime::Event& ev)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto deregister(runtime::Event& ev, runtime::Interest interest)
+  [[nodiscard]] auto deregister(runtime::Event& ev)
       -> io::IoResult<void> override;
 
   [[nodiscard]] auto select(runtime::Events& events, int timeout)

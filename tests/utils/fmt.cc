@@ -32,11 +32,13 @@ TEST(FmtTypeTest, file_IoError) {
 TEST(FmtTypeTest, IoExtra_Event) {
   auto event = xyco::runtime::Event{
       .extra_ = xyco::runtime::IoExtra{
-          .state_ = xyco::runtime::IoExtra::State::All, .fd_ = 4}};
+          .state_ = xyco::runtime::IoExtra::State::All,
+          .interest_ = xyco::runtime::IoExtra::Interest::All,
+          .fd_ = 4}};
 
   auto fmt_str = fmt::format("{}", event);
 
-  ASSERT_EQ(fmt_str, "Event{extra_=IoExtra{fd_=4, state_=All}}");
+  ASSERT_EQ(fmt_str, "Event{extra_=IoExtra{state_=All, interest_=All, fd_=4}}");
 }
 
 TEST(FmtTypeTest, TimeExtra_Event) {
