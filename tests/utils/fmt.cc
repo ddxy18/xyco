@@ -37,8 +37,26 @@ TEST(FmtTypeTest, IoExtra_Event) {
           .fd_ = 4}};
 
   auto fmt_str = fmt::format("{}", event);
-
   ASSERT_EQ(fmt_str, "Event{extra_=IoExtra{state_=All, interest_=All, fd_=4}}");
+
+  auto &extra = std::get<xyco::runtime::IoExtra>(event.extra_);
+
+  extra.state_ = xyco::runtime::IoExtra::State::Pending;
+  fmt_str = fmt::format("{}", event);
+  ASSERT_EQ(fmt_str,
+            "Event{extra_=IoExtra{state_=Pending, interest_=All, fd_=4}}");
+
+  extra.interest_ = xyco::runtime::IoExtra::Interest::Read;
+  extra.state_ = xyco::runtime::IoExtra::State::Readable;
+  fmt_str = fmt::format("{}", event);
+  ASSERT_EQ(fmt_str,
+            "Event{extra_=IoExtra{state_=Readable, interest_=Read, fd_=4}}");
+
+  extra.interest_ = xyco::runtime::IoExtra::Interest::Write;
+  extra.state_ = xyco::runtime::IoExtra::State::Writable;
+  fmt_str = fmt::format("{}", event);
+  ASSERT_EQ(fmt_str,
+            "Event{extra_=IoExtra{state_=Writable, interest_=Write, fd_=4}}");
 }
 
 TEST(FmtTypeTest, TimeExtra_Event) {
