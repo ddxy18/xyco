@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <clocale>
 #include <cstdint>
+#include <variant>
 
 #include "runtime/async_future.h"
 
@@ -144,7 +145,7 @@ auto xyco::net::TcpStream::shutdown(io::Shutdown shutdown) const
 
 xyco::net::TcpStream::~TcpStream() {
   if (socket_.into_c_fd() != -1) {
-    std::get<runtime::IoExtra>(event_->extra_).interest_ =
+    std::get_if<runtime::IoExtra>(&event_->extra_)->interest_ =
         runtime::IoExtra::Interest::All;
     runtime::RuntimeCtx::get_ctx()
         ->io_handle()
@@ -253,7 +254,7 @@ auto xyco::net::TcpListener::accept()
 
 xyco::net::TcpListener::~TcpListener() {
   if (socket_.into_c_fd() != -1 && event_ != nullptr) {
-    std::get<runtime::IoExtra>(event_->extra_).interest_ =
+    std::get_if<runtime::IoExtra>(&event_->extra_)->interest_ =
         runtime::IoExtra::Interest::All;
     runtime::RuntimeCtx::get_ctx()->io_handle()->deregister(*event_).unwrap();
   }
