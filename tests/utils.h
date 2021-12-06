@@ -13,6 +13,8 @@
     f();                                       \
   })
 
+constexpr std::chrono::milliseconds time_deviation(7);
+
 class TestRuntimeCtxGuard {
  public:
   TestRuntimeCtxGuard(

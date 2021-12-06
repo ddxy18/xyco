@@ -15,9 +15,8 @@ TEST(SleepTest, sleep_accuracy) {
                         std::chrono::system_clock::now() - before_run)
                         .count();
 
-    // deviation less than 3ms
-    CO_ASSERT_EQ(interval >= timeout_ms.count() - 3 &&
-                     interval <= timeout_ms.count() + 3,
+    CO_ASSERT_EQ(interval >= (timeout_ms - time_deviation).count() &&
+                     interval <= (timeout_ms + time_deviation).count(),
                  true);
   });
 }

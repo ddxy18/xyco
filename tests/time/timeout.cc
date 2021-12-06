@@ -23,7 +23,7 @@ TEST(TimeoutTest, timeout) {
         std::chrono::milliseconds(10);
 
     auto co_inner = [&]() -> xyco::runtime::Future<int> {
-      co_await xyco::time::sleep(timeout_ms + std::chrono::milliseconds(3));
+      co_await xyco::time::sleep(timeout_ms + time_deviation);
       co_return 1;
     };
 
