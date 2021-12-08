@@ -3,6 +3,17 @@
 #include <gtest/gtest.h>
 
 class ResultTest : public ::testing::Test {
+ public:
+  ResultTest()
+      : no_void_ok_(Result<int, int>::ok(1)),
+        no_void_err_(Result<int, int>::err(1)),
+        void_t_ok_(Result<void, int>::ok()),
+        void_t_err_(Result<void, int>::err(1)),
+        void_e_ok_(Result<int, void>::ok(1)),
+        void_e_err_(Result<int, void>::err()),
+        void_t_void_e_ok_(Result<void, void>::ok()),
+        void_t_void_e_err_(Result<void, void>::err()) {}
+
  protected:
   void SetUp() override {
     no_void_ok_ = Result<int, int>::ok(1);

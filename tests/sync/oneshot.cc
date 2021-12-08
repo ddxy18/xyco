@@ -65,7 +65,7 @@ TEST(OneshotTest, receive_first) {
   auto channel_pair = xyco::sync::oneshot::channel<int>();
 
   int value = 0;
-  Result<void, int> send_result;
+  auto send_result = Result<void, int>::ok();
 
   std::thread receive([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
