@@ -41,10 +41,9 @@ class ReadExt {
     auto next_it = dst.begin();
     auto end_it = next_it + dst_init_size;
     auto dst_size = 0;
-    IoResult<uintptr_t> read_result;
 
     while (true) {
-      read_result =
+      auto read_result =
           (co_await reader.read(next_it, end_it)).map([&](auto nbytes) {
             dst_size += nbytes;
             if (dst_size == dst.size()) {

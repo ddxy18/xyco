@@ -45,95 +45,93 @@ concept Printable = requires(T val) {
 
 template <typename T, typename E>
 class Result {
+  using Inner = std::variant<std::monostate, Ok<T>, Err<E>>;
+
  public:
   template <typename... Args>
   static auto ok(Args&&... inner) -> Result<T, E> {
     if constexpr (std::is_same_v<T, void>) {
-      return Result<T, E>(
-          std::variant<Ok<T>, Err<E>, bool>(std::in_place_index<0>, Ok<T>()));
+      return Result<T, E>(Inner(Ok<T>()));
     } else {
-      return Result<T, E>(std::variant<Ok<T>, Err<E>, bool>(
-          std::in_place_index<0>, Ok<T>(T(std::forward<Args>(inner)...))));
+      return Result<T, E>(Inner(Ok<T>(T(std::forward<Args>(inner)...))));
     }
   }
 
   template <typename... Args>
   static auto err(Args&&... inner) -> Result<T, E> {
     if constexpr (std::is_same_v<E, void>) {
-      return Result<T, E>(
-          std::variant<Ok<T>, Err<E>, bool>(std::in_place_index<1>, Err<E>()));
+      return Result<T, E>(Inner(Err<E>()));
     } else {
-      return Result<T, E>(std::variant<Ok<T>, Err<E>, bool>(
-          std::in_place_index<1>, Err<E>(E(std::forward<Args>(inner)...))));
+      return Result<T, E>(Inner(Err<E>(E(std::forward<Args>(inner)...))));
     }
   }
 
   auto unwrap() -> T requires(Printable<E> || std::is_void_v<E>) {
-    if (inner_.index() == 1) {
+    if (inner_.index() == 2) {
       if constexpr (std::is_same_v<E, void>) {
         TRACE("unwrap err:{E=void}");
       } else {
-        TRACE("unwrap err:{}", std::get<1>(inner_).inner_);
+        TRACE("unwrap err:{}", std::get<Err<E>>(inner_).inner_);
       }
       panic();
     }
     if constexpr (!std::is_same_v<T, void>) {
-      return std::move(std::get<0>(inner_).inner_);
+      return std::move(std::get<Ok<T>>(inner_).inner_);
     }
   }
 
   auto unwrap_err() -> E requires(Printable<T> || std::is_void_v<T>) {
-    if (inner_.index() == 0) {
+    if (inner_.index() == 1) {
       if constexpr (std::is_same_v<T, void>) {
         TRACE("unwrap_err err:{T=void}");
       } else {
-        TRACE("unwrap_err err:{}", std::get<0>(inner_).inner_);
+        TRACE("unwrap_err err:{}", std::get<Ok<T>>(inner_).inner_);
       }
       panic();
     }
     if constexpr (!std::is_same_v<E, void>) {
-      return std::get<1>(inner_).inner_;
+      return std::get<Err<E>>(inner_).inner_;
     }
   }
 
   template <typename Fn>
   auto unwrap_or_else(const Fn& f)
       -> T requires std::is_invocable_v<Fn, E> &&(!std::is_same_v<E, void>) {
-    if (inner_.index() == 1) {
-      return f(std::get<1>(inner_).inner_);
+    if (inner_.index() == 2) {
+      return f(std::get<Err<E>>(inner_).inner_);
     }
     if constexpr (!std::is_same_v<T, void>) {
-      return std::get<0>(inner_).inner_;
+      return std::get<Ok<T>>(inner_).inner_;
     }
   }
 
   template <typename Fn>
   auto unwrap_or_else(const Fn& f)
       -> T requires std::is_invocable_v<Fn> && std::is_same_v<E, void> {
-    if (inner_.index() == 1) {
+    if (inner_.index() == 2) {
       return f();
     }
     if constexpr (!std::is_same_v<T, void>) {
-      return std::get<0>(inner_).inner_;
+      return std::get<Ok<T>>(inner_).inner_;
     }
   }
 
   template <typename Fn>
   [[nodiscard]] auto map(const Fn& f) requires std::is_invocable_v<Fn, T> &&
       (!std::is_same_v<T, void>) {
-    using MapT = decltype(f(std::get<0>(
-        std::variant<T, Err<E>, bool>(std::in_place_index<2>, true))));
+    using MapT =
+        decltype(f(std::get<T>(std::variant<std::monostate, T, Err<E>>())));
 
-    if (inner_.index() == 0) {
+    if (inner_.index() == 1) {
       if constexpr (std::is_same_v<MapT, void>) {
-        f(std::get<0>(inner_).inner_);
+        f(std::get<Ok<T>>(inner_).inner_);
         return Result<void, E>::ok();
       } else {
-        return Result<MapT, E>::ok(f(std::get<0>(inner_).inner_));
+        return Result<MapT, E>::ok(f(std::get<Ok<T>>(inner_).inner_));
       }
     }
     if constexpr (!std::is_same_v<E, void>) {
-      return Result<MapT, E>::err(std::get<1>(inner_).inner_);
+      return Result<MapT, E>::err(std::get<Err<E>>(inner_).inner_);
     } else {
       return Result<MapT, void>::err();
     }
@@ -144,7 +142,7 @@ class Result {
   requires std::is_invocable_v<Fn> && std::is_same_v<T, void> {
     using MapT = decltype(f());
 
-    if (inner_.index() == 0) {
+    if (inner_.index() == 1) {
       if constexpr (std::is_same_v<MapT, void>) {
         f();
         return Result<void, E>::ok();
@@ -153,7 +151,7 @@ class Result {
       }
     }
     if constexpr (!std::is_same_v<E, void>) {
-      return Result<MapT, E>::err(std::get<1>(inner_).inner_);
+      return Result<MapT, E>::err(std::get<Err<E>>(inner_).inner_);
     } else {
       return Result<MapT, void>::err();
     }
@@ -162,21 +160,21 @@ class Result {
   template <typename Fn>
   [[nodiscard]] auto map_err(const Fn& f) requires std::is_invocable_v<Fn, E> &&
       (!std::is_same_v<E, void>) {
-    using MapE = decltype(f(std::get<1>(
-        std::variant<Ok<T>, E, bool>(std::in_place_index<2>, true))));
+    using MapE =
+        decltype(f(std::get<E>(std::variant<std::monostate, Ok<T>, E>())));
 
-    if (inner_.index() == 1) {
+    if (inner_.index() == 2) {
       if constexpr (std::is_same_v<MapE, void>) {
-        f(std::get<1>(inner_).inner_);
+        f(std::get<Err<E>>(inner_).inner_);
         return Result<T, void>::err();
       } else {
-        return Result<T, MapE>::err(f(std::get<1>(inner_).inner_));
+        return Result<T, MapE>::err(f(std::get<Err<E>>(inner_).inner_));
       }
     }
     if constexpr (std::is_same_v<T, void>) {
       return Result<void, MapE>::ok();
     } else {
-      return Result<T, MapE>::ok(std::get<0>(inner_).inner_);
+      return Result<T, MapE>::ok(std::get<Ok<T>>(inner_).inner_);
     }
   }
 
@@ -185,7 +183,7 @@ class Result {
   requires std::is_invocable_v<Fn> && std::is_same_v<E, void> {
     using MapE = decltype(f());
 
-    if (inner_.index() == 1) {
+    if (inner_.index() == 2) {
       if constexpr (std::is_same_v<MapE, void>) {
         f();
         return Result<T, void>::err();
@@ -196,11 +194,11 @@ class Result {
     if constexpr (std::is_same_v<T, void>) {
       return Result<void, MapE>::ok();
     } else {
-      return Result<T, MapE>::ok(std::get<0>(inner_).inner_);
+      return Result<T, MapE>::ok(std::get<Ok<T>>(inner_).inner_);
     }
   }
 
-  auto is_ok() -> bool { return inner_.index() == 0; }
+  auto is_ok() -> bool { return inner_.index() == 1; }
 
   auto is_err() -> bool { return !is_ok(); }
 
@@ -211,24 +209,21 @@ class Result {
         return Result<CastT, CastE>::ok();
       } else {
         return Result<CastT, CastE>::ok(
-            static_cast<CastT>(std::get<0>(inner_).inner_));
+            static_cast<CastT>(std::get<Ok<T>>(inner_).inner_));
       }
     }
     if constexpr (std::is_same_v<CastE, void>) {
       return Result<CastT, CastE>::err();
     } else {
       return Result<CastT, CastE>::err(
-          static_cast<CastE>(std::get<1>(inner_).inner_));
+          static_cast<CastE>(std::get<Err<E>>(inner_).inner_));
     }
   }
 
-  Result() = default;
-
  private:
-  explicit Result(std::variant<Ok<T>, Err<E>, bool>&& inner)
-      : inner_(std::move(inner)) {}
+  explicit Result(Inner&& inner) : inner_(std::move(inner)) {}
 
-  std::variant<Ok<T>, Err<E>, bool> inner_{std::in_place_index<2>, true};
+  Inner inner_;
 };
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)

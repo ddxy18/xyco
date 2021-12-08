@@ -55,7 +55,7 @@ TEST(MpscTest, send_to_full_channel) {
   auto channel_pair = xyco::sync::mpsc::channel<int, 1>();
 
   int value = 0;
-  Result<void, int> send_result;
+  auto send_result = Result<void, int>::ok();
 
   std::thread send([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
@@ -83,7 +83,7 @@ TEST(MpscTest, receive_from_empty_channel) {
   auto channel_pair = xyco::sync::mpsc::channel<int, 2>();
 
   int value = 0;
-  Result<void, int> send_result;
+  auto send_result = Result<void, int>::ok();
 
   std::thread receive([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
