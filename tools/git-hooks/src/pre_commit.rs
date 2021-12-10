@@ -182,13 +182,13 @@ impl FileCheck for ClangFmt {
 
 impl FileCheck for ClangTidy {
     fn per_file_check(me: Arc<Self>, path: PathBuf) -> Result<()> {
-        let mut cmd = Command::new("clang-tidy");
+        let cmd = &mut Command::new("clang-tidy");
         #[cfg(test)]
-        let mut cmd = cmd.stdout(Stdio::null()).stderr(Stdio::null());
+        let cmd = cmd.stdout(Stdio::null()).stderr(Stdio::null());
         let cmd = if let Some(checks) = &me.checks {
             cmd.arg(format!("--checks={}", checks))
         } else {
-            &mut cmd
+            cmd
         };
         cmd.arg(format!("-p={}", me.build_path.to_string_lossy()))
             .arg("--warnings-as-errors")
