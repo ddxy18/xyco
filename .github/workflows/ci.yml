@@ -42,18 +42,26 @@ jobs:
     container:
       image: ubuntu:21.10
     steps:
-      - name: install essential packages
-        run: |
+      - run: |
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
           apt-get -y update && apt-get -y upgrade
-          apt install -y binutils git cmake curl
+          apt-get install -y curl git binutils
+      - uses: actions/checkout@v2
+      - uses: technote-space/get-diff-action@v4
+        with:
+          PATTERNS: +(src|tests)/**
+          FILES: CMakeLists.txt
+      - name: install essential packages
+        if: env.GIT_DIFF
+        run: |
+          apt install -y cmake
           apt install -y clang-$llvm_version clang-tidy-$llvm_version
           apt install -y libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev
           ln -s /usr/bin/clang-tidy-$llvm_version /usr/bin/clang-tidy
           ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
           ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
-      - uses: actions/checkout@v2
       - uses: actions/cache@v2
+        if: env.GIT_DIFF
         with:
           path: |
             ~/.cargo/registry/index/
@@ -62,11 +70,13 @@ jobs:
             tools/target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions-rs/toolchain@v1
+        if: env.GIT_DIFF
         with:
           toolchain: nightly
           profile: minimal
           default: true
       - name: build
+        if: env.GIT_DIFF
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
           cmake --build ./build --config Release --target xyco
