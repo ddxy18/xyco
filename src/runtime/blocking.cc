@@ -85,7 +85,7 @@ auto xyco::runtime::BlockingRegistry::deregister(runtime::Event& ev)
 }
 
 auto xyco::runtime::BlockingRegistry::select(runtime::Events& events,
-                                             int timeout)
+                                             std::chrono::milliseconds timeout)
     -> io::IoResult<void> {
   auto i = 0;
   decltype(events_) new_events;

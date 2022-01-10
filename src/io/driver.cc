@@ -36,7 +36,8 @@ auto xyco::io::IoRegistry::deregister_local(runtime::Event& ev)
   return current_thread->second->get_epoll_registry().deregister(ev);
 }
 
-auto xyco::io::IoRegistry::select(runtime::Events& events, int timeout)
+auto xyco::io::IoRegistry::select(runtime::Events& events,
+                                  std::chrono::milliseconds timeout)
     -> IoResult<void> {
   return IoResult<void>::ok();
 }

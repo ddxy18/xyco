@@ -20,7 +20,8 @@ auto xyco::time::TimeRegistry::deregister(runtime::Event &ev)
   return io::IoResult<void>::ok();
 }
 
-auto xyco::time::TimeRegistry::select(runtime::Events &events, int timeout)
+auto xyco::time::TimeRegistry::select(runtime::Events &events,
+                                      std::chrono::milliseconds timeout)
     -> io::IoResult<void> {
   wheel_.expire(events);
 

@@ -6,7 +6,8 @@
 namespace xyco::net {
 class NetRegistry : public runtime::Registry {
  public:
-  static const int MAX_TIMEOUT_MS = 2;
+  constexpr static std::chrono::milliseconds MAX_TIMEOUT =
+      std::chrono::milliseconds(2);
   static const int MAX_EVENTS = 10000;
 
   [[nodiscard]] auto Register(runtime::Event &ev)
@@ -18,7 +19,8 @@ class NetRegistry : public runtime::Registry {
   [[nodiscard]] auto deregister(runtime::Event &ev)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto select(runtime::Events &events, int timeout)
+  [[nodiscard]] auto select(runtime::Events &events,
+                            std::chrono::milliseconds timeout)
       -> io::IoResult<void> override;
 
   NetRegistry();

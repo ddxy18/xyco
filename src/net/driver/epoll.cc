@@ -89,18 +89,20 @@ auto xyco::net::NetRegistry::deregister(runtime::Event &event)
   return result;
 }
 
-auto xyco::net::NetRegistry::select(runtime::Events &events, int timeout)
+auto xyco::net::NetRegistry::select(runtime::Events &events,
+                                    std::chrono::milliseconds timeout)
     -> io::IoResult<void> {
   auto final_timeout = timeout;
   auto final_max_events = MAX_EVENTS;
-  if (timeout < 0 || timeout > MAX_TIMEOUT_MS) {
-    final_timeout = MAX_TIMEOUT_MS;
+  if (timeout > MAX_TIMEOUT) {
+    final_timeout = MAX_TIMEOUT;
   }
 
   static auto epoll_events = std::array<epoll_event, MAX_EVENTS>();
 
   auto select_result = io::into_sys_result(
-      epoll_wait(epfd_, epoll_events.data(), final_max_events, final_timeout));
+      ::epoll_wait(epfd_, epoll_events.data(), final_max_events,
+                   static_cast<int>(final_timeout.count())));
   if (select_result.is_err()) {
     auto err = select_result.unwrap_err();
     if (err.errno_ != EINTR) {
