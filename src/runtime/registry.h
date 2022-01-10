@@ -54,7 +54,8 @@ class Registry {
 
   [[nodiscard]] virtual auto deregister(Event &ev) -> io::IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto select(Events &events, int timeout)
+  [[nodiscard]] virtual auto select(Events &events,
+                                    std::chrono::milliseconds timeout)
       -> io::IoResult<void> = 0;
 
   Registry() = default;
@@ -87,7 +88,7 @@ class GlobalRegistry : public Registry {
   [[nodiscard]] virtual auto deregister_local(Event &ev)
       -> io::IoResult<void> = 0;
 
-  [[nodiscard]] auto select(Events &events, int timeout)
+  [[nodiscard]] auto select(Events &events, std::chrono::milliseconds timeout)
       -> io::IoResult<void> override = 0;
 };
 }  // namespace xyco::runtime

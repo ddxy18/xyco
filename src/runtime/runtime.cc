@@ -73,7 +73,7 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
 
   // drive both local and global registry
   Events events;
-  epoll_registry_.select(events, net::NetRegistry::MAX_TIMEOUT_MS).unwrap();
+  epoll_registry_.select(events, net::NetRegistry::MAX_TIMEOUT).unwrap();
   for (Event &ev : events) {
     if (ev.future_ != nullptr) {
       TRACE("process {}", ev);

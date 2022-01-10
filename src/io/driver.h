@@ -21,7 +21,8 @@ class IoRegistry : public runtime::GlobalRegistry {
   [[nodiscard]] auto deregister_local(runtime::Event& ev)
       -> IoResult<void> override;
 
-  [[nodiscard]] auto select(runtime::Events& events, int timeout)
+  [[nodiscard]] auto select(runtime::Events& events,
+                            std::chrono::milliseconds timeout)
       -> IoResult<void> override;
 };
 }  // namespace xyco::io

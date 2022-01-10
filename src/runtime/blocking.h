@@ -69,7 +69,8 @@ class BlockingRegistry : public runtime::Registry {
   [[nodiscard]] auto deregister(runtime::Event& ev)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto select(runtime::Events& events, int timeout)
+  [[nodiscard]] auto select(runtime::Events& events,
+                            std::chrono::milliseconds timeout)
       -> io::IoResult<void> override;
 
  private:

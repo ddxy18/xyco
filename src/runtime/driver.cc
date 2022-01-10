@@ -4,13 +4,13 @@
 
 auto xyco::runtime::Driver::poll() -> void {
   runtime::Events events;
-  io_registry_.select(events, net::NetRegistry::MAX_TIMEOUT_MS).unwrap();
+  io_registry_.select(events, net::NetRegistry::MAX_TIMEOUT).unwrap();
   RuntimeCtx::get_ctx()->wake(events);
 
-  time_registry_.select(events, net::NetRegistry::MAX_TIMEOUT_MS).unwrap();
+  time_registry_.select(events, net::NetRegistry::MAX_TIMEOUT).unwrap();
   RuntimeCtx::get_ctx()->wake(events);
 
-  blocking_registry_.select(events, net::NetRegistry::MAX_TIMEOUT_MS).unwrap();
+  blocking_registry_.select(events, net::NetRegistry::MAX_TIMEOUT).unwrap();
   RuntimeCtx::get_ctx()->wake(events);
 }
 
