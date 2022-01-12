@@ -11,11 +11,11 @@ class Driver {
  public:
   auto poll() -> void;
 
-  auto net_handle() -> io::IoRegistry*;
+  auto io_handle() -> GlobalRegistry*;
 
-  auto time_handle() -> time::TimeRegistry*;
+  auto time_handle() -> Registry*;
 
-  auto blocking_handle() -> BlockingRegistry*;
+  auto blocking_handle() -> Registry*;
 
   explicit Driver(uintptr_t blocking_num);
 

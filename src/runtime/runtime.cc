@@ -125,7 +125,7 @@ auto xyco::runtime::Runtime::wake(Events &events) -> void {
 }
 
 auto xyco::runtime::Runtime::io_handle() -> GlobalRegistry * {
-  return driver_->net_handle();
+  return driver_->io_handle();
 }
 
 auto xyco::runtime::Runtime::time_handle() -> Registry * {
