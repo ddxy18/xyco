@@ -14,15 +14,15 @@ auto xyco::runtime::Driver::poll() -> void {
   RuntimeCtx::get_ctx()->wake(events);
 }
 
-auto xyco::runtime::Driver::net_handle() -> io::IoRegistry* {
+auto xyco::runtime::Driver::io_handle() -> GlobalRegistry* {
   return &io_registry_;
 }
 
-auto xyco::runtime::Driver::time_handle() -> time::TimeRegistry* {
+auto xyco::runtime::Driver::time_handle() -> Registry* {
   return &time_registry_;
 }
 
-auto xyco::runtime::Driver::blocking_handle() -> BlockingRegistry* {
+auto xyco::runtime::Driver::blocking_handle() -> Registry* {
   return &blocking_registry_;
 }
 
