@@ -2,6 +2,14 @@
 
 #include <thread>
 
+auto xyco::runtime::AsyncFutureExtra::print() const -> std::string {
+  return fmt::format("AsyncFutureExtra{{}}");
+}
+
+xyco::runtime::AsyncFutureExtra::AsyncFutureExtra(
+    std::function<void()> before_extra)
+    : before_extra_(std::move(before_extra)) {}
+
 auto xyco::runtime::Task::operator()() -> void { inner_(); }
 
 xyco::runtime::Task::Task(std::function<void()> task)
@@ -70,7 +78,7 @@ auto xyco::runtime::BlockingRegistry::Register(runtime::Event& ev)
     events_.push_back(ev);
   }
   pool_.spawn(
-      runtime::Task(std::get<AsyncFutureExtra>(ev.extra_).before_extra_));
+      runtime::Task(dynamic_cast<AsyncFutureExtra*>(ev.extra_)->before_extra_));
   return io::IoResult<void>::ok();
 }
 
@@ -91,17 +99,31 @@ auto xyco::runtime::BlockingRegistry::select(runtime::Events& events,
   decltype(events_) new_events;
 
   std::scoped_lock<std::mutex> lock_guard(mutex_);
-  std::copy_if(std::begin(events_), std::end(events_),
-               std::back_inserter(new_events), [](runtime::Event& ev) {
-                 return std::get<AsyncFutureExtra>(ev.extra_).after_extra_ ==
-                        nullptr;
-               });
-  std::copy_if(std::begin(events_), std::end(events_),
-               std::back_inserter(events), [](runtime::Event& ev) {
-                 return std::get<AsyncFutureExtra>(ev.extra_).after_extra_ !=
-                        nullptr;
-               });
+  std::copy_if(
+      std::begin(events_), std::end(events_), std::back_inserter(new_events),
+      [](runtime::Event& ev) {
+        return dynamic_cast<AsyncFutureExtra*>(ev.extra_)->after_extra_ ==
+               nullptr;
+      });
+  std::copy_if(
+      std::begin(events_), std::end(events_), std::back_inserter(events),
+      [](runtime::Event& ev) {
+        return dynamic_cast<AsyncFutureExtra*>(ev.extra_)->after_extra_ !=
+               nullptr;
+      });
   events_ = new_events;
 
   return io::IoResult<void>::ok();
 }
+
+template <typename FormatContext>
+auto fmt::formatter<xyco::runtime::AsyncFutureExtra>::format(
+    const xyco::runtime::AsyncFutureExtra& extra, FormatContext& ctx) const
+    -> decltype(ctx.out()) {
+  return fmt::formatter<std::string>::format(extra.print(), ctx);
+}
+
+template auto fmt::formatter<xyco::runtime::AsyncFutureExtra>::format(
+    const xyco::runtime::AsyncFutureExtra& extra,
+    fmt::basic_format_context<fmt::appender, char>& ctx) const
+    -> decltype(ctx.out());

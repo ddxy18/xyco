@@ -11,39 +11,15 @@ class Registry;
 class Event;
 using Events = std::vector<std::reference_wrapper<Event>>;
 
-class IoExtra {
+class Extra {
  public:
-  enum class State { Pending, Readable, Writable, All };
-  enum class Interest { Read, Write, All };
-
-  [[nodiscard]] auto readable() const -> bool;
-
-  [[nodiscard]] auto writeable() const -> bool;
-
-  auto clear_readable() -> void;
-
-  auto clear_writeable() -> void;
-
-  State state_;
-  Interest interest_;
-  int fd_;
-};
-
-class TimeExtra {
- public:
-  std::chrono::time_point<std::chrono::system_clock> expire_time_;
-};
-
-class AsyncFutureExtra {
- public:
-  std::function<void()> before_extra_;
-  void *after_extra_{};
+  [[nodiscard]] virtual auto print() const -> std::string = 0;
 };
 
 class Event {
  public:
   runtime::FutureBase *future_{};
-  std::variant<AsyncFutureExtra, IoExtra, TimeExtra> extra_;
+  Extra *extra_{};
 };
 
 class Registry {
@@ -92,32 +68,6 @@ class GlobalRegistry : public Registry {
       -> io::IoResult<void> override = 0;
 };
 }  // namespace xyco::runtime
-
-template <>
-struct fmt::formatter<xyco::runtime::IoExtra> : public fmt::formatter<bool> {
-  template <typename FormatContext>
-  auto format(const xyco::runtime::IoExtra &extra, FormatContext &ctx) const
-      -> decltype(ctx.out());
-};
-
-template <>
-struct fmt::formatter<xyco::runtime::TimeExtra> : public fmt::formatter<bool> {
-  template <typename FormatContext>
-  auto format(const xyco::runtime::TimeExtra &extra, FormatContext &ctx) const
-      -> decltype(ctx.out());
-
-  template <typename FormatContext>
-  auto format(const xyco::runtime::AsyncFutureExtra &extra,
-              FormatContext &ctx) const -> decltype(ctx.out());
-};
-
-template <>
-struct fmt::formatter<xyco::runtime::AsyncFutureExtra>
-    : public fmt::formatter<bool> {
-  template <typename FormatContext>
-  auto format(const xyco::runtime::AsyncFutureExtra &extra,
-              FormatContext &ctx) const -> decltype(ctx.out());
-};
 
 template <>
 struct fmt::formatter<xyco::runtime::Event> : public fmt::formatter<bool> {

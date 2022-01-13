@@ -6,6 +6,7 @@
 #include "future.h"
 #include "poll.h"
 #include "runtime.h"
+#include "runtime/blocking.h"
 
 namespace xyco::runtime {
 template <typename Return>
@@ -18,8 +19,7 @@ class AsyncFuture : public Future<Return> {
       return Pending();
     }
 
-    gsl::owner<Return *> ret = gsl::owner<Return *>(
-        std::get<AsyncFutureExtra>(event_.extra_).after_extra_);
+    gsl::owner<Return *> ret = gsl::owner<Return *>(extra_.after_extra_);
     auto result = std::move(*ret);
     delete ret;
 
@@ -30,13 +30,11 @@ class AsyncFuture : public Future<Return> {
   explicit AsyncFuture(Fn &&f) requires(std::is_invocable_r_v<Return, Fn>)
       : Future<Return>(nullptr),
         f_([&]() {
-          auto extra = AsyncFutureExtra{.after_extra_ = new Return(f())};
-          event_.extra_ = extra;
+          extra_.after_extra_ = gsl::owner<Return *>(new Return(f()));
         }),
         ready_(false),
-        event_(xyco::runtime::Event{
-            .future_ = this, .extra_ = AsyncFutureExtra{.before_extra_ = f_}}) {
-  }
+        extra_(f_),
+        event_(xyco::runtime::Event{.future_ = this, .extra_ = &extra_}) {}
 
   AsyncFuture(const AsyncFuture<Return> &) = delete;
 
@@ -51,6 +49,7 @@ class AsyncFuture : public Future<Return> {
  private:
   bool ready_;
   std::function<void()> f_;
+  AsyncFutureExtra extra_;
   Event event_;
 };
 }  // namespace xyco::runtime

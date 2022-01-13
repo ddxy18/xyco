@@ -1,10 +1,12 @@
 #include "wheel.h"
 
+#include "time/driver.h"
+
 xyco::time::Level::Level() : current_it_(events_.begin()) {}
 
 auto xyco::time::Wheel::insert_event(runtime::Event &event) -> void {
   auto expire_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::get<runtime::TimeExtra>(event.extra_).expire_time_ - now_);
+      dynamic_cast<TimeExtra *>(event.extra_)->expire_time_ - now_);
 
   auto level = 0;
   auto tmp_expire_time_ms = expire_time_ms;

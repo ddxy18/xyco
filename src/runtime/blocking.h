@@ -9,6 +9,16 @@
 namespace xyco::runtime {
 class BlockingRegistry;
 
+class AsyncFutureExtra : public Extra {
+ public:
+  [[nodiscard]] auto print() const -> std::string override;
+
+  AsyncFutureExtra(std::function<void()> before_extra);
+
+  std::function<void()> before_extra_;
+  void* after_extra_{};
+};
+
 class Task {
  public:
   auto operator()() -> void;
@@ -79,5 +89,13 @@ class BlockingRegistry : public runtime::Registry {
   BlockingPool pool_;
 };
 }  // namespace xyco::runtime
+
+template <>
+struct fmt::formatter<xyco::runtime::AsyncFutureExtra>
+    : public fmt::formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const xyco::runtime::AsyncFutureExtra& extra,
+              FormatContext& ctx) const -> decltype(ctx.out());
+};
 
 #endif  // XYCO_RUNTIME_BLOCKING_H_
