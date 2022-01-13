@@ -1,10 +1,9 @@
 #include <gtest/gtest.h>
 
-#include <chrono>
-
-#include "io/utils.h"
+#include "io/driver.h"
 #include "net/socket.h"
-#include "runtime/registry.h"
+#include "runtime/blocking.h"
+#include "time/driver.h"
 
 TEST(FmtTypeTest, IoError) {
   auto io_error = xyco::io::IoError();
@@ -30,40 +29,35 @@ TEST(FmtTypeTest, file_IoError) {
 }
 
 TEST(FmtTypeTest, IoExtra_Event) {
-  auto event = xyco::runtime::Event{
-      .extra_ = xyco::runtime::IoExtra{
-          .state_ = xyco::runtime::IoExtra::State::All,
-          .interest_ = xyco::runtime::IoExtra::Interest::All,
-          .fd_ = 4}};
+  auto extra = xyco::io::IoExtra(xyco::io::IoExtra::Interest::All, 4,
+                                 xyco::io::IoExtra::State::All);
+  auto event = xyco::runtime::Event{.extra_ = &extra};
 
   auto fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str, "Event{extra_=IoExtra{state_=All, interest_=All, fd_=4}}");
 
-  auto &extra = std::get<xyco::runtime::IoExtra>(event.extra_);
-
-  extra.state_ = xyco::runtime::IoExtra::State::Pending;
+  extra.state_ = xyco::io::IoExtra::State::Pending;
   fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=Pending, interest_=All, fd_=4}}");
 
-  extra.interest_ = xyco::runtime::IoExtra::Interest::Read;
-  extra.state_ = xyco::runtime::IoExtra::State::Readable;
+  extra.interest_ = xyco::io::IoExtra::Interest::Read;
+  extra.state_ = xyco::io::IoExtra::State::Readable;
   fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=Readable, interest_=Read, fd_=4}}");
 
-  extra.interest_ = xyco::runtime::IoExtra::Interest::Write;
-  extra.state_ = xyco::runtime::IoExtra::State::Writable;
+  extra.interest_ = xyco::io::IoExtra::Interest::Write;
+  extra.state_ = xyco::io::IoExtra::State::Writable;
   fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=Writable, interest_=Write, fd_=4}}");
 }
 
 TEST(FmtTypeTest, TimeExtra_Event) {
-  auto event = xyco::runtime::Event{
-      .extra_ = xyco::runtime::TimeExtra{
-          .expire_time_ = std::chrono::system_clock::time_point(
-              std::chrono::milliseconds(1))}};
+  auto extra = xyco::time::TimeExtra(
+      std::chrono::system_clock::time_point(std::chrono::milliseconds(1)));
+  auto event = xyco::runtime::Event{.extra_ = &extra};
 
   auto fmt_str = fmt::format("{}", event);
 
@@ -72,8 +66,8 @@ TEST(FmtTypeTest, TimeExtra_Event) {
 }
 
 TEST(FmtTypeTest, AsyncFutureExtra_Event) {
-  auto event =
-      xyco::runtime::Event{.extra_ = xyco::runtime::AsyncFutureExtra{}};
+  auto extra = xyco::runtime::AsyncFutureExtra([]() {});
+  auto event = xyco::runtime::Event{.extra_ = &extra};
 
   auto fmt_str = fmt::format("{}", event);
 

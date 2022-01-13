@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 
+#include "io/driver.h"
 #include "io/mod.h"
 #include "net/socket.h"
 #include "runtime/future.h"
@@ -64,8 +65,7 @@ class TcpStream {
 
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
-        auto extra = std::get<runtime::IoExtra>(self_->event_->extra_);
-        if (extra.readable()) {
+        if (self_->extra_->readable()) {
           auto n = ::read(self_->socket_.into_c_fd(), &*begin_,
                           std::distance(begin_, end_));
           if (n != -1) {
@@ -77,7 +77,7 @@ class TcpStream {
                 CoOutput::err(io::into_sys_result(-1).unwrap_err())};
           }
         }
-        extra.clear_readable();
+        self_->extra_->clear_readable();
         self_->event_->future_ = this;
         return runtime::Pending();
       }
@@ -107,8 +107,7 @@ class TcpStream {
 
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
-        auto extra = std::get<runtime::IoExtra>(self_->event_->extra_);
-        if (extra.writeable()) {
+        if (self_->extra_->writeable()) {
           auto n = ::write(self_->socket_.into_c_fd(), &*begin_,
                            std::distance(begin_, end_));
           auto nbytes = io::into_sys_result(n).map(
@@ -116,7 +115,7 @@ class TcpStream {
           INFO("write {} bytes to {}", n, self_->socket_);
           return runtime::Ready<CoOutput>{nbytes};
         }
-        extra.clear_writeable();
+        self_->extra_->clear_writeable();
         self_->event_->future_ = this;
         return runtime::Pending();
       }
@@ -148,9 +147,10 @@ class TcpStream {
   ~TcpStream();
 
  private:
-  explicit TcpStream(Socket &&socket, runtime::IoExtra::State state);
+  explicit TcpStream(Socket &&socket, io::IoExtra::State state);
 
   Socket socket_;
+  std::unique_ptr<io::IoExtra> extra_;
   std::unique_ptr<runtime::Event> event_;
 };
 
@@ -166,13 +166,14 @@ class TcpListener {
 
   auto accept() -> Future<io::IoResult<std::pair<TcpStream, SocketAddr>>>;
 
-  TcpListener(const TcpListener &tcp_stream) = delete;
+  TcpListener(const TcpListener &tcp_listener) = delete;
 
-  TcpListener(TcpListener &&tcp_stream) noexcept = default;
+  TcpListener(TcpListener &&tcp_listener) noexcept = default;
 
-  auto operator=(const TcpListener &tcp_stream) -> TcpListener & = delete;
+  auto operator=(const TcpListener &tcp_listener) -> TcpListener & = delete;
 
-  auto operator=(TcpListener &&tcp_stream) noexcept -> TcpListener & = default;
+  auto operator=(TcpListener &&tcp_listener) noexcept
+      -> TcpListener & = default;
 
   ~TcpListener();
 
@@ -180,6 +181,7 @@ class TcpListener {
   TcpListener(Socket &&socket);
 
   Socket socket_;
+  std::unique_ptr<io::IoExtra> extra_;
   std::unique_ptr<runtime::Event> event_;
 };
 }  // namespace xyco::net

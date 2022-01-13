@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "runtime/runtime.h"
+#include "time/driver.h"
 
 namespace xyco::time {
 template <typename Rep, typename Ratio>
@@ -12,15 +13,15 @@ auto sleep(std::chrono::duration<Rep, Ratio> duration)
   class Future : public runtime::Future<void> {
    public:
     explicit Future(std::chrono::duration<Rep, Ratio> duration)
-        : runtime::Future<void>(nullptr), duration_(duration) {}
+        : runtime::Future<void>(nullptr),
+          duration_(duration),
+          event_(runtime::Event{.extra_ = &extra_}) {}
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<void> override {
       if (!ready_) {
         ready_ = true;
-        event_ = runtime::Event{
-            .future_ = this,
-            .extra_ = runtime::TimeExtra{
-                .expire_time_ = std::chrono::system_clock::now() + duration_}};
+        extra_.expire_time_ = std::chrono::system_clock::now() + duration_;
+        event_.future_ = this;
         runtime::RuntimeCtx::get_ctx()
             ->time_handle()
             ->Register(event_)
@@ -35,6 +36,7 @@ auto sleep(std::chrono::duration<Rep, Ratio> duration)
    private:
     bool ready_{};
     std::chrono::milliseconds duration_;
+    time::TimeExtra extra_;
     runtime::Event event_;
   };
 
