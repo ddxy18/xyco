@@ -2,6 +2,8 @@
 
 #include <gsl/pointers>
 
+#include "net/driver/epoll.h"
+
 thread_local xyco::runtime::Runtime *xyco::runtime::RuntimeCtx::runtime_ =
     nullptr;
 
@@ -9,6 +11,9 @@ auto xyco::runtime::Worker::lanuch(Runtime *runtime) -> void {
   ctx_ = std::thread([=]() {
     runtime->on_start_f_();
     RuntimeCtx::set_ctx(runtime);
+
+    auto tid = std::this_thread::get_id();
+    runtime->driver_->add_registry(std::make_unique<net::NetRegistry>());
     while (!end_) {
       run_loop_once(runtime);
     }
@@ -23,10 +28,6 @@ auto xyco::runtime::Worker::stop() -> void { end_ = true; }
 
 auto xyco::runtime::Worker::get_native_id() const -> std::thread::id {
   return ctx_.get_id();
-}
-
-auto xyco::runtime::Worker::get_epoll_registry() -> net::NetRegistry & {
-  return epoll_registry_;
 }
 
 auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
@@ -72,15 +73,6 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
   }
 
   // drive both local and global registry
-  Events events;
-  epoll_registry_.select(events, net::NetRegistry::MAX_TIMEOUT).unwrap();
-  for (Event &ev : events) {
-    if (ev.future_ != nullptr) {
-      TRACE("process {}", ev);
-      std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
-      handles_.emplace(handles_.begin(), ev.future_->get_handle(), ev.future_);
-    }
-  }
   runtime->driver_->poll();
 
   // try to clear idle workers
@@ -119,6 +111,19 @@ auto xyco::runtime::Runtime::wake(Events &events) -> void {
     if (ev.future_ != nullptr) {
       TRACE("process {}", ev);
       register_future(ev.future_);
+    }
+  }
+  events.clear();
+}
+
+auto xyco::runtime::Runtime::wake_local(Events &events) -> void {
+  auto &worker = workers_.find(std::this_thread::get_id())->second;
+  for (Event &ev : events) {
+    if (ev.future_ != nullptr) {
+      TRACE("process {}", ev);
+      std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
+      worker->handles_.emplace(worker->handles_.begin(),
+                               ev.future_->get_handle(), ev.future_);
     }
   }
   events.clear();
