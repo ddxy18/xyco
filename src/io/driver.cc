@@ -80,23 +80,19 @@ auto xyco::io::IoRegistry::deregister(runtime::Event& ev) -> IoResult<void> {
 
 auto xyco::io::IoRegistry::register_local(runtime::Event& ev)
     -> IoResult<void> {
-  auto current_thread =
-      runtime::RuntimeCtx::get_ctx()->workers_.find(std::this_thread::get_id());
-  return current_thread->second->get_epoll_registry().Register(ev);
+  return runtime::RuntimeCtx::get_ctx()->driver_->local_handle()->Register(ev);
 }
 
 auto xyco::io::IoRegistry::reregister_local(runtime::Event& ev)
     -> IoResult<void> {
-  auto current_thread =
-      runtime::RuntimeCtx::get_ctx()->workers_.find(std::this_thread::get_id());
-  return current_thread->second->get_epoll_registry().reregister(ev);
+  return runtime::RuntimeCtx::get_ctx()->driver_->local_handle()->reregister(
+      ev);
 }
 
 auto xyco::io::IoRegistry::deregister_local(runtime::Event& ev)
     -> IoResult<void> {
-  auto current_thread =
-      runtime::RuntimeCtx::get_ctx()->workers_.find(std::this_thread::get_id());
-  return current_thread->second->get_epoll_registry().deregister(ev);
+  return runtime::RuntimeCtx::get_ctx()->driver_->local_handle()->deregister(
+      ev);
 }
 
 auto xyco::io::IoRegistry::select(runtime::Events& events,

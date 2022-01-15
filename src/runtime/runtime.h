@@ -8,7 +8,6 @@
 
 #include "driver.h"
 #include "future.h"
-#include "net/driver/mod.h"
 
 namespace xyco::runtime {
 class Runtime;
@@ -35,14 +34,11 @@ class Worker {
 
   auto get_native_id() const -> std::thread::id;
 
-  auto get_epoll_registry() -> net::NetRegistry &;
-
  private:
   auto run_loop_once(Runtime *runtime) -> void;
 
   std::atomic_bool end_;
   std::thread ctx_;
-  net::NetRegistry epoll_registry_;
   // (handle, future) -> co_await on a future object
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
   std::mutex handle_mutex_;
@@ -83,6 +79,8 @@ class Runtime {
   auto cancel_future(Handle<PromiseBase> handle) -> void;
 
   auto wake(Events &events) -> void;
+
+  auto wake_local(Events &events) -> void;
 
   auto io_handle() -> GlobalRegistry *;
 
