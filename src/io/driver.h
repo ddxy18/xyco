@@ -46,6 +46,8 @@ class IoRegistry : public runtime::GlobalRegistry {
   [[nodiscard]] auto select(runtime::Events& events,
                             std::chrono::milliseconds timeout)
       -> IoResult<void> override;
+
+  auto local_registry_init() -> void override;
 };
 }  // namespace xyco::io
 

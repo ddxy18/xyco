@@ -23,7 +23,8 @@ auto sleep(std::chrono::duration<Rep, Ratio> duration)
         extra_.expire_time_ = std::chrono::system_clock::now() + duration_;
         event_.future_ = this;
         runtime::RuntimeCtx::get_ctx()
-            ->time_handle()
+            ->driver()
+            .handle<TimeRegistry>()
             ->Register(event_)
             .unwrap();
 

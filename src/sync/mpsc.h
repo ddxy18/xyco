@@ -1,6 +1,8 @@
 #ifndef XYCO_SYNC_MPSC_H
 #define XYCO_SYNC_MPSC_H
 
+#include <queue>
+
 #include "runtime/runtime.h"
 
 namespace xyco::sync::mpsc {

@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <exception>
+#include <mutex>
 #include <thread>
 #include <unordered_map>
 
@@ -47,7 +48,6 @@ class Worker {
 class Runtime {
   friend class Worker;
   friend class Builder;
-  friend class io::IoRegistry;
 
   class Privater {};
 
@@ -78,15 +78,11 @@ class Runtime {
   // Only guarantee the coroutine will not be destroyed when executing.
   auto cancel_future(Handle<PromiseBase> handle) -> void;
 
+  auto driver() -> Driver &;
+
   auto wake(Events &events) -> void;
 
   auto wake_local(Events &events) -> void;
-
-  auto io_handle() -> GlobalRegistry *;
-
-  auto time_handle() -> Registry *;
-
-  auto blocking_handle() -> Registry *;
 
   Runtime(Privater priv);
 
@@ -141,7 +137,7 @@ class Runtime {
   // (handle, future) -> co_await on a future object
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
   std::mutex handle_mutex_;
-  std::unique_ptr<Driver> driver_;
+  Driver driver_;
 
   std::vector<Handle<PromiseBase>> cancel_future_handles_;
   std::mutex cancel_future_handles_mutex_;

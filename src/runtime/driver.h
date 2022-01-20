@@ -4,34 +4,48 @@
 #include <thread>
 #include <unordered_map>
 
-#include "blocking.h"
-#include "io/driver.h"
 #include "registry.h"
-#include "time/driver.h"
 
 namespace xyco::runtime {
 class Driver {
  public:
   auto poll() -> void;
 
-  auto io_handle() -> GlobalRegistry *;
+  template <typename R>
+  auto handle() -> Registry* {
+    return registries_.find(typeid(R).hash_code())->second.get();
+  }
 
-  auto time_handle() -> Registry *;
+  template <typename R>
+  auto local_handle() -> Registry* {
+    return local_registries_.find(std::this_thread::get_id())
+        ->second.find(typeid(R).hash_code())
+        ->second.get();
+  }
 
-  auto blocking_handle() -> Registry *;
+  template <typename R, typename... Args>
+  auto add_registry(Args... args) -> void {
+    registries_[typeid(R).hash_code()] = std::make_unique<R>(args...);
+  }
 
-  auto local_handle() -> Registry *;
+  template <typename R, typename... Args>
+  auto add_local_registry(Args... args) -> void {
+    local_registries_[std::this_thread::get_id()][typeid(R).hash_code()] =
+        std::make_unique<R>(args...);
+  }
 
-  auto add_registry(std::unique_ptr<Registry> registry) -> void;
-
-  explicit Driver(uintptr_t blocking_num);
+  auto add_thread() -> void;
 
  private:
-  io::IoRegistry io_registry_;
-  time::TimeRegistry time_registry_;
-  BlockingRegistry blocking_registry_;
+  constexpr static std::chrono::milliseconds MAX_TIMEOUT =
+      std::chrono::milliseconds(2);
 
-  std::unordered_map<std::thread::id, std::unique_ptr<Registry>>
+  std::unordered_map<decltype(typeid(int).hash_code()),
+                     std::unique_ptr<Registry>>
+      registries_;
+  std::unordered_map<std::thread::id,
+                     std::unordered_map<decltype(typeid(int).hash_code()),
+                                        std::unique_ptr<Registry>>>
       local_registries_;
 };
 }  // namespace xyco::runtime
