@@ -66,6 +66,8 @@ class GlobalRegistry : public Registry {
 
   [[nodiscard]] auto select(Events &events, std::chrono::milliseconds timeout)
       -> io::IoResult<void> override = 0;
+
+  virtual auto local_registry_init() -> void = 0;
 };
 }  // namespace xyco::runtime
 

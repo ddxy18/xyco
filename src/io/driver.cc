@@ -1,5 +1,7 @@
 #include "driver.h"
 
+#include "io/utils.h"
+#include "net/driver/epoll.h"
 #include "runtime/future.h"
 #include "runtime/runtime.h"
 
@@ -80,25 +82,38 @@ auto xyco::io::IoRegistry::deregister(runtime::Event& ev) -> IoResult<void> {
 
 auto xyco::io::IoRegistry::register_local(runtime::Event& ev)
     -> IoResult<void> {
-  return runtime::RuntimeCtx::get_ctx()->driver_->local_handle()->Register(ev);
+  return runtime::RuntimeCtx::get_ctx()
+      ->driver()
+      .local_handle<net::NetRegistry>()
+      ->Register(ev);
 }
 
 auto xyco::io::IoRegistry::reregister_local(runtime::Event& ev)
     -> IoResult<void> {
-  return runtime::RuntimeCtx::get_ctx()->driver_->local_handle()->reregister(
-      ev);
+  return runtime::RuntimeCtx::get_ctx()
+      ->driver()
+      .local_handle<net::NetRegistry>()
+      ->reregister(ev);
 }
 
 auto xyco::io::IoRegistry::deregister_local(runtime::Event& ev)
     -> IoResult<void> {
-  return runtime::RuntimeCtx::get_ctx()->driver_->local_handle()->deregister(
-      ev);
+  return runtime::RuntimeCtx::get_ctx()
+      ->driver()
+      .local_handle<net::NetRegistry>()
+      ->deregister(ev);
 }
 
 auto xyco::io::IoRegistry::select(runtime::Events& events,
                                   std::chrono::milliseconds timeout)
     -> IoResult<void> {
   return IoResult<void>::ok();
+}
+
+auto xyco::io::IoRegistry::local_registry_init() -> void {
+  runtime::RuntimeCtx::get_ctx()
+      ->driver()
+      .add_local_registry<net::NetRegistry>();
 }
 
 template <typename FormatContext>

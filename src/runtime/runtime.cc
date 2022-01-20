@@ -2,7 +2,9 @@
 
 #include <gsl/pointers>
 
-#include "net/driver/epoll.h"
+#include "io/driver.h"
+#include "runtime/blocking.h"
+#include "time/driver.h"
 
 thread_local xyco::runtime::Runtime *xyco::runtime::RuntimeCtx::runtime_ =
     nullptr;
@@ -12,8 +14,7 @@ auto xyco::runtime::Worker::lanuch(Runtime *runtime) -> void {
     runtime->on_start_f_();
     RuntimeCtx::set_ctx(runtime);
 
-    auto tid = std::this_thread::get_id();
-    runtime->driver_->add_registry(std::make_unique<net::NetRegistry>());
+    runtime->driver_.add_thread();
     while (!end_) {
       run_loop_once(runtime);
     }
@@ -73,7 +74,7 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
   }
 
   // drive both local and global registry
-  runtime->driver_->poll();
+  runtime->driver_.poll();
 
   // try to clear idle workers
   {
@@ -106,6 +107,8 @@ auto xyco::runtime::Runtime::cancel_future(Handle<PromiseBase> handle) -> void {
   cancel_future_handles_.push_back(handle);
 }
 
+auto xyco::runtime::Runtime::driver() -> Driver & { return driver_; }
+
 auto xyco::runtime::Runtime::wake(Events &events) -> void {
   for (Event &ev : events) {
     if (ev.future_ != nullptr) {
@@ -127,18 +130,6 @@ auto xyco::runtime::Runtime::wake_local(Events &events) -> void {
     }
   }
   events.clear();
-}
-
-auto xyco::runtime::Runtime::io_handle() -> GlobalRegistry * {
-  return driver_->io_handle();
-}
-
-auto xyco::runtime::Runtime::time_handle() -> Registry * {
-  return driver_->time_handle();
-}
-
-auto xyco::runtime::Runtime::blocking_handle() -> Registry * {
-  return driver_->blocking_handle();
 }
 
 xyco::runtime::Runtime::Runtime(Privater priv) {}
@@ -209,7 +200,9 @@ auto xyco::runtime::Builder::build() const
   auto runtime = std::make_unique<Runtime>(Runtime::Privater());
   runtime->on_start_f_ = on_start_f_;
   runtime->on_stop_f_ = on_stop_f_;
-  runtime->driver_ = std::make_unique<Driver>(blocking_num_);
+  runtime->driver_.add_registry<time::TimeRegistry>();
+  runtime->driver_.add_registry<BlockingRegistry>(blocking_num_);
+  runtime->driver_.add_registry<io::IoRegistry>();
   for (auto i = 0; i < worker_num_; i++) {
     auto worker = std::make_unique<Worker>();
     worker->lanuch(runtime.get());
