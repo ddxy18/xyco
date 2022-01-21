@@ -154,6 +154,14 @@ class Builder {
 
   auto max_blocking_threads(uintptr_t val) -> Builder &;
 
+  template <typename Registry, typename... Args>
+  auto registry(Args... args) -> Builder & {
+    registries_.push_back([=](Runtime *runtime) {
+      runtime->driver_.add_registry<Registry>(args...);
+    });
+    return *this;
+  }
+
   auto on_worker_start(auto (*f)()->void) -> Builder &;
 
   auto on_worker_stop(auto (*f)()->void) -> Builder &;
@@ -164,10 +172,11 @@ class Builder {
   static auto default_f() -> void;
 
   uintptr_t worker_num_;
-  uintptr_t blocking_num_;
 
   auto (*on_start_f_)() -> void;
   auto (*on_stop_f_)() -> void;
+
+  std::vector<std::function<void(Runtime *)>> registries_;
 };
 }  // namespace xyco::runtime
 

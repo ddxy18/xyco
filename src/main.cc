@@ -1,5 +1,3 @@
-#include <string>
-
 #include "net/listener.h"
 #include "runtime/runtime.h"
 
@@ -57,6 +55,7 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
   auto rt = xyco::runtime::Builder::new_multi_thread()
                 .worker_threads(2)
                 .max_blocking_threads(2)
+                .registry<xyco::io::IoRegistry>()
                 .build()
                 .unwrap();
   rt->spawn(start_server());
