@@ -48,6 +48,7 @@ class Worker {
 class Runtime {
   friend class Worker;
   friend class Builder;
+  friend class Driver;
 
   class Privater {};
 
@@ -79,10 +80,6 @@ class Runtime {
   auto cancel_future(Handle<PromiseBase> handle) -> void;
 
   auto driver() -> Driver &;
-
-  auto wake(Events &events) -> void;
-
-  auto wake_local(Events &events) -> void;
 
   Runtime(Privater priv);
 
@@ -126,6 +123,10 @@ class Runtime {
   }
 
   auto deregister_future(Handle<void> future) -> Handle<void>;
+
+  auto wake(Events &events) -> void;
+
+  auto wake_local(Events &events) -> void;
 
   std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
   std::mutex worker_mutex_;
