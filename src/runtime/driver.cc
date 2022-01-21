@@ -19,6 +19,8 @@ auto xyco::runtime::Driver::poll() -> void {
 }
 
 auto xyco::runtime::Driver::add_thread() -> void {
+  local_registries_[std::this_thread::get_id()] = std::remove_reference_t<
+      decltype(local_registries_[std::this_thread::get_id()])>();
   for (auto& [key, registry] : registries_) {
     auto* global_registry = dynamic_cast<GlobalRegistry*>(registry.get());
     if (global_registry != nullptr) {

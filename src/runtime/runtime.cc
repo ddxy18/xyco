@@ -2,9 +2,7 @@
 
 #include <gsl/pointers>
 
-#include "io/driver.h"
 #include "runtime/blocking.h"
-#include "time/driver.h"
 
 thread_local xyco::runtime::Runtime *xyco::runtime::RuntimeCtx::runtime_ =
     nullptr;
@@ -181,7 +179,7 @@ auto xyco::runtime::Builder::worker_threads(uintptr_t val) -> Builder & {
 }
 
 auto xyco::runtime::Builder::max_blocking_threads(uintptr_t val) -> Builder & {
-  blocking_num_ = val;
+  registry<BlockingRegistry>(val);
   return *this;
 }
 
@@ -200,9 +198,9 @@ auto xyco::runtime::Builder::build() const
   auto runtime = std::make_unique<Runtime>(Runtime::Privater());
   runtime->on_start_f_ = on_start_f_;
   runtime->on_stop_f_ = on_stop_f_;
-  runtime->driver_.add_registry<time::TimeRegistry>();
-  runtime->driver_.add_registry<BlockingRegistry>(blocking_num_);
-  runtime->driver_.add_registry<io::IoRegistry>();
+  for (const auto &f : registries_) {
+    f(runtime.get());
+  }
   for (auto i = 0; i < worker_num_; i++) {
     auto worker = std::make_unique<Worker>();
     worker->lanuch(runtime.get());
