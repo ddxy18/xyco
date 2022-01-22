@@ -5,7 +5,6 @@
 #include <experimental/coroutine>
 #include <optional>
 #include <variant>
-#include <vector>
 
 namespace xyco::runtime {
 class Runtime;
@@ -107,20 +106,25 @@ class Awaitable {
     // async function's return type
     if (future_.self_) {
       future_.self_.resume();
-      return true;
+      auto ret = !future_.self_.done();
+      if (ret) {
+        future_.has_suspend_ = true;
+      }
+      return ret;
     }
 
     // Future object
     auto res = future_.poll(waiting_coroutine);
-    if constexpr (std::is_same_v<Output, void>) {
-      return std::holds_alternative<Pending>(res);
-    } else {
-      if (std::holds_alternative<Pending>(res)) {
-        return true;
-      }
-      future_.return_ = std::get<Ready<Output>>(std::move(res)).inner_;
-      return false;
+    auto ret = std::holds_alternative<Pending>(res);
+    if (ret) {
+      future_.has_suspend_ = true;
     }
+    if constexpr (!std::is_same_v<Output, void>) {
+      if (!ret) {
+        future_.return_ = std::get<Ready<Output>>(std::move(res)).inner_;
+      }
+    }
+    return ret;
   }
 
   auto await_resume() -> Output requires(!std::is_same_v<Output, void>) {
@@ -184,7 +188,7 @@ class Future : public FutureBase {
     }
 
     auto final_suspend() noexcept -> FinalAwaitable {
-      return {future_->waiting_};
+      return {future_->has_suspend_ ? future_->waiting_ : nullptr};
     }
 
     auto unhandled_exception() -> void {}
@@ -245,6 +249,7 @@ class Future : public FutureBase {
     return_ = std::move(future.return_);
     self_ = future.self_;
     future.self_ = nullptr;
+    has_suspend_ = future.has_suspend_;
     waiting_ = future.waiting_;
     future.waiting_ = nullptr;
     waited_ = future.waited_;
@@ -265,6 +270,7 @@ class Future : public FutureBase {
  private:
   std::optional<Output> return_{};
   Handle<promise_type> self_;
+  bool has_suspend_{};
   Handle<void> waiting_;
   Handle<PromiseBase> waited_;
 };
@@ -324,6 +330,7 @@ class Future<void> : public FutureBase {
  private:
   std::exception_ptr exception_ptr_;
   Handle<promise_type> self_;
+  bool has_suspend_{};
   Handle<void> waiting_;
   Handle<PromiseBase> waited_;
 };

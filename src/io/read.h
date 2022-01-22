@@ -2,6 +2,7 @@
 #define XYCO_IO_READ_H_
 
 #include <concepts>
+#include <vector>
 
 #include "io/utils.h"
 #include "runtime/future.h"
