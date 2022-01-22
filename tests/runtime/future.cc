@@ -67,6 +67,21 @@ TEST_F(InRuntimeTest, Suspend) {
   ASSERT_EQ(co_result, 1);
 }
 
+TEST_F(InRuntimeTest, NoSuspend_loop) {
+  constexpr int ITERATION_TIMES = 100000;
+
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+    auto co_innner = []() -> xyco::runtime::Future<int> { co_return 1; };
+
+    for (int i = 0; i < ITERATION_TIMES; i++) {
+      int co_result = -1;
+      co_result = co_await co_innner();
+
+      CO_ASSERT_EQ(co_result, 1);
+    }
+  });
+}
+
 TEST_F(NoRuntimeTest, NeverRun) {
   int co_result = -1;
   auto co_outer = TestRuntimeCtx::co_run_without_runtime(
