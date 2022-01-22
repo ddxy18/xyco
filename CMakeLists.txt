@@ -34,3 +34,5 @@ file(GLOB_RECURSE xyco_src_lib "src/fs/*.cc" "src/io/*.cc"
 add_subdirectory(src)
 
 add_subdirectory(tests)
+
+add_subdirectory(benchmark)
