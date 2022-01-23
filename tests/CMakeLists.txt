@@ -2,7 +2,7 @@ include(GoogleTest)
 
 file(GLOB_RECURSE xyco_test_src "*.cc")
 
-set(CMAKE_CXX_FLAGS "-fprofile-instr-generate -fcoverage-mapping -DXYCO_TEST ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-fprofile-instr-generate -fcoverage-mapping ${CMAKE_CXX_FLAGS}")
 
 include_directories(.)
 
