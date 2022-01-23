@@ -1,4 +1,4 @@
-#ifndef XYCO_TEST
+#ifdef XYCO_ENABLE_LOG
 
 #include "logger.h"
 

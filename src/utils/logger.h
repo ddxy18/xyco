@@ -1,7 +1,7 @@
 #ifndef XYCO_UTILS_LOGGER_H_
 #define XYCO_UTILS_LOGGER_H_
 
-#ifndef XYCO_TEST
+#ifdef XYCO_ENABLE_LOG
 
 #include "spdlog/spdlog.h"
 
