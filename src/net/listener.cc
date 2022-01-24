@@ -198,24 +198,7 @@ auto xyco::net::TcpListener::accept()
 
   class Future : public runtime::Future<CoOutput> {
    public:
-    explicit Future(TcpListener *self)
-        : runtime::Future<CoOutput>(nullptr), self_(self) {}
-
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      if (self_->event_ == nullptr) {
-        self_->extra_ = std::make_unique<io::IoExtra>(
-            io::IoExtra::Interest::Read, self_->socket_.into_c_fd());
-        self_->event_ = std::make_unique<runtime::Event>(
-            runtime::Event{.future_ = this, .extra_ = self_->extra_.get()});
-        auto res = runtime::RuntimeCtx::get_ctx()
-                       ->driver()
-                       .handle<io::IoRegistry>()
-                       ->Register(*self_->event_);
-        if (res.is_err()) {
-          return runtime::Ready<CoOutput>{CoOutput::err(res.unwrap_err())};
-        }
-      }
-
       if (self_->extra_->readable()) {
         sockaddr_in addr_in{};
         socklen_t addrlen = sizeof(addr_in);
@@ -226,7 +209,7 @@ auto xyco::net::TcpListener::accept()
         if (accept_result.is_err()) {
           auto err = accept_result.unwrap_err();
           if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK) {
-            self_->extra_->state_ = io::IoExtra::State::Pending;
+            self_->extra_->clear_readable();
             return runtime::Pending();
           }
           return runtime::Ready<CoOutput>{CoOutput::err(err)};
@@ -245,6 +228,21 @@ auto xyco::net::TcpListener::accept()
       }
       return runtime::Pending();
     }
+
+    explicit Future(TcpListener *self)
+        : runtime::Future<CoOutput>(nullptr), self_(self) {
+      self_->event_->future_ = this;
+    }
+
+    Future(const Future &future) = delete;
+
+    Future(Future &&future) = delete;
+
+    auto operator=(Future &&future) -> Future & = delete;
+
+    auto operator=(const Future &future) -> Future & = delete;
+
+    ~Future() override { self_->event_->future_ = nullptr; }
 
    private:
     TcpListener *self_;
@@ -265,7 +263,22 @@ xyco::net::TcpListener::~TcpListener() {
 }
 
 xyco::net::TcpListener::TcpListener(Socket &&socket)
-    : socket_(std::move(socket)) {}
+    : socket_(std::move(socket)),
+      extra_(std::make_unique<io::IoExtra>(io::IoExtra::Interest::Read,
+                                           socket_.into_c_fd(),
+                                           io::IoExtra::State::Readable)),
+      event_(std::make_unique<runtime::Event>(
+          runtime::Event{.extra_ = extra_.get()})) {
+  auto *io_handle = dynamic_cast<runtime::GlobalRegistry *>(
+      runtime::RuntimeCtx::get_ctx()->driver().handle<io::IoRegistry>());
+  auto register_result = io_handle->Register(*event_);
+  if (register_result.is_err()) {
+    auto err = register_result.unwrap_err().errno_;
+    if (err == EEXIST) {
+      io_handle->reregister(*event_).unwrap();
+    }
+  }
+}
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::net::TcpSocket>::format(

@@ -57,12 +57,6 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      Future(Iterator begin, Iterator end, net::TcpStream *self)
-          : runtime::Future<CoOutput>(nullptr),
-            begin_(begin),
-            end_(end),
-            self_(self) {}
-
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
         if (self_->extra_->readable()) {
@@ -77,10 +71,26 @@ class TcpStream {
                 CoOutput::err(io::into_sys_result(-1).unwrap_err())};
           }
         }
-        self_->extra_->clear_readable();
-        self_->event_->future_ = this;
         return runtime::Pending();
       }
+
+      Future(Iterator begin, Iterator end, net::TcpStream *self)
+          : runtime::Future<CoOutput>(nullptr),
+            begin_(begin),
+            end_(end),
+            self_(self) {
+        self_->event_->future_ = this;
+      }
+
+      Future(const Future &future) = delete;
+
+      Future(Future &&future) = delete;
+
+      auto operator=(Future &&future) -> Future & = delete;
+
+      auto operator=(const Future &future) -> Future & = delete;
+
+      ~Future() override { self_->event_->future_ = nullptr; }
 
      private:
       net::TcpStream *self_;
@@ -88,9 +98,7 @@ class TcpStream {
       Iterator end_;
     };
 
-    auto result = co_await Future(begin, end, this);
-    event_->future_ = nullptr;
-    co_return result;
+    co_return co_await Future(begin, end, this);
   }
 
   template <typename Iterator>
@@ -99,12 +107,6 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      Future(Iterator begin, Iterator end, TcpStream *self)
-          : runtime::Future<CoOutput>(nullptr),
-            begin_(begin),
-            end_(end),
-            self_(self) {}
-
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
         if (self_->extra_->writeable()) {
@@ -115,10 +117,26 @@ class TcpStream {
           INFO("write {} bytes to {}", n, self_->socket_);
           return runtime::Ready<CoOutput>{nbytes};
         }
-        self_->extra_->clear_writeable();
-        self_->event_->future_ = this;
         return runtime::Pending();
       }
+
+      Future(Iterator begin, Iterator end, TcpStream *self)
+          : runtime::Future<CoOutput>(nullptr),
+            begin_(begin),
+            end_(end),
+            self_(self) {
+        self_->event_->future_ = this;
+      }
+
+      Future(const Future &future) = delete;
+
+      Future(Future &&future) = delete;
+
+      auto operator=(Future &&future) -> Future & = delete;
+
+      auto operator=(const Future &future) -> Future & = delete;
+
+      ~Future() override { self_->event_->future_ = nullptr; }
 
      private:
       TcpStream *self_;
@@ -126,9 +144,7 @@ class TcpStream {
       Iterator end_;
     };
 
-    auto result = co_await Future(begin, end, this);
-    event_->future_ = nullptr;
-    co_return result;
+    co_return co_await Future(begin, end, this);
   }
 
   static auto flush() -> Future<io::IoResult<void>>;
