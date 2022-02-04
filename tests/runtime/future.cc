@@ -114,3 +114,55 @@ TEST(InRuntimeDeathTest, coroutine_exception) {
 
   ASSERT_EQ(result, 1);
 }
+
+class DropAsserter {
+ public:
+  DropAsserter(char member) : member_(member) { dropped_ = false; }
+
+  DropAsserter(const DropAsserter &drop_asserter) = delete;
+
+  DropAsserter(DropAsserter &&drop_asserter) noexcept {
+    *this = std::move(drop_asserter);
+  }
+
+  auto operator=(const DropAsserter &drop_asserter) -> DropAsserter & = delete;
+
+  auto operator=(DropAsserter &&drop_asserter) noexcept -> DropAsserter & {
+    member_ = drop_asserter.member_;
+    drop_asserter.member_ = -1;
+
+    return *this;
+  }
+
+  static auto assert_drop() { ASSERT_EQ(dropped_, true); }
+
+  ~DropAsserter() {
+    if (member_ != -1) {
+      dropped_ = true;
+    }
+  }
+
+ private:
+  static bool dropped_;
+
+  int member_{};
+};
+
+bool DropAsserter::dropped_ = false;
+
+TEST(DropTest, drop_parameter) {
+  auto rt = xyco::runtime::Builder::new_multi_thread()
+                .worker_threads(1)
+                .max_blocking_threads(1)
+                .build()
+                .unwrap();
+
+  auto drop_asserter = DropAsserter(2);
+  rt->spawn([](DropAsserter drop_asserter) -> xyco::runtime::Future<void> {
+    co_return;
+  }(std::move(drop_asserter)));
+
+  std::this_thread::sleep_for(time_deviation);
+
+  DropAsserter::assert_drop();
+}
