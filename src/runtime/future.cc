@@ -19,7 +19,11 @@ auto xyco::runtime::Future<void>::PromiseType::unhandled_exception() -> void {
   future_->exception_ptr_ = std::current_exception();
 }
 
-auto xyco::runtime::Future<void>::PromiseType::return_void() -> void {}
+auto xyco::runtime::Future<void>::PromiseType::return_void() -> void {
+  if (future_ != nullptr) {
+    future_->return_ = true;
+  }
+}
 
 auto xyco::runtime::Future<void>::PromiseType::pending_future()
     -> Handle<void> {
@@ -78,7 +82,7 @@ xyco::runtime::Future<void>::~Future() {
     // Outer coroutine has to execute after its future dropped, so we ignore it
     // here.
     self_.promise().future_ = nullptr;
-    if (waiting_) {
+    if (waiting_ && has_suspend_) {
       self_.destroy();
     }
   }
