@@ -71,19 +71,20 @@ class FutureBase {
 class FinalAwaitable {
  public:
   FinalAwaitable(Handle<void> waiting_coroutine)
-      : waiting_(waiting_coroutine), ready_(false) {}
+      : waiting_(waiting_coroutine) {}
 
-  [[nodiscard]] auto await_ready() const noexcept -> bool { return ready_; }
+  [[nodiscard]] auto await_ready() const noexcept -> bool {
+    return waiting_ == nullptr;
+  }
 
   auto await_suspend(Handle<void> waiting_coroutine) noexcept {
-    return waiting_ ? waiting_ : std::experimental::noop_coroutine();
+    return waiting_;
   }
 
   auto await_resume() noexcept -> void {}
 
  private:
   Handle<void> waiting_;
-  const bool ready_;
 };
 
 template <typename Output>
@@ -106,7 +107,7 @@ class Awaitable {
     // async function's return type
     if (future_.self_) {
       future_.self_.resume();
-      auto ret = !future_.self_.done();
+      auto ret = !future_.return_.has_value();
       if (ret) {
         future_.has_suspend_ = true;
       }
@@ -262,7 +263,7 @@ class Future : public FutureBase {
   }
 
   ~Future() override {
-    if (self_) {
+    if (self_ && has_suspend_) {
       self_.destroy();
     }
   }
@@ -328,6 +329,7 @@ class Future<void> : public FutureBase {
   ~Future() override;
 
  private:
+  std::optional<bool> return_{};
   std::exception_ptr exception_ptr_;
   Handle<promise_type> self_;
   bool has_suspend_{};
