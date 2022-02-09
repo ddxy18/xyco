@@ -74,12 +74,6 @@ class Runtime {
 
   auto register_future(FutureBase *future) -> void;
 
-  // Try to cancel the future and waited futures.
-  // Futures may be cancelled when suspended or run to the end so the cancel
-  // point is not fixed.
-  // Only guarantee the coroutine will not be destroyed when executing.
-  auto cancel_future(Handle<PromiseBase> handle) -> void;
-
   auto driver() -> Driver &;
 
   Runtime(Privater priv);
@@ -102,6 +96,7 @@ class Runtime {
   auto spawn_catch_exception(Future<T> future) -> Future<void> {
     try {
       co_await future;
+    } catch (CancelException e) {
     } catch (std::exception e) {
       auto tid = std::this_thread::get_id();
 
@@ -123,8 +118,6 @@ class Runtime {
     }
   }
 
-  auto deregister_future(Handle<void> future) -> Handle<void>;
-
   auto wake(Events &events) -> void;
 
   auto wake_local(Events &events) -> void;
@@ -140,9 +133,6 @@ class Runtime {
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
   std::mutex handle_mutex_;
   Driver driver_;
-
-  std::vector<Handle<PromiseBase>> cancel_future_handles_;
-  std::mutex cancel_future_handles_mutex_;
 
   auto (*on_start_f_)() -> void{};
   auto (*on_stop_f_)() -> void{};
