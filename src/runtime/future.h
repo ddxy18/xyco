@@ -8,6 +8,7 @@
 
 namespace xyco::runtime {
 class Runtime;
+class FutureBase;
 template <typename Output>
 class Future;
 
@@ -28,12 +29,14 @@ class Ready<void> {};
 template <typename T>
 using Poll = std::variant<Ready<T>, Pending>;
 
+class CancelException : public std::exception {};
+
 class PromiseBase {
   template <typename Output>
   friend class Awaitable;
 
  public:
-  virtual auto pending_future() -> Handle<void> = 0;
+  virtual auto future() -> FutureBase * = 0;
 
   // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
   auto initial_suspend() noexcept -> std::experimental::suspend_always {
@@ -54,6 +57,8 @@ class FutureBase {
   // async function--self
   // Future object--the co_awaiter
   virtual auto get_handle() -> Handle<PromiseBase> = 0;
+
+  virtual auto cancel() -> void = 0;
 
   FutureBase() = default;
 
@@ -98,12 +103,10 @@ class Awaitable {
 
   auto await_suspend(Handle<void> waiting_coroutine) noexcept -> bool {
     future_.waiting_ = waiting_coroutine;
-    if (waiting_coroutine) {
-      Handle<PromiseBase>::from_address(waiting_coroutine.address())
-          .promise()
-          .set_waited(
-              Handle<PromiseBase>::from_address(future_.self_.address()));
-    }
+    Handle<PromiseBase>::from_address(waiting_coroutine.address())
+        .promise()
+        .set_waited(Handle<PromiseBase>::from_address(future_.self_.address()));
+
     // async function's return type
     if (future_.self_) {
       future_.self_.resume();
@@ -135,6 +138,9 @@ class Awaitable {
           .set_waited(nullptr);
     }
 
+    if (future_.cancelled_) {
+      throw CancelException();
+    }
     auto return_v = std::move(future_.return_);
     if (!return_v.has_value()) {
       std::rethrow_exception(std::current_exception());
@@ -149,6 +155,9 @@ class Awaitable {
           .set_waited(nullptr);
     }
 
+    if (future_.cancelled_) {
+      throw CancelException();
+    }
     auto ptr = future_.self_ ? future_.exception_ptr_ : nullptr;
     if (ptr) {
       std::rethrow_exception(ptr);
@@ -198,11 +207,7 @@ class Future : public FutureBase {
       future_->return_ = std::forward<Output>(value);
     }
 
-    auto pending_future() -> Handle<void> override {
-      return future_->waited_ != nullptr
-                 ? future_->waited_.promise().pending_future()
-                 : future_->self_;
-    }
+    auto future() -> FutureBase * override { return future_; }
 
    private:
     auto set_waited(Handle<PromiseBase> future) -> void override {
@@ -231,6 +236,13 @@ class Future : public FutureBase {
     return self_ == nullptr
                ? Handle<PromiseBase>::from_address(waiting_.address())
                : Handle<PromiseBase>::from_address(self_.address());
+  }
+
+  auto cancel() -> void override {
+    cancelled_ = true;
+    if (waited_ != nullptr) {
+      waited_.promise().future()->cancel();
+    }
   }
 
   // co_await Future object should pass nullptr
@@ -274,6 +286,8 @@ class Future : public FutureBase {
   bool has_suspend_{};
   Handle<void> waiting_;
   Handle<PromiseBase> waited_;
+
+  bool cancelled_{};
 };
 
 template <>
@@ -296,7 +310,7 @@ class Future<void> : public FutureBase {
 
     auto return_void() -> void;
 
-    auto pending_future() -> Handle<void> override;
+    auto future() -> FutureBase * override;
 
    private:
     auto set_waited(Handle<PromiseBase> future) -> void override;
@@ -315,6 +329,8 @@ class Future<void> : public FutureBase {
                ? Handle<PromiseBase>::from_address(waiting_.address())
                : Handle<PromiseBase>::from_address(self_.address());
   }
+
+  auto cancel() -> void override;
 
   explicit Future(Handle<promise_type> self);
 
@@ -335,6 +351,8 @@ class Future<void> : public FutureBase {
   bool has_suspend_{};
   Handle<void> waiting_;
   Handle<PromiseBase> waited_;
+
+  bool cancelled_{};
 };
 }  // namespace xyco::runtime
 

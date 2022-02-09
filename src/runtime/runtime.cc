@@ -30,23 +30,6 @@ auto xyco::runtime::Worker::get_native_id() const -> std::thread::id {
 }
 
 auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
-  // cancel future
-  {
-    std::scoped_lock<std::mutex> lock_guard(
-        runtime->cancel_future_handles_mutex_);
-    decltype(runtime->cancel_future_handles_) cancel_fail_futures;
-    for (auto &handle : runtime->cancel_future_handles_) {
-      if (runtime->deregister_future(handle.promise().pending_future()) !=
-              nullptr ||
-          (handle != nullptr && handle.done())) {
-        handle.destroy();
-      } else {
-        cancel_fail_futures.push_back(handle);
-      }
-    }
-    runtime->cancel_future_handles_ = cancel_fail_futures;
-  }
-
   auto resume = [&end = this->end_](auto &handles, auto &handle_mutex) {
     std::unique_lock<std::mutex> lock_guard(handle_mutex);
     while (!end && !handles.empty()) {
@@ -100,11 +83,6 @@ auto xyco::runtime::Runtime::register_future(FutureBase *future) -> void {
   this->handles_.emplace(handles_.begin(), future->get_handle(), future);
 }
 
-auto xyco::runtime::Runtime::cancel_future(Handle<PromiseBase> handle) -> void {
-  std::scoped_lock<std::mutex> lock_guard(cancel_future_handles_mutex_);
-  cancel_future_handles_.push_back(handle);
-}
-
 auto xyco::runtime::Runtime::driver() -> Driver & { return driver_; }
 
 xyco::runtime::Runtime::Runtime(Privater priv) {}
@@ -115,32 +93,6 @@ xyco::runtime::Runtime::~Runtime() {
     worker->stop();
     worker->ctx_.join();
   }
-}
-
-auto xyco::runtime::Runtime::deregister_future(Handle<void> future)
-    -> Handle<void> {
-  {
-    std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
-    auto pos = std::remove_if(std::begin(handles_), std::end(handles_),
-                              [=](auto pair) { return pair.first == future; });
-    if (pos != std::end(handles_)) {
-      handles_.erase(pos, handles_.end());
-      return future;
-    }
-  }
-
-  for (auto &[id, worker] : workers_) {
-    std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
-    auto handles = worker->handles_;
-    auto pos = std::remove_if(std::begin(handles), std::end(handles),
-                              [=](auto pair) { return pair.first == future; });
-    if (pos != std::end(handles)) {
-      handles.erase(pos, handles_.end());
-      return future;
-    }
-  }
-
-  return nullptr;
 }
 
 auto xyco::runtime::Runtime::wake(Events &events) -> void {

@@ -25,11 +25,8 @@ auto xyco::runtime::Future<void>::PromiseType::return_void() -> void {
   }
 }
 
-auto xyco::runtime::Future<void>::PromiseType::pending_future()
-    -> Handle<void> {
-  return future_->waited_ != nullptr
-             ? future_->waited_.promise().pending_future()
-             : future_->self_;
+auto xyco::runtime::Future<void>::PromiseType::future() -> FutureBase * {
+  return future_;
 }
 
 auto xyco::runtime::Future<void>::PromiseType::set_waited(
@@ -49,6 +46,13 @@ auto xyco::runtime::Future<void>::poll(Handle<void> self) -> Poll<void> {
 
 auto xyco::runtime::Future<void>::poll_wrapper() -> bool {
   return !std::holds_alternative<Pending>(poll(waiting_));
+}
+
+auto xyco::runtime::Future<void>::cancel() -> void {
+  cancelled_ = true;
+  if (waited_ != nullptr) {
+    waited_.promise().future()->cancel();
+  }
 }
 
 xyco::runtime::Future<void>::Future(Handle<promise_type> self) : self_(self) {
