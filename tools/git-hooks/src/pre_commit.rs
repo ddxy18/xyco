@@ -62,13 +62,13 @@ pub trait FileCheck {
         let n = std::cmp::min(paths.len(), num_cpus::get());
 
         let mut out = vec![];
-        let _ = writeln!(&mut out, "run with {} threads", n);
+        let _ = writeln!(out, "run with {} threads", n);
 
-        let _ = writeln!(&mut out, "check files:[");
+        let _ = writeln!(out, "check files:[");
         for path in paths.iter() {
-            let _ = writeln!(&mut out, "{:?}", path);
+            let _ = writeln!(out, "{:?}", path);
         }
-        let _ = writeln!(&mut out, "]");
+        let _ = writeln!(out, "]");
         let _ = stdout().write(out.as_slice());
 
         let mut handles = vec![];
