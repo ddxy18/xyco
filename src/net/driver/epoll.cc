@@ -113,7 +113,9 @@ auto xyco::net::NetRegistry::select(runtime::Events &events,
     return io::IoResult<void>::ok();
   }
   auto ready_len = select_result.unwrap();
-  TRACE("epoll_wait:{}", ready_len);
+  if (ready_len != 0) {
+    TRACE("epoll_wait:{}", ready_len);
+  }
 
   for (auto i = 0; i < ready_len; i++) {
     auto &ready_ev =
@@ -131,7 +133,4 @@ xyco::net::NetRegistry::NetRegistry() : epfd_(epoll_create(1)) {
   }
 }
 
-xyco::net::NetRegistry::~NetRegistry() {
-  // FIXME(dongxiaoyu): replace global epoll with per worker epoll
-  close(epfd_);
-}
+xyco::net::NetRegistry::~NetRegistry() { close(epfd_); }

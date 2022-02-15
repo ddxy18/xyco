@@ -98,7 +98,7 @@ xyco::runtime::Runtime::~Runtime() {
 auto xyco::runtime::Runtime::wake(Events &events) -> void {
   for (Event &ev : events) {
     if (ev.future_ != nullptr) {
-      TRACE("process {}", ev);
+      TRACE("wake {}", ev);
       register_future(ev.future_);
     }
   }
@@ -109,7 +109,7 @@ auto xyco::runtime::Runtime::wake_local(Events &events) -> void {
   auto &worker = workers_.find(std::this_thread::get_id())->second;
   for (Event &ev : events) {
     if (ev.future_ != nullptr) {
-      TRACE("process {}", ev);
+      TRACE("wake local {}", ev);
       std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
       worker->handles_.emplace(worker->handles_.begin(),
                                ev.future_->get_handle(), ev.future_);
