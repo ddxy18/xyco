@@ -2,6 +2,10 @@
 
 #include "panic.h"
 
+#include <unistd.h>
+
+#include <array>
+#include <sstream>
 #include <vector>
 
 #include "libunwind.h"
@@ -13,15 +17,53 @@ class Frame {
   friend struct fmt::formatter<Frame>;
 
  public:
-  Frame() : symbol_(SYMBOL_SIZE, '0') {}
-
- private:
   static constexpr int SYMBOL_SIZE = 256;
 
+  Frame() : symbol_(SYMBOL_SIZE, 0) {}
+
+ private:
   std::string symbol_;
+  std::string line_;
   unw_word_t offset_{};
   unw_word_t ip_{};
 };
+
+auto addr2line(std::vector<unw_word_t> addresses) -> std::string {
+  constexpr int PATH_SIZE = 256;
+
+  std::array<int, 2> pipe{};
+  ::pipe(pipe.data());
+  auto pid = ::fork();
+  if (pid == 0) {
+    ::close(pipe[0]);
+    ::dup2(pipe[1], STDOUT_FILENO);
+    auto exe_path = std::string(PATH_SIZE, 0);
+    auto rlin_size =
+        ::readlink("/proc/self/exe", exe_path.data(), exe_path.size());
+    exe_path.resize(rlin_size);
+    auto cmd = fmt::format("/usr/bin/addr2line -e {} -Cf {:#x}", exe_path,
+                           fmt::join(addresses, " "));
+    std::system(cmd.data());
+    ::close(STDOUT_FILENO);
+    ::close(pipe[1]);
+    std::quick_exit(0);
+  } else if (pid > 0) {
+    ::close(pipe[1]);
+
+    auto demangle_symbol =
+        std::string(Frame::SYMBOL_SIZE * addresses.size(), '0');
+    decltype(::read(0, nullptr, 0)) nbytes = 1;
+    decltype(::read(0, nullptr, 0)) total_bytes = 0;
+    while (nbytes > 0) {
+      nbytes = ::read(pipe[0], (demangle_symbol.begin() + total_bytes).base(),
+                      demangle_symbol.size() - total_bytes);
+      total_bytes += nbytes;
+    }
+    demangle_symbol.resize(total_bytes);
+    return demangle_symbol;
+  }
+  return {};
+}
 
 auto unwind() -> std::vector<Frame> {
   auto ctx = unw_context_t();
@@ -40,6 +82,20 @@ auto unwind() -> std::vector<Frame> {
     frames.push_back(frame);
   }
 
+  auto addresses = std::vector<unw_word_t>(frames.size());
+  std::transform(frames.begin(), frames.end(), addresses.begin(),
+                 [](auto frame) { return frame.ip_; });
+  auto loc = addr2line(addresses);
+  auto loc_stream = std::stringstream(loc);
+  for (int i = 0; i < addresses.size(); i++) {
+    std::string symbol;
+    std::getline(loc_stream, symbol);
+    if (symbol != "??") {
+      frames[i].symbol_ = symbol;
+    }
+    std::getline(loc_stream, frames[i].line_);
+  }
+
   return frames;
 }
 
@@ -52,12 +108,13 @@ struct fmt::formatter<Frame> : public fmt::formatter<std::string> {
     if (frame.symbol_.empty()) {
       symbol = "unkown name";
     }
-    return format_to(ctx.out(), "{}+{:#x} 0x{:0>16x}", symbol, frame.offset_,
-                     frame.ip_);
+    return format_to(ctx.out(), "0x{:0>16x} {} at {}+{:#x}", frame.ip_, symbol,
+                     frame.line_, frame.offset_);
   }
 };
 
 auto panic() -> void {
-  ERROR("panic!\n{}", fmt::join(unwind(), "\n"));
-  throw std::runtime_error("panic");
+  auto unwind_info = fmt::format("panic!\n{}", fmt::join(unwind(), "\n"));
+  ERROR(unwind_info);
+  throw std::runtime_error(unwind_info);
 }
