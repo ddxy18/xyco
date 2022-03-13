@@ -32,7 +32,7 @@ TEST_F(InRuntimeTest, NoSuspend) {
 }
 
 TEST_F(InRuntimeTest, Suspend) {
-  int co_result = -1;
+  std::atomic_int co_result = -1;
   xyco::runtime::Future<int> *handle = nullptr;
   auto co_outer =
       TestRuntimeCtx::co_run_no_wait([&]() -> xyco::runtime::Future<void> {
@@ -83,7 +83,7 @@ TEST_F(InRuntimeTest, NoSuspend_loop) {
 }
 
 TEST_F(NoRuntimeTest, NeverRun) {
-  int co_result = -1;
+  std::atomic_int co_result = -1;
   auto co_outer = TestRuntimeCtx::co_run_without_runtime(
       [&]() -> xyco::runtime::Future<void> {
         auto co_innner = []() -> xyco::runtime::Future<int> { co_return 1; };
@@ -104,7 +104,7 @@ TEST(InRuntimeDeathTest, coroutine_exception) {
     co_return;
   }());
 
-  auto result = -1;
+  std::atomic_int result = -1;
   auto fut = [&]() -> xyco::runtime::Future<void> {
     result = 1;
     co_return;
@@ -143,12 +143,12 @@ class DropAsserter {
   }
 
  private:
-  static bool dropped_;
+  static std::atomic_bool dropped_;
 
   int member_{};
 };
 
-bool DropAsserter::dropped_ = false;
+std::atomic_bool DropAsserter::dropped_ = false;
 
 TEST(DropTest, drop_parameter) {
   auto rt = xyco::runtime::Builder::new_multi_thread()
