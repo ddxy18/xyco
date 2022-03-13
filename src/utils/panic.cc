@@ -43,6 +43,7 @@ auto addr2line(std::vector<unw_word_t> addresses) -> std::string {
     exe_path.resize(rlin_size);
     auto cmd = fmt::format("/usr/bin/addr2line -e {} -Cf {:#x}", exe_path,
                            fmt::join(addresses, " "));
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
     std::system(cmd.data());
     ::close(STDOUT_FILENO);
     ::close(pipe[1]);
