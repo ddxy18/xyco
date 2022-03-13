@@ -1,0 +1,39 @@
+name: codecov
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'build/*'
+
+env:
+  llvm_version: 13
+
+jobs:
+  test-codecov:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:21.10
+    steps:
+      - name: install essential packages
+        run: |
+          ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+          apt-get -y update && apt-get -y upgrade
+          apt install -y binutils git cmake \
+          clang-$llvm_version libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-dev
+          ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
+          ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
+      - uses: actions/checkout@v2
+      - name: test
+        run: |
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
+          cmake --build ./build --config Release --target xyco_test
+          LLVM_PROFILE_FILE="./build/tests/xyco_test.profraw" ./build/tests/xyco_test --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle --gtest_brief=1
+          llvm-profdata-$llvm_version merge -sparse ./build/tests/xyco_test.profraw -o ./build/tests/xyco_test.profdata
+          llvm-cov-$llvm_version show ./build/tests/xyco_test -instr-profile=./build/tests/xyco_test.profdata > ./build/tests/coverage.txt
+      - name: upload coverage reports
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./build/tests/coverage.txt
+          fail_ci_if_error: true
+          verbose: true
