@@ -56,7 +56,7 @@ jobs:
         run: |
           apt install -y cmake
           apt install -y clang-$llvm_version clang-tidy-$llvm_version
-          apt install -y libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev
+          apt install -y libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-dev
           ln -s /usr/bin/clang-tidy-$llvm_version /usr/bin/clang-tidy
           ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
           ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
@@ -94,7 +94,7 @@ jobs:
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
           apt-get -y update && apt-get -y upgrade
           apt install -y binutils git cmake \
-          clang-$llvm_version libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev
+          clang-$llvm_version libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-dev
           ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
           ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
       - uses: actions/checkout@v2
