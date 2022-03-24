@@ -1,6 +1,7 @@
 #ifndef XYCO_IO_DRIVER_H_
 #define XYCO_IO_DRIVER_H_
 
+#include "net/driver/mod.h"
 #include "runtime/registry.h"
 
 namespace xyco::io {
@@ -26,7 +27,7 @@ class IoExtra : public runtime::Extra {
   int fd_;
 };
 
-class IoRegistry : public runtime::GlobalRegistry {
+class IoRegistry : public runtime::Registry {
  public:
   [[nodiscard]] auto Register(runtime::Event& ev) -> IoResult<void> override;
 
@@ -34,20 +35,12 @@ class IoRegistry : public runtime::GlobalRegistry {
 
   [[nodiscard]] auto deregister(runtime::Event& ev) -> IoResult<void> override;
 
-  [[nodiscard]] auto register_local(runtime::Event& ev)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto reregister_local(runtime::Event& ev)
-      -> IoResult<void> override;
-
-  [[nodiscard]] auto deregister_local(runtime::Event& ev)
-      -> IoResult<void> override;
-
   [[nodiscard]] auto select(runtime::Events& events,
                             std::chrono::milliseconds timeout)
       -> IoResult<void> override;
 
-  auto local_registry_init() -> void override;
+ private:
+  net::NetRegistry registry_;
 };
 }  // namespace xyco::io
 

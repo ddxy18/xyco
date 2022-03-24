@@ -69,51 +69,21 @@ xyco::io::IoExtra::IoExtra(Interest interest, int fd, State state)
     : state_(state), interest_(interest), fd_(fd) {}
 
 auto xyco::io::IoRegistry::Register(runtime::Event& ev) -> IoResult<void> {
-  return register_local(ev);
+  return registry_.Register(ev);
 }
 
 auto xyco::io::IoRegistry::reregister(runtime::Event& ev) -> IoResult<void> {
-  return reregister_local(ev);
+  return registry_.reregister(ev);
 }
 
 auto xyco::io::IoRegistry::deregister(runtime::Event& ev) -> IoResult<void> {
-  return deregister_local(ev);
-}
-
-auto xyco::io::IoRegistry::register_local(runtime::Event& ev)
-    -> IoResult<void> {
-  return runtime::RuntimeCtx::get_ctx()
-      ->driver()
-      .local_handle<net::NetRegistry>()
-      ->Register(ev);
-}
-
-auto xyco::io::IoRegistry::reregister_local(runtime::Event& ev)
-    -> IoResult<void> {
-  return runtime::RuntimeCtx::get_ctx()
-      ->driver()
-      .local_handle<net::NetRegistry>()
-      ->reregister(ev);
-}
-
-auto xyco::io::IoRegistry::deregister_local(runtime::Event& ev)
-    -> IoResult<void> {
-  return runtime::RuntimeCtx::get_ctx()
-      ->driver()
-      .local_handle<net::NetRegistry>()
-      ->deregister(ev);
+  return registry_.deregister(ev);
 }
 
 auto xyco::io::IoRegistry::select(runtime::Events& events,
                                   std::chrono::milliseconds timeout)
     -> IoResult<void> {
-  return IoResult<void>::ok();
-}
-
-auto xyco::io::IoRegistry::local_registry_init() -> void {
-  runtime::RuntimeCtx::get_ctx()
-      ->driver()
-      .add_local_registry<net::NetRegistry>();
+  return registry_.select(events, timeout);
 }
 
 template <typename FormatContext>

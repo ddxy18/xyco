@@ -30,7 +30,7 @@ auto xyco::runtime::Worker::get_native_id() const -> std::thread::id {
 }
 
 auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
-  auto resume = [&end = this->end_](auto &handles, auto &handle_mutex) {
+  auto resume = [&end = end_](auto &handles, auto &handle_mutex) {
     std::unique_lock<std::mutex> lock_guard(handle_mutex);
     while (!end && !handles.empty()) {
       auto [handle, future] = handles.back();
@@ -80,7 +80,7 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
 
 auto xyco::runtime::Runtime::register_future(FutureBase *future) -> void {
   std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
-  this->handles_.emplace(handles_.begin(), future->get_handle(), future);
+  handles_.emplace(handles_.begin(), future->get_handle(), future);
 }
 
 auto xyco::runtime::Runtime::driver() -> Driver & { return driver_; }

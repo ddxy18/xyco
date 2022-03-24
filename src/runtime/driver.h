@@ -1,6 +1,7 @@
 #ifndef XYCO_RUNTIME_DRIVER_H_
 #define XYCO_RUNTIME_DRIVER_H_
 
+#include <mutex>
 #include <thread>
 #include <unordered_map>
 
@@ -43,6 +44,8 @@ class Driver {
   std::unordered_map<decltype(typeid(int).hash_code()),
                      std::unique_ptr<Registry>>
       registries_;
+  std::unordered_map<decltype(typeid(int).hash_code()), std::mutex> mutexes_;
+
   std::unordered_map<std::thread::id,
                      std::unordered_map<decltype(typeid(int).hash_code()),
                                         std::unique_ptr<Registry>>>

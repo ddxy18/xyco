@@ -149,9 +149,10 @@ auto xyco::net::TcpStream::shutdown(io::Shutdown shutdown) const
 xyco::net::TcpStream::~TcpStream() {
   if (socket_.into_c_fd() != -1) {
     extra_->interest_ = io::IoExtra::Interest::All;
-    dynamic_cast<runtime::GlobalRegistry *>(
-        runtime::RuntimeCtx::get_ctx()->driver().handle<io::IoRegistry>())
-        ->deregister_local(*event_)
+    runtime::RuntimeCtx::get_ctx()
+        ->driver()
+        .handle<io::IoRegistry>()
+        ->deregister(*event_)
         .unwrap();
   }
 }
@@ -162,13 +163,13 @@ xyco::net::TcpStream::TcpStream(Socket &&socket, xyco::io::IoExtra::State state)
                                            socket_.into_c_fd(), state)),
       event_(std::make_unique<runtime::Event>(
           runtime::Event{.extra_ = extra_.get()})) {
-  auto *io_handle = dynamic_cast<runtime::GlobalRegistry *>(
-      runtime::RuntimeCtx::get_ctx()->driver().handle<io::IoRegistry>());
-  auto register_result = io_handle->register_local(*event_);
+  auto *io_handle =
+      runtime::RuntimeCtx::get_ctx()->driver().handle<io::IoRegistry>();
+  auto register_result = io_handle->Register(*event_);
   if (register_result.is_err()) {
     auto err = register_result.unwrap_err().errno_;
     if (err == EEXIST) {
-      io_handle->reregister_local(*event_).unwrap();
+      io_handle->reregister(*event_).unwrap();
     }
   }
 }
@@ -269,8 +270,8 @@ xyco::net::TcpListener::TcpListener(Socket &&socket)
                                            io::IoExtra::State::Readable)),
       event_(std::make_unique<runtime::Event>(
           runtime::Event{.extra_ = extra_.get()})) {
-  auto *io_handle = dynamic_cast<runtime::GlobalRegistry *>(
-      runtime::RuntimeCtx::get_ctx()->driver().handle<io::IoRegistry>());
+  auto *io_handle =
+      runtime::RuntimeCtx::get_ctx()->driver().handle<io::IoRegistry>();
   auto register_result = io_handle->Register(*event_);
   if (register_result.is_err()) {
     auto err = register_result.unwrap_err().errno_;
