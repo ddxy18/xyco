@@ -13,6 +13,7 @@ auto xyco::runtime::Driver::poll() -> void {
   }
 
   for (auto& [key, registry] : registries_) {
+    std::unique_lock<std::mutex> lock_guard(mutexes_[key]);
     registry->select(events, MAX_TIMEOUT).unwrap();
     RuntimeCtx::get_ctx()->wake(events);
   }

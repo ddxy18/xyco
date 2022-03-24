@@ -22,7 +22,7 @@ FetchContent_MakeAvailable(googletest)
 FetchContent_Declare(GSL GIT_REPOSITORY "https://gitee.com/mirrors/GSL")
 FetchContent_MakeAvailable(GSL)
 FetchContent_Declare(spdlog
-                     GIT_REPOSITORY "https://gitee.com/ywh_welcom/spdlog.git"
+                     GIT_REPOSITORY "https://gitee.com/QuantumStudio/spdlog.git"
                      GIT_TAG v1.x)
 FetchContent_MakeAvailable(spdlog)
 
