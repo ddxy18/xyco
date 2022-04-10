@@ -83,9 +83,11 @@ auto xyco::runtime::Future<void>::operator=(Future<void> &&future) noexcept
 
 xyco::runtime::Future<void>::~Future() {
   if (self_) {
-    // Outer coroutine has to execute after its future dropped, so we ignore it
-    // here.
-    self_.promise().future_ = nullptr;
+    // Outermost coroutine has to execute after its future dropped, so we ignore
+    // it here.
+    if (!waiting_) {
+      self_.promise().future_ = nullptr;
+    }
     if (waiting_ && has_suspend_) {
       self_.destroy();
     }
