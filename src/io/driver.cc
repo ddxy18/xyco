@@ -46,6 +46,9 @@ auto xyco::io::IoExtra::print() const -> std::string {
     case xyco::io::IoExtra::State::All:
       state = "All";
       break;
+    case xyco::io::IoExtra::State::Error:
+      state = "Error";
+      break;
   }
 
   std::string interest;

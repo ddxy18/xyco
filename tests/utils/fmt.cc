@@ -52,6 +52,11 @@ TEST(FmtTypeTest, IoExtra_Event) {
   fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=Writable, interest_=Write, fd_=4}}");
+
+  extra.state_ = xyco::io::IoExtra::State::Error;
+  fmt_str = fmt::format("{}", event);
+  ASSERT_EQ(fmt_str,
+            "Event{extra_=IoExtra{state_=Error, interest_=Write, fd_=4}}");
 }
 
 TEST(FmtTypeTest, TimeExtra_Event) {
