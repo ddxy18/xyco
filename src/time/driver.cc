@@ -11,20 +11,20 @@ xyco::time::TimeExtra::TimeExtra(
     std::chrono::time_point<std::chrono::system_clock> expire_time)
     : expire_time_(expire_time) {}
 
-auto xyco::time::TimeRegistry::Register(runtime::Event &ev)
+auto xyco::time::TimeRegistry::Register(std::shared_ptr<runtime::Event> event)
     -> io::IoResult<void> {
-  wheel_.insert_event(ev);
+  wheel_.insert_event(event);
 
   return io::IoResult<void>::ok();
 }
 
 // TODO(dongxiaoyu): support update expire time and cancel event
-auto xyco::time::TimeRegistry::reregister(runtime::Event &ev)
+auto xyco::time::TimeRegistry::reregister(std::shared_ptr<runtime::Event> event)
     -> io::IoResult<void> {
   return io::IoResult<void>::ok();
 }
 
-auto xyco::time::TimeRegistry::deregister(runtime::Event &ev)
+auto xyco::time::TimeRegistry::deregister(std::shared_ptr<runtime::Event> event)
     -> io::IoResult<void> {
   return io::IoResult<void>::ok();
 }

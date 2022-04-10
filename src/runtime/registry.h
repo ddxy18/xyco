@@ -1,34 +1,47 @@
 #ifndef XYCO_RUNTIME_REGISTRY_H_
 #define XYCO_RUNTIME_REGISTRY_H_
 
-#include <chrono>
-
 #include "io/utils.h"
 
 namespace xyco::runtime {
 class FutureBase;
 class Registry;
 class Event;
-using Events = std::vector<std::reference_wrapper<Event>>;
+using Events = std::vector<std::weak_ptr<Event>>;
 
 class Extra {
  public:
   [[nodiscard]] virtual auto print() const -> std::string = 0;
+
+  Extra() = default;
+
+  Extra(const Extra &extra) = delete;
+
+  Extra(Extra &&extra) = delete;
+
+  auto operator=(const Extra &) -> Extra & = delete;
+
+  auto operator=(Extra &&) -> Extra & = delete;
+
+  virtual ~Extra() = default;
 };
 
 class Event {
  public:
   runtime::FutureBase *future_{};
-  Extra *extra_{};
+  std::unique_ptr<Extra> extra_;
 };
 
 class Registry {
  public:
-  [[nodiscard]] virtual auto Register(Event &ev) -> io::IoResult<void> = 0;
+  [[nodiscard]] virtual auto Register(std::shared_ptr<Event> event)
+      -> io::IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto reregister(Event &ev) -> io::IoResult<void> = 0;
+  [[nodiscard]] virtual auto reregister(std::shared_ptr<Event> event)
+      -> io::IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto deregister(Event &ev) -> io::IoResult<void> = 0;
+  [[nodiscard]] virtual auto deregister(std::shared_ptr<Event> event)
+      -> io::IoResult<void> = 0;
 
   [[nodiscard]] virtual auto select(Events &events,
                                     std::chrono::milliseconds timeout)
@@ -49,19 +62,22 @@ class Registry {
 
 class GlobalRegistry : public Registry {
  public:
-  [[nodiscard]] auto Register(Event &ev) -> io::IoResult<void> override = 0;
+  [[nodiscard]] auto Register(std::shared_ptr<Event> event)
+      -> io::IoResult<void> override = 0;
 
-  [[nodiscard]] auto reregister(Event &ev) -> io::IoResult<void> override = 0;
+  [[nodiscard]] auto reregister(std::shared_ptr<Event> event)
+      -> io::IoResult<void> override = 0;
 
-  [[nodiscard]] auto deregister(Event &ev) -> io::IoResult<void> override = 0;
+  [[nodiscard]] auto deregister(std::shared_ptr<Event> event)
+      -> io::IoResult<void> override = 0;
 
-  [[nodiscard]] virtual auto register_local(Event &ev)
+  [[nodiscard]] virtual auto register_local(std::shared_ptr<Event> event)
       -> io::IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto reregister_local(Event &ev)
+  [[nodiscard]] virtual auto reregister_local(std::shared_ptr<Event> event)
       -> io::IoResult<void> = 0;
 
-  [[nodiscard]] virtual auto deregister_local(Event &ev)
+  [[nodiscard]] virtual auto deregister_local(std::shared_ptr<Event> event)
       -> io::IoResult<void> = 0;
 
   [[nodiscard]] auto select(Events &events, std::chrono::milliseconds timeout)

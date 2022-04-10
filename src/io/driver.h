@@ -7,20 +7,40 @@
 namespace xyco::io {
 class IoExtra : public runtime::Extra {
  public:
-  enum class State { Pending, Readable, Writable, All, Error };
+  class State {
+    friend class IoExtra;
+
+   public:
+    enum {
+      Registered = 0b1,
+      Pending = 0b10,
+      Readable = 0b100,
+      Writable = 0b1000,
+      Error = 0b10000
+    };
+
+    template <size_t F, bool flag = true>
+    auto set_field() {
+      if constexpr (flag) {
+        field_ |= F;
+      } else {
+        field_ &= ~F;
+      }
+    }
+
+    template <size_t F>
+    [[nodiscard]] auto get_field() -> bool {
+      return field_ & F;
+    }
+
+   private:
+    uint8_t field_;
+  };
   enum class Interest { Read, Write, All };
-
-  [[nodiscard]] auto readable() const -> bool;
-
-  [[nodiscard]] auto writeable() const -> bool;
-
-  auto clear_readable() -> void;
-
-  auto clear_writeable() -> void;
 
   [[nodiscard]] auto print() const -> std::string override;
 
-  IoExtra(Interest interest, int fd, State state = State::Pending);
+  IoExtra(Interest interest, int fd);
 
   State state_;
   Interest interest_;
@@ -29,11 +49,14 @@ class IoExtra : public runtime::Extra {
 
 class IoRegistry : public runtime::Registry {
  public:
-  [[nodiscard]] auto Register(runtime::Event& ev) -> IoResult<void> override;
+  [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
+      -> IoResult<void> override;
 
-  [[nodiscard]] auto reregister(runtime::Event& ev) -> IoResult<void> override;
+  [[nodiscard]] auto reregister(std::shared_ptr<runtime::Event> event)
+      -> IoResult<void> override;
 
-  [[nodiscard]] auto deregister(runtime::Event& ev) -> IoResult<void> override;
+  [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
+      -> IoResult<void> override;
 
   [[nodiscard]] auto select(runtime::Events& events,
                             std::chrono::milliseconds timeout)

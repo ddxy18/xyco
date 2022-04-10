@@ -70,13 +70,13 @@ class BlockingRegistry : public runtime::Registry {
  public:
   explicit BlockingRegistry(uintptr_t woker_num);
 
-  [[nodiscard]] auto Register(runtime::Event& ev)
+  [[nodiscard]] auto Register(std::shared_ptr<Event> event)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto reregister(runtime::Event& ev)
+  [[nodiscard]] auto reregister(std::shared_ptr<Event> event)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto deregister(runtime::Event& ev)
+  [[nodiscard]] auto deregister(std::shared_ptr<Event> event)
       -> io::IoResult<void> override;
 
   [[nodiscard]] auto select(runtime::Events& events,

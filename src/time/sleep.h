@@ -15,30 +15,27 @@ auto sleep(std::chrono::duration<Rep, Ratio> duration)
     explicit Future(std::chrono::duration<Rep, Ratio> duration)
         : runtime::Future<void>(nullptr),
           duration_(duration),
-          event_(runtime::Event{.extra_ = &extra_}) {}
+          event_(std::make_shared<runtime::Event>(
+              runtime::Event{.extra_ = std::make_unique<TimeExtra>()})) {}
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<void> override {
       if (!ready_) {
         ready_ = true;
-        extra_.expire_time_ = std::chrono::system_clock::now() + duration_;
-        event_.future_ = this;
-        runtime::RuntimeCtx::get_ctx()
-            ->driver()
-            .handle<TimeRegistry>()
-            ->Register(event_)
-            .unwrap();
+        auto *extra = dynamic_cast<TimeExtra *>(event_->extra_.get());
+        extra->expire_time_ = std::chrono::system_clock::now() + duration_;
+        event_->future_ = this;
+        runtime::RuntimeCtx::get_ctx()->driver().Register<TimeRegistry>(event_);
 
         return runtime::Pending();
       }
 
-      return runtime::Ready<void>{};
+      return runtime::Ready<void>();
     }
 
    private:
     bool ready_{};
     std::chrono::milliseconds duration_;
-    time::TimeExtra extra_;
-    runtime::Event event_;
+    std::shared_ptr<runtime::Event> event_;
   };
 
   co_await Future(duration);
