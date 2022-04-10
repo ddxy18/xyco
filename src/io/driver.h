@@ -7,7 +7,7 @@
 namespace xyco::io {
 class IoExtra : public runtime::Extra {
  public:
-  enum class State { Pending, Readable, Writable, All };
+  enum class State { Pending, Readable, Writable, All, Error };
   enum class Interest { Read, Write, All };
 
   [[nodiscard]] auto readable() const -> bool;

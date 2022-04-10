@@ -20,6 +20,9 @@ auto to_sys(xyco::io::IoExtra::Interest interest) -> int {
 }
 
 auto to_state(uint32_t events) -> xyco::io::IoExtra::State {
+  if ((events & EPOLLERR) != 0U || (events & EPOLLHUP) != 0U) {
+    return xyco::io::IoExtra::State::Error;
+  }
   if ((events & EPOLLIN) != 0U) {
     if ((events & EPOLLOUT) != 0U) {
       return xyco::io::IoExtra::State::All;
