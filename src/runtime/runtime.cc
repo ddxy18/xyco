@@ -30,7 +30,7 @@ auto xyco::runtime::Worker::get_native_id() const -> std::thread::id {
 }
 
 auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
-  auto resume = [&end = end_](auto &handles, auto &handle_mutex) {
+  auto resume = [runtime, &end = end_](auto &handles, auto &handle_mutex) {
     std::unique_lock<std::mutex> lock_guard(handle_mutex);
     while (!end && !handles.empty()) {
       auto [handle, future] = handles.back();
@@ -38,6 +38,7 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
       lock_guard.unlock();
       if (future == nullptr || future->poll_wrapper()) {
         handle.resume();
+        runtime->driver().dispatch();
       }
       lock_guard.lock();
     }
@@ -96,10 +97,12 @@ xyco::runtime::Runtime::~Runtime() {
 }
 
 auto xyco::runtime::Runtime::wake(Events &events) -> void {
-  for (Event &ev : events) {
-    if (ev.future_ != nullptr) {
-      TRACE("wake {}", ev);
-      register_future(ev.future_);
+  for (auto &ev : events) {
+    auto event_ptr = ev.lock();
+    if (event_ptr && event_ptr->future_ != nullptr) {
+      TRACE("wake {}", *event_ptr);
+      register_future(event_ptr->future_);
+      event_ptr->future_ = nullptr;
     }
   }
   events.clear();
@@ -107,12 +110,15 @@ auto xyco::runtime::Runtime::wake(Events &events) -> void {
 
 auto xyco::runtime::Runtime::wake_local(Events &events) -> void {
   auto &worker = workers_.find(std::this_thread::get_id())->second;
-  for (Event &ev : events) {
-    if (ev.future_ != nullptr) {
-      TRACE("wake local {}", ev);
+  for (auto &ev : events) {
+    auto event_ptr = ev.lock();
+    if (event_ptr && event_ptr->future_ != nullptr) {
+      TRACE("wake local {}", *event_ptr);
       std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
       worker->handles_.emplace(worker->handles_.begin(),
-                               ev.future_->get_handle(), ev.future_);
+                               event_ptr->future_->get_handle(),
+                               event_ptr->future_);
+      event_ptr->future_ = nullptr;
     }
   }
   events.clear();

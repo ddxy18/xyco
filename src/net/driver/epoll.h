@@ -1,18 +1,20 @@
 #ifndef XYCO_NET_EPOLL_H_
 #define XYCO_NET_EPOLL_H_
 
+#include <vector>
+
 #include "runtime/registry.h"
 
 namespace xyco::net {
 class NetRegistry : public runtime::Registry {
  public:
-  [[nodiscard]] auto Register(runtime::Event &ev)
+  [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto reregister(runtime::Event &ev)
+  [[nodiscard]] auto reregister(std::shared_ptr<runtime::Event> event)
       -> io::IoResult<void> override;
 
-  [[nodiscard]] auto deregister(runtime::Event &ev)
+  [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
       -> io::IoResult<void> override;
 
   [[nodiscard]] auto select(runtime::Events &events,
@@ -37,6 +39,7 @@ class NetRegistry : public runtime::Registry {
   constexpr static int MAX_EVENTS = 10000;
 
   int epfd_;
+  std::vector<std::shared_ptr<runtime::Event>> registered_events_;
 };
 }  // namespace xyco::net
 

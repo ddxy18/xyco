@@ -35,39 +35,44 @@ auto xyco::net::TcpSocket::connect(SocketAddr addr)
         : runtime::Future<CoOutput>(nullptr),
           socket_(socket),
           addr_(addr),
-          extra_(io::IoExtra::Interest::All, socket_.into_c_fd()),
-          event_(runtime::Event{.extra_ = &extra_}) {}
+          event_(std::make_shared<runtime::Event>(runtime::Event{
+              .future_ = this,
+              .extra_ = std::make_unique<io::IoExtra>(
+                  io::IoExtra::Interest::Write, socket_.into_c_fd())})) {
+      runtime::RuntimeCtx::get_ctx()->driver().Register<io::IoRegistry>(event_);
+    }
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      if (event_.future_ == nullptr) {
-        event_.future_ = this;
-        auto register_result = runtime::RuntimeCtx::get_ctx()
-                                   ->driver()
-                                   .handle<io::IoRegistry>()
-                                   ->Register(event_);
-        if (register_result.is_err()) {
-          return runtime::Ready<CoOutput>{
-              CoOutput::err(register_result.unwrap_err())};
+      auto *extra = dynamic_cast<io::IoExtra *>(event_->extra_.get());
+      if (extra->state_.get_field<io::IoExtra::State::Error>() ||
+          extra->state_.get_field<io::IoExtra::State::Writable>()) {
+        int ret = -1;
+        socklen_t len = sizeof(decltype(ret));
+        getsockopt(socket_.into_c_fd(), SOL_SOCKET, SO_ERROR, &ret, &len);
+        if (ret != 0) {
+          runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(
+              event_);
+          return runtime::Ready<CoOutput>{CoOutput::err(
+              io::IoError{ret, strerror_l(ret, uselocale(nullptr))})};
         }
-        return runtime::Pending();
+        INFO("{} connect to {}", socket_, addr_);
+        runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(
+            event_);
+        return runtime::Ready<CoOutput>{CoOutput::ok(TcpStream(
+            std::move(socket_),
+            extra->state_.get_field<io::IoExtra::State::Writable>(),
+            extra->state_.get_field<io::IoExtra::State::Readable>()))};
       }
-      int ret = -1;
-      socklen_t len = sizeof(decltype(ret));
-      getsockopt(socket_.into_c_fd(), SOL_SOCKET, SO_ERROR, &ret, &len);
-      if (ret != 0) {
-        return runtime::Ready<CoOutput>{CoOutput::err(
-            io::IoError{ret, strerror_l(ret, uselocale(nullptr))})};
-      }
-      INFO("{} connect to {}", socket_, addr_);
-      return runtime::Ready<CoOutput>{
-          CoOutput::ok(TcpStream(std::move(socket_), extra_.state_))};
+      event_->future_ = this;
+      runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
+          event_);
+      return runtime::Pending();
     }
 
    private:
     Socket &socket_;
     SocketAddr addr_;
-    io::IoExtra extra_;
-    runtime::Event event_;
+    std::shared_ptr<runtime::Event> event_;
   };
 
   auto connect_result = co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
@@ -75,8 +80,7 @@ auto xyco::net::TcpSocket::connect(SocketAddr addr)
         ::connect(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
   });
   if (connect_result.is_ok()) {
-    co_return CoOutput::ok(
-        TcpStream(std::move(socket_), io::IoExtra::State::Writable));
+    co_return CoOutput::ok(TcpStream(std::move(socket_), true));
   }
   auto err = connect_result.unwrap_err().errno_;
   if (err != EINPROGRESS && err != EAGAIN) {
@@ -147,30 +151,24 @@ auto xyco::net::TcpStream::shutdown(io::Shutdown shutdown) const
 }
 
 xyco::net::TcpStream::~TcpStream() {
-  if (socket_.into_c_fd() != -1) {
-    extra_->interest_ = io::IoExtra::Interest::All;
-    runtime::RuntimeCtx::get_ctx()
-        ->driver()
-        .handle<io::IoRegistry>()
-        ->deregister(*event_)
-        .unwrap();
+  if (socket_.into_c_fd() != -1 &&
+      dynamic_cast<io::IoExtra *>(event_->extra_.get())
+          ->state_.get_field<io::IoExtra::State::Registered>()) {
+    runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(event_);
   }
 }
 
-xyco::net::TcpStream::TcpStream(Socket &&socket, xyco::io::IoExtra::State state)
+xyco::net::TcpStream::TcpStream(Socket &&socket, bool writable, bool readable)
     : socket_(std::move(socket)),
-      extra_(std::make_unique<io::IoExtra>(io::IoExtra::Interest::All,
-                                           socket_.into_c_fd(), state)),
-      event_(std::make_unique<runtime::Event>(
-          runtime::Event{.extra_ = extra_.get()})) {
-  auto *io_handle =
-      runtime::RuntimeCtx::get_ctx()->driver().handle<io::IoRegistry>();
-  auto register_result = io_handle->Register(*event_);
-  if (register_result.is_err()) {
-    auto err = register_result.unwrap_err().errno_;
-    if (err == EEXIST) {
-      io_handle->reregister(*event_).unwrap();
-    }
+      event_(std::make_shared<runtime::Event>(runtime::Event{
+          .extra_ = std::make_unique<io::IoExtra>(io::IoExtra::Interest::All,
+                                                  socket_.into_c_fd())})) {
+  auto &state = dynamic_cast<io::IoExtra *>(event_->extra_.get())->state_;
+  if (writable) {
+    state.set_field<io::IoExtra::State::Writable>();
+  }
+  if (readable) {
+    state.set_field<io::IoExtra::State::Readable>();
   }
 }
 
@@ -200,7 +198,16 @@ auto xyco::net::TcpListener::accept()
   class Future : public runtime::Future<CoOutput> {
    public:
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      if (self_->extra_->readable()) {
+      auto *extra = dynamic_cast<io::IoExtra *>(self_->event_->extra_.get());
+      if (!extra->state_.get_field<io::IoExtra::State::Registered>()) {
+        self_->event_->future_ = this;
+        runtime::RuntimeCtx::get_ctx()->driver().Register<io::IoRegistry>(
+            self_->event_);
+        INFO("register accept {}", *self_->event_);
+        return runtime::Pending();
+      }
+      if (extra->state_.get_field<io::IoExtra::State::Error>() ||
+          extra->state_.get_field<io::IoExtra::State::Readable>()) {
         sockaddr_in addr_in{};
         socklen_t addrlen = sizeof(addr_in);
         auto accept_result = io::into_sys_result(
@@ -210,30 +217,34 @@ auto xyco::net::TcpListener::accept()
         if (accept_result.is_err()) {
           auto err = accept_result.unwrap_err();
           if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK) {
-            self_->extra_->clear_readable();
+            self_->event_->future_ = this;
+            INFO("reregister accept {}", *self_->event_);
+            runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
+                self_->event_);
             return runtime::Pending();
           }
           return runtime::Ready<CoOutput>{CoOutput::err(err)};
         }
         std::string ip(INET_ADDRSTRLEN, 0);
         auto sock_addr = SocketAddr::new_v4(
-            Ipv4Addr(inet_ntop(addr_in.sin_family, &addr_in.sin_addr, ip.data(),
-                               ip.size())),
+            Ipv4Addr(::inet_ntop(addr_in.sin_family, &addr_in.sin_addr,
+                                 ip.data(), ip.size())),
             addr_in.sin_port);
         auto socket = Socket(accept_result.unwrap());
         INFO("accept from {} new connect={{{}, addr:{}}}", self_->socket_,
              socket, sock_addr);
-        return runtime::Ready<CoOutput>{CoOutput::ok(
-            TcpStream(std::move(socket), io::IoExtra::State::Writable),
-            sock_addr)};
+        return runtime::Ready<CoOutput>{
+            CoOutput::ok(TcpStream(std::move(socket)), sock_addr)};
       }
+      self_->event_->future_ = this;
+      INFO("reregister accept {}", *self_->event_);
+      runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
+          self_->event_);
       return runtime::Pending();
     }
 
     explicit Future(TcpListener *self)
-        : runtime::Future<CoOutput>(nullptr), self_(self) {
-      self_->event_->future_ = this;
-    }
+        : runtime::Future<CoOutput>(nullptr), self_(self) {}
 
     Future(const Future &future) = delete;
 
@@ -253,33 +264,18 @@ auto xyco::net::TcpListener::accept()
 }
 
 xyco::net::TcpListener::~TcpListener() {
-  if (socket_.into_c_fd() != -1 && event_ != nullptr) {
-    extra_->interest_ = io::IoExtra::Interest::All;
-    runtime::RuntimeCtx::get_ctx()
-        ->driver()
-        .handle<io::IoRegistry>()
-        ->deregister(*event_)
-        .unwrap();
+  if (socket_.into_c_fd() != -1 && event_ != nullptr &&
+      dynamic_cast<io::IoExtra *>(event_->extra_.get())
+          ->state_.get_field<io::IoExtra::State::Registered>()) {
+    runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(event_);
   }
 }
 
 xyco::net::TcpListener::TcpListener(Socket &&socket)
     : socket_(std::move(socket)),
-      extra_(std::make_unique<io::IoExtra>(io::IoExtra::Interest::Read,
-                                           socket_.into_c_fd(),
-                                           io::IoExtra::State::Readable)),
-      event_(std::make_unique<runtime::Event>(
-          runtime::Event{.extra_ = extra_.get()})) {
-  auto *io_handle =
-      runtime::RuntimeCtx::get_ctx()->driver().handle<io::IoRegistry>();
-  auto register_result = io_handle->Register(*event_);
-  if (register_result.is_err()) {
-    auto err = register_result.unwrap_err().errno_;
-    if (err == EEXIST) {
-      io_handle->reregister(*event_).unwrap();
-    }
-  }
-}
+      event_(std::make_shared<runtime::Event>(runtime::Event{
+          .extra_ = std::make_unique<io::IoExtra>(io::IoExtra::Interest::Read,
+                                                  socket_.into_c_fd())})) {}
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::net::TcpSocket>::format(

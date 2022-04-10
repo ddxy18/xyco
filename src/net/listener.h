@@ -6,8 +6,7 @@
 #include "io/driver.h"
 #include "io/mod.h"
 #include "net/socket.h"
-#include "runtime/future.h"
-#include "runtime/registry.h"
+#include "runtime/runtime.h"
 
 namespace xyco::net {
 class TcpStream;
@@ -59,11 +58,22 @@ class TcpStream {
      public:
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
-        if (self_->extra_->readable()) {
+        auto *extra = dynamic_cast<io::IoExtra *>(self_->event_->extra_.get());
+
+        if (!extra->state_.get_field<io::IoExtra::State::Registered>()) {
+          self_->event_->future_ = this;
+          extra->interest_ = io::IoExtra::Interest::Read;
+          runtime::RuntimeCtx::get_ctx()->driver().Register<io::IoRegistry>(
+              self_->event_);
+          INFO("reregister read {}", self_->socket_);
+          return runtime::Pending();
+        }
+        if (extra->state_.get_field<io::IoExtra::State::Error>() ||
+            extra->state_.get_field<io::IoExtra::State::Readable>()) {
           auto n = ::read(self_->socket_.into_c_fd(), &*begin_,
                           std::distance(begin_, end_));
           if (n != -1) {
-            INFO("read {} bytes from {}", n, self_->socket_);
+            INFO("read {} bytes from {}", n, *self_);
             return runtime::Ready<CoOutput>{CoOutput::ok(n)};
           }
           if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -71,6 +81,11 @@ class TcpStream {
                 CoOutput::err(io::into_sys_result(-1).unwrap_err())};
           }
         }
+        self_->event_->future_ = this;
+        extra->interest_ = io::IoExtra::Interest::Read;
+        INFO("reregister read {}", self_->socket_);
+        runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
+            self_->event_);
         return runtime::Pending();
       }
 
@@ -78,9 +93,7 @@ class TcpStream {
           : runtime::Future<CoOutput>(nullptr),
             begin_(begin),
             end_(end),
-            self_(self) {
-        self_->event_->future_ = this;
-      }
+            self_(self) {}
 
       Future(const Future &future) = delete;
 
@@ -109,7 +122,17 @@ class TcpStream {
      public:
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
-        if (self_->extra_->writeable()) {
+        auto *extra = dynamic_cast<io::IoExtra *>(self_->event_->extra_.get());
+
+        if (!extra->state_.get_field<io::IoExtra::State::Registered>()) {
+          self_->event_->future_ = this;
+          extra->interest_ = io::IoExtra::Interest::Write;
+          runtime::RuntimeCtx::get_ctx()->driver().Register<io::IoRegistry>(
+              self_->event_);
+          return runtime::Pending();
+        }
+        if (extra->state_.get_field<io::IoExtra::State::Error>() ||
+            extra->state_.get_field<io::IoExtra::State::Writable>()) {
           auto n = ::write(self_->socket_.into_c_fd(), &*begin_,
                            std::distance(begin_, end_));
           auto nbytes = io::into_sys_result(n).map(
@@ -117,6 +140,10 @@ class TcpStream {
           INFO("write {} bytes to {}", n, self_->socket_);
           return runtime::Ready<CoOutput>{nbytes};
         }
+        self_->event_->future_ = this;
+        extra->interest_ = io::IoExtra::Interest::Write;
+        runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
+            self_->event_);
         return runtime::Pending();
       }
 
@@ -124,9 +151,7 @@ class TcpStream {
           : runtime::Future<CoOutput>(nullptr),
             begin_(begin),
             end_(end),
-            self_(self) {
-        self_->event_->future_ = this;
-      }
+            self_(self) {}
 
       Future(const Future &future) = delete;
 
@@ -163,11 +188,11 @@ class TcpStream {
   ~TcpStream();
 
  private:
-  explicit TcpStream(Socket &&socket, io::IoExtra::State state);
+  explicit TcpStream(Socket &&socket, bool writable = false,
+                     bool readable = false);
 
   Socket socket_;
-  std::unique_ptr<io::IoExtra> extra_;
-  std::unique_ptr<runtime::Event> event_;
+  std::shared_ptr<runtime::Event> event_;
 };
 
 class TcpListener {
@@ -197,8 +222,7 @@ class TcpListener {
   TcpListener(Socket &&socket);
 
   Socket socket_;
-  std::unique_ptr<io::IoExtra> extra_;
-  std::unique_ptr<runtime::Event> event_;
+  std::shared_ptr<runtime::Event> event_;
 };
 }  // namespace xyco::net
 

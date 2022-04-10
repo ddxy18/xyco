@@ -15,13 +15,12 @@ class AsyncFuture : public Future<Return> {
   [[nodiscard]] auto poll(Handle<void> self) -> Poll<Return> override {
     if (!ready_) {
       ready_ = true;
-      auto res =
-          RuntimeCtx::get_ctx()->driver().handle<BlockingRegistry>()->Register(
-              event_);
+      RuntimeCtx::get_ctx()->driver().Register<BlockingRegistry>(event_);
       return Pending();
     }
 
-    gsl::owner<Return *> ret = gsl::owner<Return *>(extra_.after_extra_);
+    gsl::owner<Return *> ret = gsl::owner<Return *>(
+        dynamic_cast<AsyncFutureExtra *>(event_->extra_.get())->after_extra_);
     auto result = std::move(*ret);
     delete ret;
 
@@ -32,11 +31,13 @@ class AsyncFuture : public Future<Return> {
   explicit AsyncFuture(Fn &&f) requires(std::is_invocable_r_v<Return, Fn>)
       : Future<Return>(nullptr),
         f_([&]() {
-          extra_.after_extra_ = gsl::owner<Return *>(new Return(f()));
+          dynamic_cast<AsyncFutureExtra *>(event_->extra_.get())->after_extra_ =
+              gsl::owner<Return *>(new Return(f()));
         }),
         ready_(false),
-        extra_(f_),
-        event_(xyco::runtime::Event{.future_ = this, .extra_ = &extra_}) {}
+        event_(std::make_shared<Event>(xyco::runtime::Event{
+            .future_ = this,
+            .extra_ = std::make_unique<AsyncFutureExtra>(f_)})) {}
 
   AsyncFuture(const AsyncFuture<Return> &) = delete;
 
@@ -51,8 +52,7 @@ class AsyncFuture : public Future<Return> {
  private:
   bool ready_;
   std::function<void()> f_;
-  AsyncFutureExtra extra_;
-  Event event_;
+  std::shared_ptr<Event> event_;
 };
 }  // namespace xyco::runtime
 

@@ -5,51 +5,24 @@
 #include "runtime/future.h"
 #include "runtime/runtime.h"
 
-auto xyco::io::IoExtra::readable() const -> bool {
-  return state_ == State::Readable || state_ == State::All;
-}
-
-auto xyco::io::IoExtra::writeable() const -> bool {
-  return state_ == State::Writable || state_ == State::All;
-}
-
-auto xyco::io::IoExtra::clear_readable() -> void {
-  if (state_ == State::Readable) {
-    state_ = State::Pending;
-  }
-  if (state_ == State::All) {
-    state_ = State::Writable;
-  }
-}
-
-auto xyco::io::IoExtra::clear_writeable() -> void {
-  if (state_ == State::Writable) {
-    state_ = State::Pending;
-  }
-  if (state_ == State::All) {
-    state_ = State::Readable;
-  }
-}
-
 auto xyco::io::IoExtra::print() const -> std::string {
-  std::string state;
-  switch (state_) {
-    case xyco::io::IoExtra::State::Pending:
-      state = "Pending";
-      break;
-    case xyco::io::IoExtra::State::Readable:
-      state = "Readable";
-      break;
-    case xyco::io::IoExtra::State::Writable:
-      state = "Writable";
-      break;
-    case xyco::io::IoExtra::State::All:
-      state = "All";
-      break;
-    case xyco::io::IoExtra::State::Error:
-      state = "Error";
-      break;
+  std::string state = "[";
+  if ((state_.field_ & xyco::io::IoExtra::State::Registered) != 0) {
+    state += "Registered,";
   }
+  if ((state_.field_ & xyco::io::IoExtra::State::Pending) != 0) {
+    state += "Pending,";
+  }
+  if ((state_.field_ & xyco::io::IoExtra::State::Readable) != 0) {
+    state += "Readable,";
+  }
+  if ((state_.field_ & xyco::io::IoExtra::State::Writable) != 0) {
+    state += "Writable,";
+  }
+  if ((state_.field_ & xyco::io::IoExtra::State::Error) != 0) {
+    state += "Error,";
+  }
+  state[state.length() - 1] = ']';
 
   std::string interest;
   switch (interest_) {
@@ -68,19 +41,22 @@ auto xyco::io::IoExtra::print() const -> std::string {
                      interest, fd_);
 }
 
-xyco::io::IoExtra::IoExtra(Interest interest, int fd, State state)
-    : state_(state), interest_(interest), fd_(fd) {}
+xyco::io::IoExtra::IoExtra(Interest interest, int fd)
+    : state_(), interest_(interest), fd_(fd) {}
 
-auto xyco::io::IoRegistry::Register(runtime::Event& ev) -> IoResult<void> {
-  return registry_.Register(ev);
+auto xyco::io::IoRegistry::Register(std::shared_ptr<runtime::Event> event)
+    -> IoResult<void> {
+  return registry_.Register(std::move(event));
 }
 
-auto xyco::io::IoRegistry::reregister(runtime::Event& ev) -> IoResult<void> {
-  return registry_.reregister(ev);
+auto xyco::io::IoRegistry::reregister(std::shared_ptr<runtime::Event> event)
+    -> IoResult<void> {
+  return registry_.reregister(std::move(event));
 }
 
-auto xyco::io::IoRegistry::deregister(runtime::Event& ev) -> IoResult<void> {
-  return registry_.deregister(ev);
+auto xyco::io::IoRegistry::deregister(std::shared_ptr<runtime::Event> event)
+    -> IoResult<void> {
+  return registry_.deregister(std::move(event));
 }
 
 auto xyco::io::IoRegistry::select(runtime::Events& events,

@@ -4,9 +4,11 @@
 
 xyco::time::Level::Level() : current_it_(events_.begin()) {}
 
-auto xyco::time::Wheel::insert_event(runtime::Event &event) -> void {
+auto xyco::time::Wheel::insert_event(std::weak_ptr<runtime::Event> event)
+    -> void {
   auto expire_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-      dynamic_cast<TimeExtra *>(event.extra_)->expire_time_ - now_);
+      dynamic_cast<TimeExtra *>(event.lock()->extra_.get())->expire_time_ -
+      now_);
 
   auto level = 0;
   auto tmp_expire_time_ms = expire_time_ms;
@@ -28,7 +30,7 @@ auto xyco::time::Wheel::insert_event(runtime::Event &event) -> void {
       std::advance(slot_it, steps);
     }
   }
-  slot_it->push_back(event);
+  slot_it->push_back(std::move(event));
 }
 
 auto xyco::time::Wheel::expire(runtime::Events &events) -> void {
