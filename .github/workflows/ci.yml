@@ -47,12 +47,7 @@ jobs:
           apt-get -y update && apt-get -y upgrade
           apt-get install -y curl git binutils
       - uses: actions/checkout@v2
-      - uses: technote-space/get-diff-action@v4
-        with:
-          PATTERNS: +(src|tests)/**
-          FILES: CMakeLists.txt
       - name: install essential packages
-        if: env.GIT_DIFF
         run: |
           apt install -y cmake
           apt install -y clang-$llvm_version clang-tidy-$llvm_version
@@ -61,7 +56,6 @@ jobs:
           ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
           ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
       - uses: actions/cache@v2
-        if: env.GIT_DIFF
         with:
           path: |
             ~/.cargo/registry/index/
@@ -70,13 +64,11 @@ jobs:
             tools/target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions-rs/toolchain@v1
-        if: env.GIT_DIFF
         with:
           toolchain: nightly
           profile: minimal
           default: true
       - name: build
-        if: env.GIT_DIFF
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
           cmake --build ./build --config Release --target xyco
@@ -117,16 +109,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: technote-space/get-diff-action@v4
-        with: 
-          FILES: Dockerfile
       - uses: docker/login-action@v1
-        if: env.GIT_DIFF
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - uses: docker/build-push-action@v2
-        if: env.MATCHED_FILES
         with:
           push: true
           tags: ddxy18/xyco-dev:latest
