@@ -1,6 +1,4 @@
-#![feature(bool_to_option)]
 #![feature(assert_matches)]
-#![feature(path_try_exists)]
 
 mod commit_msg;
 mod pre_commit;
