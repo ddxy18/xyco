@@ -9,7 +9,7 @@ pub struct CommitMessage {
     path: PathBuf,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum MsgError {
     General,
     Header,
