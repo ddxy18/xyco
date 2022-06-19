@@ -203,7 +203,7 @@ auto xyco::net::TcpListener::accept()
         self_->event_->future_ = this;
         runtime::RuntimeCtx::get_ctx()->driver().Register<io::IoRegistry>(
             self_->event_);
-        INFO("register accept {}", *self_->event_);
+        TRACE("register accept {}", *self_->event_);
         return runtime::Pending();
       }
       if (extra->state_.get_field<io::IoExtra::State::Error>() ||
@@ -218,7 +218,7 @@ auto xyco::net::TcpListener::accept()
           auto err = accept_result.unwrap_err();
           if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK) {
             self_->event_->future_ = this;
-            INFO("reregister accept {}", *self_->event_);
+            TRACE("reregister accept {}", *self_->event_);
             runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
                 self_->event_);
             return runtime::Pending();
@@ -237,7 +237,7 @@ auto xyco::net::TcpListener::accept()
             CoOutput::ok(TcpStream(std::move(socket)), sock_addr)};
       }
       self_->event_->future_ = this;
-      INFO("reregister accept {}", *self_->event_);
+      TRACE("reregister accept {}", *self_->event_);
       runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
           self_->event_);
       return runtime::Pending();

@@ -65,7 +65,7 @@ class TcpStream {
           extra->interest_ = io::IoExtra::Interest::Read;
           runtime::RuntimeCtx::get_ctx()->driver().Register<io::IoRegistry>(
               self_->event_);
-          INFO("reregister read {}", self_->socket_);
+          TRACE("register read {}", self_->socket_);
           return runtime::Pending();
         }
         if (extra->state_.get_field<io::IoExtra::State::Error>() ||
@@ -74,6 +74,7 @@ class TcpStream {
                           std::distance(begin_, end_));
           if (n != -1) {
             INFO("read {} bytes from {}", n, *self_);
+            extra->state_.set_field<io::IoExtra::State::Readable, false>();
             return runtime::Ready<CoOutput>{CoOutput::ok(n)};
           }
           if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -83,7 +84,7 @@ class TcpStream {
         }
         self_->event_->future_ = this;
         extra->interest_ = io::IoExtra::Interest::Read;
-        INFO("reregister read {}", self_->socket_);
+        TRACE("reregister read {}", self_->socket_);
         runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
             self_->event_);
         return runtime::Pending();

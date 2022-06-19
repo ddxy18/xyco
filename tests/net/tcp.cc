@@ -215,3 +215,34 @@ TEST_F(WithServerTest, TcpStream_rw_loop) {
     }
   });
 }
+
+TEST_F(WithServerTest, TcpStream_rw_twice) {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+    auto client = (co_await xyco::net::TcpStream::connect(
+                       xyco::net::SocketAddr::new_v4(ip_, port_)))
+                      .unwrap();
+    auto [server_stream, addr] = (co_await listener_->accept()).unwrap();
+
+    auto w_buf = {'a'};
+    auto w_nbytes = (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(
+                         client, w_buf))
+                        .unwrap();
+    auto r_buf = std::vector<char>(w_buf.size());
+    auto r_nbytes = (co_await xyco::io::ReadExt<xyco::net::TcpStream>::read(
+                         server_stream, r_buf))
+                        .unwrap();
+
+    CO_ASSERT_EQ(w_nbytes, w_buf.size());
+    CO_ASSERT_EQ(r_nbytes, r_buf.size());
+
+    w_nbytes = (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(client,
+                                                                         w_buf))
+                   .unwrap();
+    r_nbytes = (co_await xyco::io::ReadExt<xyco::net::TcpStream>::read(
+                    server_stream, r_buf))
+                   .unwrap();
+
+    CO_ASSERT_EQ(w_nbytes, w_buf.size());
+    CO_ASSERT_EQ(r_nbytes, r_buf.size());
+  });
+}
