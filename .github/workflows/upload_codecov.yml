@@ -30,7 +30,7 @@ jobs:
           cmake --build ./build --config Release --target xyco_test
           LLVM_PROFILE_FILE="./build/tests/xyco_test.profraw" ./build/tests/xyco_test --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle --gtest_brief=1
           llvm-profdata-$llvm_version merge -sparse ./build/tests/xyco_test.profraw -o ./build/tests/xyco_test.profdata
-          llvm-cov-$llvm_version show ./build/tests/xyco_test -instr-profile=./build/tests/xyco_test.profdata > ./build/tests/coverage.txt
+          llvm-cov-$llvm_version show ./build/tests/xyco_test -ignore-filename-regex=./build -instr-profile=./build/tests/xyco_test.profdata > ./build/tests/coverage.txt
       - name: upload coverage reports
         uses: codecov/codecov-action@v2
         with:
