@@ -22,22 +22,23 @@ concept Writable = requires(Writer writer, Iterator begin, Iterator end) {
     } -> std::same_as<runtime::Future<IoResult<void>>>;
 };
 
-template <typename Writer>
 class WriteExt {
  public:
-  static auto write(Writer &writer, const std::vector<char> &buf)
+  template <typename Writer, typename B>
+  static auto write(Writer &writer, const B &buffer)
       -> runtime::Future<IoResult<uintptr_t>>
-  requires(Writable<Writer, decltype(buf.cbegin())>) {
-    co_return co_await writer.write(buf.cbegin(), buf.cend());
+  requires(Writable<Writer, typename B::iterator> &&Buffer<B>) {
+    co_return co_await writer.write(buffer.begin(), buffer.end());
   }
 
-  static auto write_all(Writer &writer, const std::vector<char> &buf)
+  template <typename Writer, typename B>
+  static auto write_all(Writer &writer, const B &buffer)
       -> runtime::Future<IoResult<void>>
-  requires(Writable<Writer, decltype(buf.cbegin())>) {
-    auto buf_size = buf.size();
+  requires(Writable<Writer, typename B::iterator>) {
+    auto buf_size = buffer.size();
     auto total_write = 0;
-    auto begin = buf.cbegin();
-    auto end = buf.cend();
+    auto begin = buffer.begin();
+    auto end = buffer.end();
 
     while (total_write != buf_size) {
       auto write_result =

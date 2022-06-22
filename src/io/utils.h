@@ -21,6 +21,12 @@ class IoError {
 };
 
 auto into_sys_result(int return_value) -> IoResult<int>;
+
+template <typename Container>
+concept Buffer = requires {
+  data(std::declval<Container>());
+  size(std::declval<Container>());
+};
 }  // namespace xyco::io
 
 template <>
