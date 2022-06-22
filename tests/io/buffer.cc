@@ -58,78 +58,72 @@ const uint16_t BufferTest::port_ = 8088;
 
 TEST_F(BufferTest, buffer_read) {
   TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-    auto write_bytes = {'a', 'b'};
+    std::string_view write_bytes = "ab";
     auto write_nbytes =
-        (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(*client_,
-                                                                  write_bytes))
-            .unwrap();
+        (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
 
-    xyco::io::BufferReader<xyco::net::TcpStream> reader(std::move(*server_));
+    xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
     auto readed =
-        (co_await xyco::io::ReadExt<decltype(reader)>::read_to_end(reader))
+        (co_await xyco::io::ReadExt::read_to_end<decltype(reader), std::string>(
+             reader))
             .unwrap();
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
-    CO_ASSERT_EQ(std::string(readed.begin(), readed.end()),
-                 std::string(write_bytes.begin(), write_bytes.end()));
+    CO_ASSERT_EQ(readed, std::string(write_bytes.begin(), write_bytes.end()));
   });
 }
 
 TEST_F(BufferTest, read_until) {
   TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-    auto write_bytes = {'a', 'b', 'c'};
+    std::string_view write_bytes = "abc";
     auto write_nbytes =
-        (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(*client_,
-                                                                  write_bytes))
-            .unwrap();
+        (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
 
-    xyco::io::BufferReader<xyco::net::TcpStream> reader(std::move(*server_));
-    auto line = (co_await xyco::io::BufferReadExt<decltype(reader)>::read_until(
-                     reader, 'c'))
-                    .unwrap();
+    xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
+    auto line =
+        (co_await xyco::io::BufferReadExt::read_until<decltype(reader),
+                                                      std::string>(reader, 'c'))
+            .unwrap();
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
-    CO_ASSERT_EQ(line, std::string("abc"));
+    CO_ASSERT_EQ(line, write_bytes);
   });
 }
 
 TEST_F(BufferTest, read_until_eof) {
   TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-    auto write_bytes = {'a', 'b'};
+    std::string_view write_bytes = "ab";
     auto write_nbytes =
-        (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(*client_,
-                                                                  write_bytes))
-            .unwrap();
+        (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
 
-    xyco::io::BufferReader<xyco::net::TcpStream> reader(std::move(*server_));
-    auto line = (co_await xyco::io::BufferReadExt<decltype(reader)>::read_until(
-                     reader, 'c'))
-                    .unwrap();
+    xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
+    auto line =
+        (co_await xyco::io::BufferReadExt::read_until<decltype(reader),
+                                                      std::string>(reader, 'c'))
+            .unwrap();
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
-    CO_ASSERT_EQ(line, std::string("ab"));
+    CO_ASSERT_EQ(line, write_bytes);
   });
 }
 
 TEST_F(BufferTest, read_line) {
   TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-    auto write_bytes = {'a', 'b', '\n', 'c'};
-    auto stream =
-        std::istringstream(std::string(write_bytes.begin(), write_bytes.end()));
+    std::string write_bytes = "ab\nc";
+    auto stream = std::istringstream(write_bytes);
     std::string w_line;
     stream >> w_line;
     auto write_nbytes =
-        (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(*client_,
-                                                                  write_bytes))
-            .unwrap();
+        (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
 
-    xyco::io::BufferReader<xyco::net::TcpStream> reader(std::move(*server_));
+    xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
     auto line =
-        (co_await xyco::io::BufferReadExt<decltype(reader)>::read_line(reader))
+        (co_await xyco::io::BufferReadExt::read_line<decltype(reader),
+                                                     std::string>(reader))
             .unwrap();
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());

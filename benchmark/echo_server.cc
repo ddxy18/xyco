@@ -26,17 +26,14 @@ class Server {
       -> xyco::runtime::Future<void> {
     constexpr int buffer_size = 1024;
 
-    std::vector<char> read_buf(buffer_size);
-    auto r_nbytes = (co_await xyco::io::ReadExt<xyco::net::TcpStream>::read(
-                         server_stream, read_buf))
-                        .unwrap();
+    std::string read_buf(buffer_size, 0);
+    auto r_nbytes =
+        (co_await xyco::io::ReadExt::read(server_stream, read_buf)).unwrap();
     if (r_nbytes == 0) {
       co_await server_stream.shutdown(xyco::io::Shutdown::All);
     } else {
       read_buf.resize(r_nbytes);
-      (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(server_stream,
-                                                                read_buf))
-          .unwrap();
+      (co_await xyco::io::WriteExt::write(server_stream, read_buf)).unwrap();
     }
   }
 

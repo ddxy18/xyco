@@ -21,10 +21,9 @@ auto start_server() -> Future<void> {
 
   while (true) {
     auto [connection, addr] = (co_await listener.accept()).unwrap();
-    auto buf = std::vector<char>({'a', 'b', 'c'});
-    (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(connection, buf))
-        .unwrap();
-    INFO("success send \"{}\" to {}\n", fmt::join(buf, ""), connection);
+    std::string_view buf = "abc";
+    (co_await xyco::io::WriteExt::write(connection, buf)).unwrap();
+    INFO("success send \"{}\" to {}\n", buf, connection);
   }
   co_return;
 }
@@ -44,9 +43,9 @@ auto start_client() -> Future<void> {
             xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
   }
   auto c = connection.unwrap();
-  auto buf = std::vector<char>(max_buf_size);
-  (co_await xyco::io::ReadExt<xyco::net::TcpStream>::read(c, buf)).unwrap();
-  INFO("success read \"{}\" from {}\n", fmt::join(buf, ""), c);
+  auto buf = std::string(max_buf_size, 0);
+  (co_await xyco::io::ReadExt::read(c, buf)).unwrap();
+  INFO("success read \"{}\" from {}\n", buf, c);
 }
 
 auto main(int /*unused*/, char** /*unused*/) -> int {

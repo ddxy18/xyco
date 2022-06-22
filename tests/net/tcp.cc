@@ -164,14 +164,12 @@ TEST_F(WithServerTest, TcpStream_rw) {
                       .unwrap();
     auto [server_stream, addr] = (co_await listener_->accept()).unwrap();
 
-    auto w_buf = {'a'};
-    auto w_nbytes = (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(
-                         client, w_buf))
-                        .unwrap();
-    auto r_buf = std::vector<char>(w_buf.size());
-    auto r_nbytes = (co_await xyco::io::ReadExt<xyco::net::TcpStream>::read(
-                         server_stream, r_buf))
-                        .unwrap();
+    std::string_view w_buf = "a";
+    auto w_nbytes =
+        (co_await xyco::io::WriteExt::write(client, w_buf)).unwrap();
+    auto r_buf = std::string(w_buf.size(), 0);
+    auto r_nbytes =
+        (co_await xyco::io::ReadExt::read(server_stream, r_buf)).unwrap();
 
     CO_ASSERT_EQ(w_nbytes, w_buf.size());
     CO_ASSERT_EQ(r_nbytes, r_buf.size());
@@ -201,14 +199,12 @@ TEST_F(WithServerTest, TcpStream_rw_loop) {
     auto [server_stream, addr] = (co_await listener_->accept()).unwrap();
 
     for (int i = 0; i < ITERATION_TIMES; i++) {
-      auto w_buf = {'a'};
-      auto w_nbytes = (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(
-                           client, w_buf))
-                          .unwrap();
-      auto r_buf = std::vector<char>(w_buf.size());
-      auto r_nbytes = (co_await xyco::io::ReadExt<xyco::net::TcpStream>::read(
-                           server_stream, r_buf))
-                          .unwrap();
+      std::string_view w_buf = "a";
+      auto w_nbytes =
+          (co_await xyco::io::WriteExt::write(client, w_buf)).unwrap();
+      auto r_buf = std::string(w_buf.size(), 0);
+      auto r_nbytes =
+          (co_await xyco::io::ReadExt::read(server_stream, r_buf)).unwrap();
 
       CO_ASSERT_EQ(w_nbytes, w_buf.size());
       CO_ASSERT_EQ(r_nbytes, r_buf.size());
@@ -223,24 +219,19 @@ TEST_F(WithServerTest, TcpStream_rw_twice) {
                       .unwrap();
     auto [server_stream, addr] = (co_await listener_->accept()).unwrap();
 
-    auto w_buf = {'a'};
-    auto w_nbytes = (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(
-                         client, w_buf))
-                        .unwrap();
-    auto r_buf = std::vector<char>(w_buf.size());
-    auto r_nbytes = (co_await xyco::io::ReadExt<xyco::net::TcpStream>::read(
-                         server_stream, r_buf))
-                        .unwrap();
+    std::string_view w_buf = "a";
+    auto w_nbytes =
+        (co_await xyco::io::WriteExt::write(client, w_buf)).unwrap();
+    auto r_buf = std::string(w_buf.size(), 0);
+    auto r_nbytes =
+        (co_await xyco::io::ReadExt::read(server_stream, r_buf)).unwrap();
 
     CO_ASSERT_EQ(w_nbytes, w_buf.size());
     CO_ASSERT_EQ(r_nbytes, r_buf.size());
 
-    w_nbytes = (co_await xyco::io::WriteExt<xyco::net::TcpStream>::write(client,
-                                                                         w_buf))
-                   .unwrap();
-    r_nbytes = (co_await xyco::io::ReadExt<xyco::net::TcpStream>::read(
-                    server_stream, r_buf))
-                   .unwrap();
+    w_nbytes = (co_await xyco::io::WriteExt::write(client, w_buf)).unwrap();
+    r_nbytes =
+        (co_await xyco::io::ReadExt::read(server_stream, r_buf)).unwrap();
 
     CO_ASSERT_EQ(w_nbytes, w_buf.size());
     CO_ASSERT_EQ(r_nbytes, r_buf.size());
