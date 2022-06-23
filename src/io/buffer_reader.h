@@ -5,8 +5,6 @@
 #include "read.h"
 
 namespace xyco::io {
-const int DEFAULT_BUFFER_SIZE = 8 * 1024;  // 8 KB
-
 template <typename Reader, typename B>
 requires(
     Readable<Reader, typename B::iterator>&& Buffer<B>) class BufferReader {
@@ -15,13 +13,14 @@ requires(
       -> runtime::Future<io::IoResult<uintptr_t>> {
     auto len = std::distance(begin, end);
     if (len <= cap_ - pos_) {
-      std::copy(buffer_.begin(), buffer_.begin() + len, begin);
+      std::copy(std::begin(buffer_) + pos_, std::begin(buffer_) + pos_ + len,
+                begin);
       consume(len);
       co_return IoResult<uintptr_t>::ok(len);
     }
     ASYNC_TRY((co_await fill_buffer()).map([](auto pair) { return 0; }));
     len = std::min(len, static_cast<decltype(len)>(cap_ - pos_));
-    std::copy(buffer_.begin(), buffer_.begin() + len, begin);
+    std::copy(std::begin(buffer_), std::begin(buffer_) + len, begin);
     consume(len);
     co_return IoResult<uintptr_t>::ok(len);
   }
@@ -29,17 +28,16 @@ requires(
   auto fill_buffer() -> runtime::Future<
       io::IoResult<std::pair<typename B::iterator, typename B::iterator>>> {
     if (pos_ == cap_) {
-      ASYNC_TRY(
-          (co_await ReadExt::read(inner_reader_, buffer_))
-              .map([&](auto nbytes) {
-                cap_ = nbytes;
-                pos_ = 0;
-                return std::pair<typename B::iterator, typename B::iterator>(
-                    buffer_.begin(), buffer_.begin() + cap_);
-              }));
+      ASYNC_TRY((co_await ReadExt::read(inner_reader_, buffer_))
+                    .map([&](auto nbytes) {
+                      cap_ = nbytes;
+                      pos_ = 0;
+                      return std::pair(std::begin(buffer_),
+                                       std::begin(buffer_) + cap_);
+                    }));
     }
     co_return IoResult<std::pair<typename B::iterator, typename B::iterator>>::
-        ok(buffer_.begin(), buffer_.begin() + cap_);
+        ok(std::begin(buffer_), std::begin(buffer_) + cap_);
   }
 
   auto consume(uint16_t amt) -> void {
@@ -54,6 +52,7 @@ requires(
 
  private:
   Reader& inner_reader_;
+  static constexpr int DEFAULT_BUFFER_SIZE = 8 * 1024;  // 8 KB
 
   B buffer_;
   typename B::size_type pos_;
