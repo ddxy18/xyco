@@ -2,6 +2,7 @@
 #define XYCO_IO_WRITE_H_
 
 #include <concepts>
+#include <span>
 
 #include "io/utils.h"
 #include "runtime/future.h"
@@ -27,18 +28,28 @@ class WriteExt {
   template <typename Writer, typename B>
   static auto write(Writer &writer, const B &buffer)
       -> runtime::Future<IoResult<uintptr_t>>
-  requires(Writable<Writer, typename B::iterator> &&Buffer<B>) {
-    co_return co_await writer.write(buffer.begin(), buffer.end());
+  requires(Writable<Writer, decltype(std::begin(buffer))> &&Buffer<B>) {
+    co_return co_await writer.write(std::begin(buffer), std::end(buffer));
+  }
+
+  template <typename Writer, typename V, std::size_t N>
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
+  static auto write(Writer &writer, const V (&buffer)[N])
+      -> runtime::Future<IoResult<uintptr_t>>
+  requires(Writable<Writer, decltype(std::begin(buffer))>
+               &&Buffer<decltype(buffer)>) {
+    auto span = std::span(buffer);
+    co_return co_await write(writer, span);
   }
 
   template <typename Writer, typename B>
   static auto write_all(Writer &writer, const B &buffer)
       -> runtime::Future<IoResult<void>>
-  requires(Writable<Writer, typename B::iterator>) {
-    auto buf_size = buffer.size();
+  requires(Writable<Writer, decltype(std::begin(buffer))> &&Buffer<B>) {
+    auto buf_size = std::size(buffer);
     auto total_write = 0;
-    auto begin = buffer.begin();
-    auto end = buffer.end();
+    auto begin = std::begin(buffer);
+    auto end = std::end(buffer);
 
     while (total_write != buf_size) {
       auto write_result =
@@ -55,6 +66,16 @@ class WriteExt {
       }
     }
     co_return IoResult<void>::ok();
+  }
+
+  template <typename Writer, typename V, std::size_t N>
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
+  static auto write_all(Writer &writer, const V (&buffer)[N])
+      -> runtime::Future<IoResult<void>>
+  requires(Writable<Writer, decltype(std::begin(buffer))>
+               &&Buffer<decltype(buffer)>) {
+    auto span = std::span(buffer);
+    co_return co_await write_all(writer, span);
   }
 };
 }  // namespace xyco::io
