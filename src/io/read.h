@@ -74,13 +74,10 @@ class BufferReadExt {
         co_return IoResult<B>::ok(content);
       }
       auto pos = std::find(begin, end, c);
-      if (pos != end) {
-        std::advance(pos, 1);
-      }
       auto prev_size = std::size(content);
-      content.resize(prev_size + std::distance(begin, pos));
-      std::copy(begin, pos, std::begin(content) + prev_size);
-      reader.consume(std::distance(begin, pos));
+      content.resize(prev_size + std::distance(begin, pos + 1));
+      std::copy(begin, pos + 1, std::begin(content) + prev_size);
+      reader.consume(std::distance(begin, pos + 1));
       if (pos != end) {
         co_return IoResult<B>::ok(content);
       }
@@ -90,10 +87,7 @@ class BufferReadExt {
   template <typename Reader, typename B>
   static auto read_line(Reader &reader) -> runtime::Future<IoResult<B>>
   requires(BufferReadable<Reader, B> &&DynamicBuffer<B>) {
-    co_return(co_await read_until<Reader, B>(reader, '\n')).map([](auto line) {
-      line.resize(std::size(line) - 1);
-      return line;
-    });
+    co_return co_await read_until<Reader, B>(reader, '\n');
   }
 };
 }  // namespace xyco::io

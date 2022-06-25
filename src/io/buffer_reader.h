@@ -37,7 +37,7 @@ requires(
                     }));
     }
     co_return IoResult<std::pair<typename B::iterator, typename B::iterator>>::
-        ok(std::begin(buffer_), std::begin(buffer_) + cap_);
+        ok(std::begin(buffer_) + pos_, std::begin(buffer_) + cap_);
   }
 
   auto consume(uint16_t amt) -> void {
