@@ -123,16 +123,15 @@ TEST_F(BufferTest, read_until_eof) {
             .unwrap();
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
-    CO_ASSERT_EQ(line, write_bytes);
+    std::string expected_line(write_bytes);
+    expected_line.push_back('\0');
+    CO_ASSERT_EQ(line, expected_line);
   });
 }
 
 TEST_F(BufferTest, read_line) {
   TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
     std::string write_bytes = "ab\nc";
-    auto stream = std::istringstream(write_bytes);
-    std::string w_line;
-    stream >> w_line;
     auto write_nbytes =
         (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
@@ -144,7 +143,7 @@ TEST_F(BufferTest, read_line) {
             .unwrap();
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
-    CO_ASSERT_EQ(line, w_line);
+    CO_ASSERT_EQ(line, "ab\n");
   });
 }
 
