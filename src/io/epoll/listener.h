@@ -5,10 +5,10 @@
 
 #include "io/driver.h"
 #include "io/mod.h"
-#include "net/socket.h"
+#include "io/net/socket.h"
 #include "runtime/runtime.h"
 
-namespace xyco::net {
+namespace xyco::net::epoll {
 class TcpStream;
 class TcpListener;
 
@@ -90,7 +90,7 @@ class TcpStream {
         return runtime::Pending();
       }
 
-      Future(Iterator begin, Iterator end, net::TcpStream *self)
+      Future(Iterator begin, Iterator end, net::epoll::TcpStream *self)
           : runtime::Future<CoOutput>(nullptr),
             begin_(begin),
             end_(end),
@@ -107,7 +107,7 @@ class TcpStream {
       ~Future() override { self_->event_->future_ = nullptr; }
 
      private:
-      net::TcpStream *self_;
+      net::epoll::TcpStream *self_;
       Iterator begin_;
       Iterator end_;
     };
@@ -225,26 +225,29 @@ class TcpListener {
   Socket socket_;
   std::shared_ptr<runtime::Event> event_;
 };
-}  // namespace xyco::net
+}  // namespace xyco::net::epoll
 
 template <>
-struct fmt::formatter<xyco::net::TcpSocket> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::net::epoll::TcpSocket>
+    : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::TcpSocket &tcp_socket, FormatContext &ctx) const
-      -> decltype(ctx.out());
+  auto format(const xyco::net::epoll::TcpSocket &tcp_socket,
+              FormatContext &ctx) const -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<xyco::net::TcpStream> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::net::epoll::TcpStream>
+    : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::TcpStream &tcp_stream, FormatContext &ctx) const
-      -> decltype(ctx.out());
+  auto format(const xyco::net::epoll::TcpStream &tcp_stream,
+              FormatContext &ctx) const -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<xyco::net::TcpListener> : public fmt::formatter<bool> {
+struct fmt::formatter<xyco::net::epoll::TcpListener>
+    : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::TcpListener &tcp_listener,
+  auto format(const xyco::net::epoll::TcpListener &tcp_listener,
               FormatContext &ctx) const -> decltype(ctx.out());
 };
 

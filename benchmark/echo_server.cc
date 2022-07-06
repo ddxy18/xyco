@@ -1,4 +1,4 @@
-#include "net/listener.h"
+#include "io/epoll/listener.h"
 #include "runtime/runtime.h"
 
 class Server {
@@ -7,7 +7,7 @@ class Server {
          uint16_t port)
       : runtime_(std::move(runtime)) {
     auto f = [=](const char *ip, uint16_t port) -> xyco::runtime::Future<void> {
-      auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
+      auto tcp_socket = xyco::net::epoll::TcpSocket::new_v4().unwrap();
       tcp_socket.set_reuseaddr(true).unwrap();
       (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4(ip, port)))
           .unwrap();
@@ -22,7 +22,7 @@ class Server {
   }
 
  private:
-  static auto echo(xyco::net::TcpStream server_stream)
+  static auto echo(xyco::net::epoll::TcpStream server_stream)
       -> xyco::runtime::Future<void> {
     constexpr int buffer_size = 1024;
 

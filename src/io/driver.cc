@@ -1,7 +1,6 @@
 #include "driver.h"
 
 #include "io/utils.h"
-#include "net/driver/epoll.h"
 #include "runtime/future.h"
 #include "runtime/runtime.h"
 
