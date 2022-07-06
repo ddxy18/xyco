@@ -1,7 +1,7 @@
 #ifndef XYCO_IO_DRIVER_H_
 #define XYCO_IO_DRIVER_H_
 
-#include "net/driver/mod.h"
+#include "epoll/mod.h"
 #include "runtime/registry.h"
 #include "utils/error.h"
 
@@ -64,7 +64,7 @@ class IoRegistry : public runtime::Registry {
       -> utils::Result<void> override;
 
  private:
-  net::NetRegistry registry_;
+  io::NetRegistry registry_;
 };
 }  // namespace xyco::io
 

@@ -50,7 +50,7 @@ struct fmt::formatter<epoll_event> : public fmt::formatter<bool> {
   }
 };
 
-auto xyco::net::NetRegistry::Register(std::shared_ptr<runtime::Event> event)
+auto xyco::io::NetRegistry::Register(std::shared_ptr<runtime::Event> event)
     -> utils::Result<void> {
   auto *extra = dynamic_cast<io::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{
@@ -68,7 +68,7 @@ auto xyco::net::NetRegistry::Register(std::shared_ptr<runtime::Event> event)
   return result;
 }
 
-auto xyco::net::NetRegistry::reregister(std::shared_ptr<runtime::Event> event)
+auto xyco::io::NetRegistry::reregister(std::shared_ptr<runtime::Event> event)
     -> utils::Result<void> {
   auto *extra = dynamic_cast<io::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
@@ -83,7 +83,7 @@ auto xyco::net::NetRegistry::reregister(std::shared_ptr<runtime::Event> event)
   return result;
 }
 
-auto xyco::net::NetRegistry::deregister(std::shared_ptr<runtime::Event> event)
+auto xyco::io::NetRegistry::deregister(std::shared_ptr<runtime::Event> event)
     -> utils::Result<void> {
   auto *extra = dynamic_cast<io::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
@@ -101,8 +101,8 @@ auto xyco::net::NetRegistry::deregister(std::shared_ptr<runtime::Event> event)
   return result;
 }
 
-auto xyco::net::NetRegistry::select(runtime::Events &events,
-                                    std::chrono::milliseconds timeout)
+auto xyco::io::NetRegistry::select(runtime::Events &events,
+                                   std::chrono::milliseconds timeout)
     -> utils::Result<void> {
   static auto epoll_events = std::array<epoll_event, MAX_EVENTS>();
 
@@ -131,10 +131,10 @@ auto xyco::net::NetRegistry::select(runtime::Events &events,
   return utils::Result<void>::ok();
 }
 
-xyco::net::NetRegistry::NetRegistry() : epfd_(::epoll_create(1)) {
+xyco::io::NetRegistry::NetRegistry() : epfd_(::epoll_create(1)) {
   if (epfd_ == -1) {
     utils::panic();
   }
 }
 
-xyco::net::NetRegistry::~NetRegistry() { ::close(epfd_); }
+xyco::io::NetRegistry::~NetRegistry() { ::close(epfd_); }
