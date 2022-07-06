@@ -1,4 +1,4 @@
-#include "net/listener.h"
+#include "io/epoll/listener.h"
 #include "runtime/runtime.h"
 
 class Server {
@@ -23,7 +23,7 @@ class Server {
   }
 
  private:
-  static auto echo(xyco::net::TcpStream server_stream)
+  static auto echo(xyco::net::epoll::TcpStream server_stream)
       -> xyco::runtime::Future<void> {
     constexpr int buffer_size = 1024;
 

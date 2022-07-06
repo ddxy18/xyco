@@ -5,7 +5,7 @@
 
 #include "runtime/registry.h"
 
-namespace xyco::net {
+namespace xyco::io {
 class NetRegistry : public runtime::Registry {
  public:
   [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
@@ -41,6 +41,6 @@ class NetRegistry : public runtime::Registry {
   int epfd_;
   std::vector<std::shared_ptr<runtime::Event>> registered_events_;
 };
-}  // namespace xyco::net
+}  // namespace xyco::io
 
 #endif  // XYCO_NET_EPOLL_H_

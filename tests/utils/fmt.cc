@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "io/driver.h"
-#include "net/socket.h"
+#include "io/net/socket.h"
 #include "runtime/blocking.h"
 #include "time/driver.h"
 

@@ -1,4 +1,4 @@
-#include "net/listener.h"
+#include "net/epoll/listener.h"
 #include "runtime/runtime.h"
 
 using xyco::runtime::Future;
@@ -7,7 +7,7 @@ const std::string SERVER_IP = "127.0.0.1";
 const int SERVER_PORT = 8080;
 
 auto start_server() -> Future<void> {
-  auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
+  auto tcp_socket = xyco::net::epoll::TcpSocket::new_v4().unwrap();
   tcp_socket.set_reuseaddr(true).unwrap();
 
   auto bind_result = (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4(
@@ -32,15 +32,15 @@ auto start_client() -> Future<void> {
   constexpr int max_buf_size = 10;
 
   auto start = std::chrono::system_clock::now();
-  auto connect_result =
-      (co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
-          xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
+  auto connect_result = (co_await xyco::net::epoll::TcpStream::connect(
+      xyco::net::SocketAddr::new_v4(xyco::net::Ipv4Addr(SERVER_IP.c_str()),
+                                    SERVER_PORT)));
   while (connect_result.is_err() &&
          std::chrono::system_clock::now() - start <= std::chrono::seconds(2)) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    connect_result =
-        (co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
-            xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
+    connect_result = (co_await xyco::net::epoll::TcpStream::connect(
+        xyco::net::SocketAddr::new_v4(xyco::net::Ipv4Addr(SERVER_IP.c_str()),
+                                      SERVER_PORT)));
   }
   auto connection = connect_result.unwrap();
   auto buf = std::string(max_buf_size, 0);
