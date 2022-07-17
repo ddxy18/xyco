@@ -37,34 +37,35 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
           addr_(addr),
           event_(std::make_shared<runtime::Event>(runtime::Event{
               .future_ = this,
-              .extra_ = std::make_unique<io::IoExtra>(
-                  io::IoExtra::Interest::Write, socket_.into_c_fd())})) {
-      runtime::RuntimeCtx::get_ctx()->driver().Register<io::IoRegistry>(event_);
+              .extra_ = std::make_unique<io::epoll::IoExtra>(
+                  io::epoll::IoExtra::Interest::Write, socket_.into_c_fd())})) {
+      runtime::RuntimeCtx::get_ctx()->driver().Register<io::NetRegistry>(
+          event_);
     }
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      auto *extra = dynamic_cast<io::IoExtra *>(event_->extra_.get());
-      if (extra->state_.get_field<io::IoExtra::State::Error>() ||
-          extra->state_.get_field<io::IoExtra::State::Writable>()) {
+      auto *extra = dynamic_cast<io::epoll::IoExtra *>(event_->extra_.get());
+      if (extra->state_.get_field<io::epoll::IoExtra::State::Error>() ||
+          extra->state_.get_field<io::epoll::IoExtra::State::Writable>()) {
         int ret = -1;
         socklen_t len = sizeof(decltype(ret));
         getsockopt(socket_.into_c_fd(), SOL_SOCKET, SO_ERROR, &ret, &len);
         if (ret != 0) {
-          runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(
+          runtime::RuntimeCtx::get_ctx()->driver().deregister<io::NetRegistry>(
               event_);
           return runtime::Ready<CoOutput>{CoOutput::err(
               io::IoError{ret, strerror_l(ret, uselocale(nullptr))})};
         }
         INFO("{} connect to {}", socket_, addr_);
-        runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(
+        runtime::RuntimeCtx::get_ctx()->driver().deregister<io::NetRegistry>(
             event_);
         return runtime::Ready<CoOutput>{CoOutput::ok(TcpStream(
             std::move(socket_),
-            extra->state_.get_field<io::IoExtra::State::Writable>(),
-            extra->state_.get_field<io::IoExtra::State::Readable>()))};
+            extra->state_.get_field<io::epoll::IoExtra::State::Writable>(),
+            extra->state_.get_field<io::epoll::IoExtra::State::Readable>()))};
       }
       event_->future_ = this;
-      runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
+      runtime::RuntimeCtx::get_ctx()->driver().reregister<io::NetRegistry>(
           event_);
       return runtime::Pending();
     }
@@ -155,9 +156,10 @@ auto xyco::net::epoll::TcpStream::shutdown(io::Shutdown shutdown) const
 
 xyco::net::epoll::TcpStream::~TcpStream() {
   if (socket_.into_c_fd() != -1 &&
-      dynamic_cast<io::IoExtra *>(event_->extra_.get())
-          ->state_.get_field<io::IoExtra::State::Registered>()) {
-    runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(event_);
+      dynamic_cast<io::epoll::IoExtra *>(event_->extra_.get())
+          ->state_.get_field<io::epoll::IoExtra::State::Registered>()) {
+    runtime::RuntimeCtx::get_ctx()->driver().deregister<io::NetRegistry>(
+        event_);
   }
 }
 
@@ -165,14 +167,15 @@ xyco::net::epoll::TcpStream::TcpStream(Socket &&socket, bool writable,
                                        bool readable)
     : socket_(std::move(socket)),
       event_(std::make_shared<runtime::Event>(runtime::Event{
-          .extra_ = std::make_unique<io::IoExtra>(io::IoExtra::Interest::All,
-                                                  socket_.into_c_fd())})) {
-  auto &state = dynamic_cast<io::IoExtra *>(event_->extra_.get())->state_;
+          .extra_ = std::make_unique<io::epoll::IoExtra>(
+              io::epoll::IoExtra::Interest::All, socket_.into_c_fd())})) {
+  auto &state =
+      dynamic_cast<io::epoll::IoExtra *>(event_->extra_.get())->state_;
   if (writable) {
-    state.set_field<io::IoExtra::State::Writable>();
+    state.set_field<io::epoll::IoExtra::State::Writable>();
   }
   if (readable) {
-    state.set_field<io::IoExtra::State::Readable>();
+    state.set_field<io::epoll::IoExtra::State::Readable>();
   }
 }
 
@@ -202,38 +205,38 @@ auto xyco::net::epoll::TcpListener::accept()
   class Future : public runtime::Future<CoOutput> {
    public:
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
-      auto *extra = dynamic_cast<io::IoExtra *>(self_->event_->extra_.get());
-      if (!extra->state_.get_field<io::IoExtra::State::Registered>()) {
+      auto *extra =
+          dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
+      if (!extra->state_.get_field<io::epoll::IoExtra::State::Registered>()) {
         self_->event_->future_ = this;
-        runtime::RuntimeCtx::get_ctx()->driver().Register<io::IoRegistry>(
+        runtime::RuntimeCtx::get_ctx()->driver().Register<io::NetRegistry>(
             self_->event_);
         TRACE("register accept {}", *self_->event_);
         return runtime::Pending();
       }
-      if (extra->state_.get_field<io::IoExtra::State::Error>() ||
-          extra->state_.get_field<io::IoExtra::State::Readable>()) {
-        sockaddr_in addr_in{};
-        socklen_t addrlen = sizeof(addr_in);
+      if (extra->state_.get_field<io::epoll::IoExtra::State::Error>() ||
+          extra->state_.get_field<io::epoll::IoExtra::State::Readable>()) {
         auto accept_result = io::into_sys_result(
             ::accept4(self_->socket_.into_c_fd(),
-                      static_cast<sockaddr *>(static_cast<void *>(&addr_in)),
-                      &addrlen, SOCK_NONBLOCK));
+                      static_cast<sockaddr *>(static_cast<void *>(&addr_in_)),
+                      &addrlen_, SOCK_NONBLOCK));
         if (accept_result.is_err()) {
           auto err = accept_result.unwrap_err();
           if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK) {
             self_->event_->future_ = this;
             TRACE("reregister accept {}", *self_->event_);
-            runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
-                self_->event_);
+            runtime::RuntimeCtx::get_ctx()
+                ->driver()
+                .reregister<io::NetRegistry>(self_->event_);
             return runtime::Pending();
           }
           return runtime::Ready<CoOutput>{CoOutput::err(err)};
         }
         std::string ip(INET_ADDRSTRLEN, 0);
         auto sock_addr = SocketAddr::new_v4(
-            Ipv4Addr(::inet_ntop(addr_in.sin_family, &addr_in.sin_addr,
+            Ipv4Addr(::inet_ntop(addr_in_.sin_family, &addr_in_.sin_addr,
                                  ip.data(), ip.size())),
-            addr_in.sin_port);
+            addr_in_.sin_port);
         auto socket = Socket(accept_result.unwrap());
         INFO("accept from {} new connect={{{}, addr:{}}}", self_->socket_,
              socket, sock_addr);
@@ -242,7 +245,7 @@ auto xyco::net::epoll::TcpListener::accept()
       }
       self_->event_->future_ = this;
       TRACE("reregister accept {}", *self_->event_);
-      runtime::RuntimeCtx::get_ctx()->driver().reregister<io::IoRegistry>(
+      runtime::RuntimeCtx::get_ctx()->driver().reregister<io::NetRegistry>(
           self_->event_);
       return runtime::Pending();
     }
@@ -262,6 +265,8 @@ auto xyco::net::epoll::TcpListener::accept()
 
    private:
     TcpListener *self_;
+    sockaddr_in addr_in_{};
+    socklen_t addrlen_{sizeof(addr_in_)};
   };
 
   co_return co_await Future(this);
@@ -269,17 +274,18 @@ auto xyco::net::epoll::TcpListener::accept()
 
 xyco::net::epoll::TcpListener::~TcpListener() {
   if (socket_.into_c_fd() != -1 && event_ != nullptr &&
-      dynamic_cast<io::IoExtra *>(event_->extra_.get())
-          ->state_.get_field<io::IoExtra::State::Registered>()) {
-    runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(event_);
+      dynamic_cast<io::epoll::IoExtra *>(event_->extra_.get())
+          ->state_.get_field<io::epoll::IoExtra::State::Registered>()) {
+    runtime::RuntimeCtx::get_ctx()->driver().deregister<io::NetRegistry>(
+        event_);
   }
 }
 
 xyco::net::epoll::TcpListener::TcpListener(Socket &&socket)
     : socket_(std::move(socket)),
       event_(std::make_shared<runtime::Event>(runtime::Event{
-          .extra_ = std::make_unique<io::IoExtra>(io::IoExtra::Interest::Read,
-                                                  socket_.into_c_fd())})) {}
+          .extra_ = std::make_unique<io::epoll::IoExtra>(
+              io::epoll::IoExtra::Interest::Read, socket_.into_c_fd())})) {}
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::net::epoll::TcpSocket>::format(

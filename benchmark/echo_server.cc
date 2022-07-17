@@ -1,5 +1,10 @@
+#include "io/epoll/epoll.h"
 #include "io/epoll/listener.h"
+#include "io/io_uring/io_uring.h"
+#include "io/io_uring/listener.h"
 #include "runtime/runtime.h"
+
+namespace net = xyco::net::uring;
 
 class Server {
  public:
@@ -7,7 +12,7 @@ class Server {
          uint16_t port)
       : runtime_(std::move(runtime)) {
     auto f = [=](const char *ip, uint16_t port) -> xyco::runtime::Future<void> {
-      auto tcp_socket = xyco::net::epoll::TcpSocket::new_v4().unwrap();
+      auto tcp_socket = net::TcpSocket::new_v4().unwrap();
       tcp_socket.set_reuseaddr(true).unwrap();
       (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4(ip, port)))
           .unwrap();
@@ -22,7 +27,7 @@ class Server {
   }
 
  private:
-  static auto echo(xyco::net::epoll::TcpStream server_stream)
+  static auto echo(net::TcpStream server_stream)
       -> xyco::runtime::Future<void> {
     constexpr int buffer_size = 1024;
 
@@ -49,7 +54,7 @@ auto main() -> int {
   auto server = Server(xyco::runtime::Builder::new_multi_thread()
                            .worker_threads(1)
                            .max_blocking_threads(1)
-                           .registry<xyco::io::IoRegistry>()
+                           .registry<xyco::io::IoUringRegistry>(4)
                            .build()
                            .unwrap(),
                        ip, port);

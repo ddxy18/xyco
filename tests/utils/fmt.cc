@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "io/driver.h"
 #include "io/net/socket.h"
 #include "runtime/blocking.h"
 #include "time/driver.h"
+#include "io/epoll/extra.h"
 
 TEST(FmtTypeTest, IoError) {
   auto io_error = xyco::io::IoError();
@@ -30,50 +30,50 @@ TEST(FmtTypeTest, file_IoError) {
 
 TEST(FmtTypeTest, IoExtra_Event) {
   auto event =
-      xyco::runtime::Event{.extra_ = std::make_unique<xyco::io::IoExtra>(
-                               xyco::io::IoExtra::Interest::All, 4)};
-  auto *extra = dynamic_cast<xyco::io::IoExtra *>(event.extra_.get());
+      xyco::runtime::Event{.extra_ = std::make_unique<xyco::io::epoll::IoExtra>(
+                               xyco::io::epoll::IoExtra::Interest::All, 4)};
+  auto *extra = dynamic_cast<xyco::io::epoll::IoExtra *>(event.extra_.get());
 
-  extra->state_.set_field<xyco::io::IoExtra::State::Registered>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Registered>();
   auto fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered], interest_=All, "
             "fd_=4}}");
 
-  extra->state_.set_field<xyco::io::IoExtra::State::Readable>();
-  extra->state_.set_field<xyco::io::IoExtra::State::Writable>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Readable>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Writable>();
   fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Readable,Writable], "
             "interest_=All, "
             "fd_=4}}");
 
-  extra->state_.set_field<xyco::io::IoExtra::State::Readable, false>();
-  extra->state_.set_field<xyco::io::IoExtra::State::Writable, false>();
-  extra->state_.set_field<xyco::io::IoExtra::State::Pending>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Readable, false>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Writable, false>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Pending>();
   fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Pending], interest_=All, "
             "fd_=4}}");
 
-  extra->state_.set_field<xyco::io::IoExtra::State::Pending, false>();
-  extra->state_.set_field<xyco::io::IoExtra::State::Readable>();
-  extra->interest_ = xyco::io::IoExtra::Interest::Read;
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Pending, false>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Readable>();
+  extra->interest_ = xyco::io::epoll::IoExtra::Interest::Read;
   fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Readable], "
             "interest_=Read, fd_=4}}");
 
-  extra->state_.set_field<xyco::io::IoExtra::State::Readable, false>();
-  extra->state_.set_field<xyco::io::IoExtra::State::Writable>();
-  extra->interest_ = xyco::io::IoExtra::Interest::Write;
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Readable, false>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Writable>();
+  extra->interest_ = xyco::io::epoll::IoExtra::Interest::Write;
   fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Writable], "
             "interest_=Write, fd_=4}}");
 
-  extra->state_.set_field<xyco::io::IoExtra::State::Writable, false>();
-  extra->state_.set_field<xyco::io::IoExtra::State::Error>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Writable, false>();
+  extra->state_.set_field<xyco::io::epoll::IoExtra::State::Error>();
   fmt_str = fmt::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Error], interest_=Write, "

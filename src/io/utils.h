@@ -34,12 +34,21 @@ concept DynamicBuffer = requires(Container container) {
   requires Buffer<Container>;
   container.resize(0);
 };
+
+enum class Shutdown { Read, Write, All };
 }  // namespace xyco::io
 
 template <>
 struct fmt::formatter<xyco::io::IoError> : public fmt::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::io::IoError& err, FormatContext& ctx) const
+      -> decltype(ctx.out());
+};
+
+template <>
+struct fmt::formatter<xyco::io::Shutdown> : public fmt::formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const xyco::io::Shutdown& shutdown, FormatContext& ctx) const
       -> decltype(ctx.out());
 };
 

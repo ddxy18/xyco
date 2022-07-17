@@ -2,14 +2,14 @@
 
 #include <gtest/gtest.h>
 
-#include "io/driver.h"
+#include "io/epoll/epoll.h"
 #include "time/driver.h"
 
 std::unique_ptr<xyco::runtime::Runtime> TestRuntimeCtx::runtime_(
     xyco::runtime::Builder::new_multi_thread()
         .worker_threads(1)
         .max_blocking_threads(1)
-        .registry<xyco::io::IoRegistry>()
+        .registry<xyco::io::NetRegistry>()
         .registry<xyco::time::TimeRegistry>()
         .build()
         .unwrap());

@@ -8,8 +8,6 @@
 #include "runtime/future.h"
 
 namespace xyco::io {
-enum class Shutdown { Read, Write, All };
-
 template <typename Writer, typename Iterator>
 concept Writable = requires(Writer writer, Iterator begin, Iterator end) {
   {

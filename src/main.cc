@@ -1,4 +1,6 @@
+#include "io/epoll/epoll.h"
 #include "io/epoll/listener.h"
+#include "io/io_uring/io_uring.h"
 #include "runtime/runtime.h"
 
 using xyco::runtime::Future;
@@ -54,7 +56,7 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
   auto rt = xyco::runtime::Builder::new_multi_thread()
                 .worker_threads(2)
                 .max_blocking_threads(2)
-                .registry<xyco::io::IoRegistry>()
+                .registry<xyco::io::NetRegistry>()
                 .build()
                 .unwrap();
   rt->spawn(start_server());

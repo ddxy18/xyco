@@ -2,6 +2,8 @@
 
 #include <__utility/to_underlying.h>
 
+#include <string>
+
 auto xyco::io::IoError::from_sys_error() -> IoError {
   auto err = IoError{};
   err.errno_ = errno;
@@ -35,7 +37,31 @@ auto fmt::formatter<xyco::io::IoError>::format(const xyco::io::IoError& err,
                    fmt::join(err.info_, ""));
 }
 
+template <typename FormatContext>
+auto fmt::formatter<xyco::io::Shutdown>::format(
+    const xyco::io::Shutdown& shutdown, FormatContext& ctx) const
+    -> decltype(ctx.out()) {
+  std::string s;
+  switch (shutdown) {
+    case xyco::io::Shutdown::All:
+      s = "All";
+      break;
+    case xyco::io::Shutdown::Read:
+      s = "Read";
+      break;
+    case xyco::io::Shutdown::Write:
+      s = "Write";
+      break;
+  }
+  return format_to(ctx.out(), "Shutdown{{{}}}", s);
+}
+
 template auto fmt::formatter<xyco::io::IoError>::format(
     const xyco::io::IoError& err,
+    fmt::basic_format_context<fmt::appender, char>& ctx) const
+    -> decltype(ctx.out());
+
+template auto fmt::formatter<xyco::io::Shutdown>::format(
+    const xyco::io::Shutdown& err,
     fmt::basic_format_context<fmt::appender, char>& ctx) const
     -> decltype(ctx.out());

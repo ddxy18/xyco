@@ -1,5 +1,5 @@
-#ifndef XYCO_NET_SOCKET_H_
-#define XYCO_NET_SOCKET_H_
+#ifndef XYCO_IO_NET_SOCKET_H_
+#define XYCO_IO_NET_SOCKET_H_
 
 #include <arpa/inet.h>
 
@@ -101,4 +101,4 @@ struct fmt::formatter<xyco::net::Socket> : public fmt::formatter<bool> {
       -> decltype(ctx.out());
 };
 
-#endif  // XYCO_NET_SOCKET_H_
+#endif  // XYCO_IO_NET_SOCKET_H_
