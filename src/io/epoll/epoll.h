@@ -5,8 +5,8 @@
 
 #include "runtime/registry.h"
 
-namespace xyco::io {
-class NetRegistry : public runtime::Registry {
+namespace xyco::io::epoll {
+class IoRegistry : public runtime::Registry {
  public:
   [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
@@ -21,17 +21,17 @@ class NetRegistry : public runtime::Registry {
                             std::chrono::milliseconds timeout)
       -> utils::Result<void> override;
 
-  NetRegistry();
+  IoRegistry();
 
-  NetRegistry(const NetRegistry &epoll) = delete;
+  IoRegistry(const IoRegistry &epoll) = delete;
 
-  NetRegistry(NetRegistry &&epoll) = delete;
+  IoRegistry(IoRegistry &&epoll) = delete;
 
-  auto operator=(const NetRegistry &epoll) -> NetRegistry & = delete;
+  auto operator=(const IoRegistry &epoll) -> IoRegistry & = delete;
 
-  auto operator=(NetRegistry &&epoll) -> NetRegistry & = delete;
+  auto operator=(IoRegistry &&epoll) -> IoRegistry & = delete;
 
-  ~NetRegistry() override;
+  ~IoRegistry() override;
 
  private:
   constexpr static std::chrono::milliseconds MAX_TIMEOUT =
@@ -41,6 +41,6 @@ class NetRegistry : public runtime::Registry {
   int epfd_;
   std::vector<std::shared_ptr<runtime::Event>> registered_events_;
 };
-}  // namespace xyco::io
+}  // namespace xyco::io::epoll
 
 #endif  // XYCO_NET_EPOLL_H_

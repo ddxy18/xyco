@@ -6,35 +6,35 @@
 #include <array>
 #include <vector>
 
-#include "io/driver.h"
+#include "extra.h"
 
-auto to_sys(xyco::io::IoExtra::Interest interest) -> int {
+auto to_sys(xyco::io::epoll::IoExtra::Interest interest) -> int {
   switch (interest) {
-    case xyco::io::IoExtra::Interest::Read:
+    case xyco::io::epoll::IoExtra::Interest::Read:
       return EPOLLIN | EPOLLRDHUP | EPOLLONESHOT;
-    case xyco::io::IoExtra::Interest::Write:
+    case xyco::io::epoll::IoExtra::Interest::Write:
       return EPOLLOUT | EPOLLRDHUP | EPOLLONESHOT;
-    case xyco::io::IoExtra::Interest::All:
+    case xyco::io::epoll::IoExtra::Interest::All:
       return EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLONESHOT;
   }
 }
 
-auto to_state(uint32_t events) -> xyco::io::IoExtra::State {
-  xyco::io::IoExtra::State state{};
-  state.set_field<xyco::io::IoExtra::State::Registered>();
+auto to_state(uint32_t events) -> xyco::io::epoll::IoExtra::State {
+  xyco::io::epoll::IoExtra::State state{};
+  state.set_field<xyco::io::epoll::IoExtra::State::Registered>();
   if ((events & EPOLLERR) != 0U || (events & EPOLLHUP) != 0U ||
       (events & EPOLLRDHUP) != 0U || (events & EPOLLPRI) != 0U) {
-    state.set_field<xyco::io::IoExtra::State::Error>();
+    state.set_field<xyco::io::epoll::IoExtra::State::Error>();
     return state;
   }
   if ((events & EPOLLIN) != 0U) {
-    state.set_field<xyco::io::IoExtra::State::Readable>();
+    state.set_field<xyco::io::epoll::IoExtra::State::Readable>();
   }
   if ((events & EPOLLOUT) != 0U) {
-    state.set_field<xyco::io::IoExtra::State::Writable>();
+    state.set_field<xyco::io::epoll::IoExtra::State::Writable>();
   }
   if (((~events & EPOLLIN) != 0U) && ((~events & EPOLLOUT) != 0U)) {
-    state.set_field<xyco::io::IoExtra::State::Pending>();
+    state.set_field<xyco::io::epoll::IoExtra::State::Pending>();
   }
   return state;
 }
@@ -50,9 +50,9 @@ struct fmt::formatter<epoll_event> : public fmt::formatter<bool> {
   }
 };
 
-auto xyco::io::NetRegistry::Register(std::shared_ptr<runtime::Event> event)
-    -> utils::Result<void> {
-  auto *extra = dynamic_cast<io::IoExtra *>(event->extra_.get());
+auto xyco::io::epoll::IoRegistry::Register(
+    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
+  auto *extra = dynamic_cast<io::epoll::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{
       .events = static_cast<uint32_t>(to_sys((extra->interest_))),
       .data = {.ptr = event.get()}};
@@ -61,16 +61,16 @@ auto xyco::io::NetRegistry::Register(std::shared_ptr<runtime::Event> event)
       ::epoll_ctl(epfd_, EPOLL_CTL_ADD, extra->fd_, &epoll_event));
   if (result.is_ok()) {
     TRACE("epoll_ctl add:{}", epoll_event);
-    extra->state_.set_field<io::IoExtra::State::Registered>();
+    extra->state_.set_field<io::epoll::IoExtra::State::Registered>();
     registered_events_.push_back(event);
   }
 
   return result;
 }
 
-auto xyco::io::NetRegistry::reregister(std::shared_ptr<runtime::Event> event)
-    -> utils::Result<void> {
-  auto *extra = dynamic_cast<io::IoExtra *>(event->extra_.get());
+auto xyco::io::epoll::IoRegistry::reregister(
+    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
+  auto *extra = dynamic_cast<io::epoll::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
   epoll_event.data.ptr = event.get();
 
@@ -83,9 +83,9 @@ auto xyco::io::NetRegistry::reregister(std::shared_ptr<runtime::Event> event)
   return result;
 }
 
-auto xyco::io::NetRegistry::deregister(std::shared_ptr<runtime::Event> event)
-    -> utils::Result<void> {
-  auto *extra = dynamic_cast<io::IoExtra *>(event->extra_.get());
+auto xyco::io::epoll::IoRegistry::deregister(
+    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
+  auto *extra = dynamic_cast<io::epoll::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
   epoll_event.data.ptr = event.get();
 
@@ -94,15 +94,15 @@ auto xyco::io::NetRegistry::deregister(std::shared_ptr<runtime::Event> event)
   if (result.is_ok()) {
     registered_events_.erase(
         std::find(registered_events_.begin(), registered_events_.end(), event));
-    extra->state_.set_field<io::IoExtra::State::Registered, false>();
+    extra->state_.set_field<io::epoll::IoExtra::State::Registered, false>();
     TRACE("epoll_ctl del:{}", epoll_event);
   }
 
   return result;
 }
 
-auto xyco::io::NetRegistry::select(runtime::Events &events,
-                                   std::chrono::milliseconds timeout)
+auto xyco::io::epoll::IoRegistry::select(runtime::Events &events,
+                                         std::chrono::milliseconds timeout)
     -> utils::Result<void> {
   static auto epoll_events = std::array<epoll_event, MAX_EVENTS>();
 
@@ -123,18 +123,18 @@ auto xyco::io::NetRegistry::select(runtime::Events &events,
         [&](auto &registered_event) {
           return epoll_events.at(i).data.ptr == registered_event.get();
         });
-    dynamic_cast<io::IoExtra *>(ready_event->get()->extra_.get())->state_ =
-        to_state(epoll_events.at(i).events);
+    dynamic_cast<io::epoll::IoExtra *>(ready_event->get()->extra_.get())
+        ->state_ = to_state(epoll_events.at(i).events);
     TRACE("select {}", *ready_event->get());
     events.push_back(*ready_event);
   }
   return utils::Result<void>::ok();
 }
 
-xyco::io::NetRegistry::NetRegistry() : epfd_(::epoll_create(1)) {
+xyco::io::epoll::IoRegistry::IoRegistry() : epfd_(::epoll_create(1)) {
   if (epfd_ == -1) {
     utils::panic();
   }
 }
 
-xyco::io::NetRegistry::~NetRegistry() { ::close(epfd_); }
+xyco::io::epoll::IoRegistry::~IoRegistry() { ::close(epfd_); }

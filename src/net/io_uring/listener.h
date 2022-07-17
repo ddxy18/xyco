@@ -1,16 +1,15 @@
-#ifndef XYCO_NET_EPOLL_LISTENER_H_
-#define XYCO_NET_EPOLL_LISTENER_H_
+#ifndef XYCO_NET_IO_URING_LISTENER_H_
+#define XYCO_NET_IO_URING_LISTENER_H_
 
 #include <unistd.h>
 
-#include "io/epoll/epoll.h"
-#include "io/epoll/extra.h"
+#include "io/io_uring/extra.h"
+#include "io/io_uring/io_uring.h"
 #include "io/mod.h"
 #include "net/socket.h"
 #include "runtime/runtime.h"
-#include "utils/error.h"
 
-namespace xyco::net::epoll {
+namespace xyco::net::uring {
 class TcpStream;
 class TcpListener;
 
@@ -61,102 +60,26 @@ class TcpStream {
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
         auto *extra =
-            dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
+            dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
 
-        if (!extra->state_.get_field<io::epoll::IoExtra::State::Registered>()) {
+        if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
           self_->event_->future_ = this;
-          extra->interest_ = io::epoll::IoExtra::Interest::Read;
+          extra->args_ = io::uring::IoExtra::Read{
+              .buf_ = &*begin_,
+              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
           runtime::RuntimeCtx::get_ctx()
               ->driver()
-              .Register<io::epoll::IoRegistry>(self_->event_);
+              .Register<io::uring::IoRegistry>(self_->event_);
           TRACE("register read {}", self_->socket_);
           return runtime::Pending();
         }
-        if (extra->state_.get_field<io::epoll::IoExtra::State::Error>() ||
-            extra->state_.get_field<io::epoll::IoExtra::State::Readable>()) {
-          auto read_bytes = ::read(self_->socket_.into_c_fd(), &*begin_,
-                                   std::distance(begin_, end_));
-          if (read_bytes != -1) {
-            INFO("read {} bytes from {}", read_bytes, *self_);
-            extra->state_
-                .set_field<io::epoll::IoExtra::State::Readable, false>();
-            return runtime::Ready<CoOutput>{CoOutput::ok(read_bytes)};
-          }
-          if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            return runtime::Ready<CoOutput>{
-                CoOutput::err(utils::into_sys_result(-1).unwrap_err())};
-          }
+        extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
+        if (extra->return_ >= 0) {
+          INFO("read {} bytes from {}", extra->return_, self_->socket_);
+          return runtime::Ready<CoOutput>{CoOutput::ok(extra->return_)};
         }
-        self_->event_->future_ = this;
-        extra->interest_ = io::epoll::IoExtra::Interest::Read;
-        TRACE("reregister read {}", self_->socket_);
-        runtime::RuntimeCtx::get_ctx()
-            ->driver()
-            .reregister<io::epoll::IoRegistry>(self_->event_);
-        return runtime::Pending();
-      }
-
-      Future(Iterator begin, Iterator end, net::epoll::TcpStream *self)
-          : runtime::Future<CoOutput>(nullptr),
-            begin_(begin),
-            end_(end),
-            self_(self) {}
-
-      Future(const Future &future) = delete;
-
-      Future(Future &&future) = delete;
-
-      auto operator=(Future &&future) -> Future & = delete;
-
-      auto operator=(const Future &future) -> Future & = delete;
-
-      ~Future() override { self_->event_->future_ = nullptr; }
-
-     private:
-      net::epoll::TcpStream *self_;
-      Iterator begin_;
-      Iterator end_;
-    };
-
-    co_return co_await Future(begin, end, this);
-  }
-
-  template <typename Iterator>
-  auto write(Iterator begin, Iterator end) -> Future<utils::Result<uintptr_t>> {
-    using CoOutput = utils::Result<uintptr_t>;
-
-    class Future : public runtime::Future<CoOutput> {
-     public:
-      auto poll(runtime::Handle<void> self)
-          -> runtime::Poll<CoOutput> override {
-        auto *extra =
-            dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
-
-        if (!extra->state_.get_field<io::epoll::IoExtra::State::Registered>()) {
-          self_->event_->future_ = this;
-          extra->interest_ = io::epoll::IoExtra::Interest::Write;
-          runtime::RuntimeCtx::get_ctx()
-              ->driver()
-              .Register<io::epoll::IoRegistry>(self_->event_);
-          return runtime::Pending();
-        }
-        if (extra->state_.get_field<io::epoll::IoExtra::State::Error>() ||
-            extra->state_.get_field<io::epoll::IoExtra::State::Writable>()) {
-          auto write_bytes = ::write(self_->socket_.into_c_fd(), &*begin_,
-                                     std::distance(begin_, end_));
-          auto nbytes =
-              utils::into_sys_result(write_bytes).map([](auto n) -> uintptr_t {
-                return static_cast<uintptr_t>(n);
-              });
-          INFO("write {} bytes to {}", write_bytes, self_->socket_);
-          return runtime::Ready<CoOutput>{nbytes};
-        }
-        self_->event_->future_ = this;
-        extra->interest_ = io::epoll::IoExtra::Interest::Write;
-        runtime::RuntimeCtx::get_ctx()
-            ->driver()
-            .reregister<io::epoll::IoRegistry>(self_->event_);
-        return runtime::Pending();
+        return runtime::Ready<CoOutput>{
+            CoOutput::err(utils::Error{.errno_ = -extra->return_})};
       }
 
       Future(Iterator begin, Iterator end, TcpStream *self)
@@ -184,9 +107,64 @@ class TcpStream {
     co_return co_await Future(begin, end, this);
   }
 
-  auto flush() -> Future<utils::Result<void>>;
+  template <typename Iterator>
+  auto write(Iterator begin, Iterator end) -> Future<utils::Result<uintptr_t>> {
+    using CoOutput = utils::Result<uintptr_t>;
 
-  [[nodiscard]] auto shutdown(io::Shutdown shutdown) const
+    class Future : public runtime::Future<CoOutput> {
+     public:
+      auto poll(runtime::Handle<void> self)
+          -> runtime::Poll<CoOutput> override {
+        auto *extra =
+            dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
+        if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
+          self_->event_->future_ = this;
+          extra->args_ = io::uring::IoExtra::Write{
+              .buf_ = &*begin_,
+              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
+          runtime::RuntimeCtx::get_ctx()
+              ->driver()
+              .Register<io::uring::IoRegistry>(self_->event_);
+
+          return runtime::Pending();
+        }
+        extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
+        if (extra->return_ >= 0) {
+          INFO("write {} bytes to {}", extra->return_, self_->socket_);
+          return runtime::Ready<CoOutput>{CoOutput::ok(extra->return_)};
+        }
+        return runtime::Ready<CoOutput>{
+            CoOutput::err(utils::Error{.errno_ = -extra->return_})};
+      }
+
+      Future(Iterator begin, Iterator end, TcpStream *self)
+          : runtime::Future<CoOutput>(nullptr),
+            begin_(begin),
+            end_(end),
+            self_(self) {}
+
+      Future(const Future &future) = delete;
+
+      Future(Future &&future) = delete;
+
+      auto operator=(Future &&future) -> Future & = delete;
+
+      auto operator=(const Future &future) -> Future & = delete;
+
+      ~Future() override { self_->event_->future_ = nullptr; }
+
+     private:
+      TcpStream *self_;
+      Iterator begin_;
+      Iterator end_;
+    };
+
+    co_return co_await Future(begin, end, this);
+  }
+
+  static auto flush() -> Future<utils::Result<void>>;
+
+  [[nodiscard]] auto shutdown(io::Shutdown shutdown)
       -> Future<utils::Result<void>>;
 
   TcpStream(const TcpStream &tcp_stream) = delete;
@@ -197,7 +175,7 @@ class TcpStream {
 
   auto operator=(TcpStream &&tcp_stream) noexcept -> TcpStream & = default;
 
-  ~TcpStream();
+  ~TcpStream() = default;
 
  private:
   explicit TcpStream(Socket &&socket, bool writable = false,
@@ -228,7 +206,7 @@ class TcpListener {
   auto operator=(TcpListener &&tcp_listener) noexcept
       -> TcpListener & = default;
 
-  ~TcpListener();
+  ~TcpListener() = default;
 
  private:
   TcpListener(Socket &&socket);
@@ -236,30 +214,30 @@ class TcpListener {
   Socket socket_;
   std::shared_ptr<runtime::Event> event_;
 };
-}  // namespace xyco::net::epoll
+}  // namespace xyco::net::uring
 
 template <>
-struct fmt::formatter<xyco::net::epoll::TcpSocket>
+struct fmt::formatter<xyco::net::uring::TcpSocket>
     : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::epoll::TcpSocket &tcp_socket,
+  auto format(const xyco::net::uring::TcpSocket &tcp_socket,
               FormatContext &ctx) const -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<xyco::net::epoll::TcpStream>
+struct fmt::formatter<xyco::net::uring::TcpStream>
     : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::epoll::TcpStream &tcp_stream,
+  auto format(const xyco::net::uring::TcpStream &tcp_stream,
               FormatContext &ctx) const -> decltype(ctx.out());
 };
 
 template <>
-struct fmt::formatter<xyco::net::epoll::TcpListener>
+struct fmt::formatter<xyco::net::uring::TcpListener>
     : public fmt::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::epoll::TcpListener &tcp_listener,
+  auto format(const xyco::net::uring::TcpListener &tcp_listener,
               FormatContext &ctx) const -> decltype(ctx.out());
 };
 
-#endif  // XYCO_NET_EPOLL_LISTENER_H_
+#endif  // XYCO_NET_IO_URING_LISTENER_H_
