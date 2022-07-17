@@ -1,5 +1,5 @@
-#ifndef XYWEBSERVER_TEST_UTILS_H_
-#define XYWEBSERVER_TEST_UTILS_H_
+#ifndef XYCO_TESTS_COMMON_UTILS_GLOBAL_H_
+#define XYCO_TESTS_COMMON_UTILS_GLOBAL_H_
 
 #include <gtest/gtest.h>
 
@@ -40,45 +40,44 @@ class TestRuntimeCtx {
  public:
   // run until co finished
   template <typename Fn>
-  static auto co_run(Fn &&co)
+  static auto co_run(Fn &&coroutine)
       -> void requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>) {
     // co_outer's lifetime is managed by the caller to avoid being destroyed
     // automatically before resumed.
 
     std::mutex mutex;
     std::unique_lock<std::mutex> lock_guard(mutex);
-    std::condition_variable cv;
+    std::condition_variable condition_variable;
 
     auto co_outer = [&]() -> xyco::runtime::Future<void> {
       try {
-        co_await co();
-        cv.notify_one();
+        co_await coroutine();
+        condition_variable.notify_one();
       } catch (std::exception e) {
-        auto f = [&]() { ASSERT_NO_THROW(throw e); };
-        f();
-        cv.notify_one();
+        [&]() { ASSERT_NO_THROW(throw e); }();
+        condition_variable.notify_one();
       }
     };
     runtime_->spawn(co_outer());
-    cv.wait(lock_guard);
+    condition_variable.wait(lock_guard);
   }
 
   template <typename Fn>
-  static auto co_run_no_wait(Fn &&co) -> TestRuntimeCtxGuard
+  static auto co_run_no_wait(Fn &&coroutine) -> TestRuntimeCtxGuard
       requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>) {
     auto *co_outer = gsl::owner<std::function<xyco::runtime::Future<void>()> *>(
         new std::function<xyco::runtime::Future<void>()>(
-            [=]() -> xyco::runtime::Future<void> { co_await co(); }));
+            [=]() -> xyco::runtime::Future<void> { co_await coroutine(); }));
 
     return {co_outer, true};
   }
 
   template <typename Fn>
-  static auto co_run_without_runtime(Fn &&co) -> TestRuntimeCtxGuard
+  static auto co_run_without_runtime(Fn &&coroutine) -> TestRuntimeCtxGuard
       requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>) {
     auto *co_outer = gsl::owner<std::function<xyco::runtime::Future<void>()> *>(
         new std::function<xyco::runtime::Future<void>()>(
-            [=]() -> xyco::runtime::Future<void> { co_await co(); }));
+            [=]() -> xyco::runtime::Future<void> { co_await coroutine(); }));
 
     return {co_outer, false};
   }
@@ -87,4 +86,4 @@ class TestRuntimeCtx {
   static std::unique_ptr<xyco::runtime::Runtime> runtime_;
 };
 
-#endif  // XYWEBSERVER_TEST_UTILS_H_
+#endif  // XYCO_TESTS_COMMON_UTILS_GLOBAL_H_
