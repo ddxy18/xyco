@@ -1,8 +1,8 @@
 #ifndef XYCO_RUNTIME_FUTURE_H_
 #define XYCO_RUNTIME_FUTURE_H_
 
+#include <coroutine>
 #include <exception>
-#include <experimental/coroutine>
 #include <optional>
 #include <variant>
 
@@ -13,7 +13,7 @@ template <typename Output>
 class Future;
 
 template <typename T>
-using Handle = std::experimental::coroutine_handle<T>;
+using Handle = std::coroutine_handle<T>;
 
 class Pending {};
 
@@ -39,9 +39,20 @@ class PromiseBase {
   virtual auto future() -> FutureBase * = 0;
 
   // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-  auto initial_suspend() noexcept -> std::experimental::suspend_always {
-    return {};
-  }
+  auto initial_suspend() noexcept -> std::suspend_always { return {}; }
+
+  PromiseBase() = default;
+
+  PromiseBase(const PromiseBase &future_base) = delete;
+
+  PromiseBase(PromiseBase &&future_base) = delete;
+
+  auto operator=(const PromiseBase &future_base)
+      -> const PromiseBase & = delete;
+
+  auto operator=(PromiseBase &&future_base) -> const PromiseBase & = delete;
+
+  virtual ~PromiseBase() = default;
 
  private:
   virtual auto set_waited(Handle<PromiseBase> future) -> void = 0;
@@ -164,8 +175,8 @@ class Awaitable {
     }
   }
 
- private : explicit Awaitable(Future<Output> &future) noexcept
-     : future_(future) {}
+ private:
+  explicit Awaitable(Future<Output> &future) noexcept : future_(future) {}
   Future<Output> &future_;
 };
 
