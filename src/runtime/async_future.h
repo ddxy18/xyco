@@ -28,13 +28,13 @@ class AsyncFuture : public Future<Return> {
   }
 
   template <typename Fn>
-  explicit AsyncFuture(Fn &&f) requires(std::is_invocable_r_v<Return, Fn>)
+  explicit AsyncFuture(Fn &&function) requires(
+      std::is_invocable_r_v<Return, Fn>)
       : Future<Return>(nullptr),
         f_([&]() {
           dynamic_cast<AsyncFutureExtra *>(event_->extra_.get())->after_extra_ =
-              gsl::owner<Return *>(new Return(f()));
+              gsl::owner<Return *>(new Return(function()));
         }),
-        ready_(false),
         event_(std::make_shared<Event>(xyco::runtime::Event{
             .future_ = this,
             .extra_ = std::make_unique<AsyncFutureExtra>(f_)})) {}
@@ -47,10 +47,10 @@ class AsyncFuture : public Future<Return> {
 
   auto operator=(AsyncFuture<Return> &&) -> AsyncFuture<Return> & = delete;
 
-  ~AsyncFuture() = default;
+  virtual ~AsyncFuture() = default;
 
  private:
-  bool ready_;
+  bool ready_{};
   std::function<void()> f_;
   std::shared_ptr<Event> event_;
 };

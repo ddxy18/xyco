@@ -42,10 +42,10 @@ auto xyco::runtime::BlockingPool::run(BlockingRegistry& blocking_registry)
 }
 
 auto xyco::runtime::BlockingPool::spawn(runtime::Task task) -> void {
-  auto n = 0;
   auto worker = std::min_element(
-      workers_.begin(), workers_.end(),
-      [](auto& a, auto& b) { return a.tasks_.size() < b.tasks_.size(); });
+      workers_.begin(), workers_.end(), [](auto& worker1, auto& worker2) {
+        return worker1.tasks_.size() < worker2.tasks_.size();
+      });
   {
     std::scoped_lock<std::mutex> lock_guard(worker->mutex_);
     worker->tasks_.push(std::move(task));
@@ -61,8 +61,8 @@ xyco::runtime::BlockingPool::~BlockingPool() {
     worker.end_ = true;
     worker.cv_.notify_one();
   }
-  for (auto& t : worker_ctx_) {
-    t.join();
+  for (auto& thread : worker_ctx_) {
+    thread.join();
   }
 }
 
@@ -95,7 +95,6 @@ auto xyco::runtime::BlockingRegistry::deregister(std::shared_ptr<Event> event)
 auto xyco::runtime::BlockingRegistry::select(runtime::Events& events,
                                              std::chrono::milliseconds timeout)
     -> io::IoResult<void> {
-  auto i = 0;
   decltype(events_) new_events;
 
   std::scoped_lock<std::mutex> lock_guard(mutex_);

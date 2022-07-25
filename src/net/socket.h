@@ -32,7 +32,7 @@ class Ipv4Addr {
   friend class SocketAddr;
 
  public:
-  Ipv4Addr(const char* s);
+  Ipv4Addr(const char* addr);
 
  private:
   in_addr inner_;
@@ -42,7 +42,7 @@ class Ipv6Addr {
   friend class SocketAddr;
 
  public:
-  Ipv6Addr(const char* s);
+  Ipv6Addr(const char* addr);
 
  private:
   in6_addr inner_;
@@ -52,9 +52,9 @@ class SocketAddr {
   friend struct fmt::formatter<SocketAddr>;
 
  public:
-  static auto new_v4(Ipv4Addr ip, uint16_t port) -> SocketAddr;
+  static auto new_v4(Ipv4Addr ip_addr, uint16_t port) -> SocketAddr;
 
-  static auto new_v6(Ipv6Addr ip, uint16_t port) -> SocketAddr;
+  static auto new_v6(Ipv6Addr ip_addr, uint16_t port) -> SocketAddr;
 
   auto is_v4() -> bool;
 
@@ -70,7 +70,7 @@ class Socket {
  public:
   [[nodiscard]] auto into_c_fd() const -> int;
 
-  Socket(int fd);
+  Socket(int file_descriptor);
 
   Socket(const Socket& socket) = delete;
 

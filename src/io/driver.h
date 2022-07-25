@@ -40,7 +40,7 @@ class IoExtra : public runtime::Extra {
 
   [[nodiscard]] auto print() const -> std::string override;
 
-  IoExtra(Interest interest, int fd);
+  IoExtra(Interest interest, int file_descriptor);
 
   State state_;
   Interest interest_;

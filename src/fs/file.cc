@@ -18,16 +18,16 @@ class StatxExtraFields {
   statx_timestamp stx_btime_;
 };
 
-auto file_attr(int fd) -> xyco::runtime::Future<
+auto file_attr(int file_descriptor) -> xyco::runtime::Future<
     xyco::io::IoResult<std::pair<struct stat64, StatxExtraFields>>> {
   struct statx stx {};
   struct stat64 stat {};
 
   ASYNC_TRY((co_await xyco::runtime::AsyncFuture<
                  xyco::io::IoResult<int>>([&]() {
-              return xyco::io::into_sys_result(
-                  statx(fd, "\0", AT_EMPTY_PATH | AT_STATX_SYNC_AS_STAT,
-                        STATX_ALL, &stx));
+              return xyco::io::into_sys_result(statx(
+                  file_descriptor, "\0", AT_EMPTY_PATH | AT_STATX_SYNC_AS_STAT,
+                  STATX_ALL, &stx));
             })).map([](auto n) {
     return std::pair<struct stat64, StatxExtraFields>{{}, StatxExtraFields()};
   }));
@@ -58,7 +58,7 @@ auto file_attr(int fd) -> xyco::runtime::Future<
 
 auto xyco::fs::File::modified() const
     -> runtime::Future<io::IoResult<timespec>> {
-  co_return(co_await file_attr(fd_)).map([](auto pair) {
+  co_return (co_await file_attr(fd_)).map([](auto pair) {
     auto stat = pair.first;
     return timespec{.tv_sec = stat.st_mtim.tv_sec,
                     .tv_nsec = stat.st_mtim.tv_nsec};
@@ -67,7 +67,7 @@ auto xyco::fs::File::modified() const
 
 auto xyco::fs::File::accessed() const
     -> runtime::Future<io::IoResult<timespec>> {
-  co_return(co_await file_attr(fd_)).map([](auto pair) {
+  co_return (co_await file_attr(fd_)).map([](auto pair) {
     auto stat = pair.first;
     return timespec{.tv_sec = stat.st_atim.tv_sec,
                     .tv_nsec = stat.st_atim.tv_nsec};
@@ -192,8 +192,8 @@ xyco::fs::File::~File() {
   }
 }
 
-xyco::fs::File::File(int fd, std::filesystem::path&& path)
-    : fd_(fd), path_(std::move(path)) {}
+xyco::fs::File::File(int file_descriptor, std::filesystem::path&& path)
+    : fd_(file_descriptor), path_(std::move(path)) {}
 
 auto xyco::fs::OpenOptions::open(std::filesystem::path&& path)
     -> runtime::Future<io::IoResult<File>> {
@@ -213,7 +213,7 @@ auto xyco::fs::OpenOptions::open(std::filesystem::path&& path)
                 (custom_flags_ & O_ACCMODE);
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     return io::into_sys_result(::open(path.c_str(), flags, mode_))
-        .map([&](auto fd) { return File(fd, std::move(path)); });
+        .map([&](auto file_descriptor) { return File(file_descriptor, std::move(path)); });
   });
 }
 

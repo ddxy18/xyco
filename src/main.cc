@@ -32,37 +32,38 @@ auto start_client() -> Future<void> {
   constexpr int max_buf_size = 10;
 
   auto start = std::chrono::system_clock::now();
-  auto connection =
+  auto connect_result =
       (co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
           xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
-  while (connection.is_err() &&
+  while (connect_result.is_err() &&
          std::chrono::system_clock::now() - start <= std::chrono::seconds(2)) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    connection =
+    connect_result =
         (co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
             xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
   }
-  auto c = connection.unwrap();
+  auto connection = connect_result.unwrap();
   auto buf = std::string(max_buf_size, 0);
-  (co_await xyco::io::ReadExt::read(c, buf)).unwrap();
-  INFO("success read \"{}\" from {}\n", buf, c);
+  (co_await xyco::io::ReadExt::read(connection, buf)).unwrap();
+  INFO("success read \"{}\" from {}\n", buf, connection);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 auto main(int /*unused*/, char** /*unused*/) -> int {
   constexpr std::chrono::seconds wait_seconds(5);
 
-  auto rt = xyco::runtime::Builder::new_multi_thread()
-                .worker_threads(2)
-                .max_blocking_threads(2)
-                .registry<xyco::io::IoRegistry>()
-                .build()
-                .unwrap();
-  rt->spawn(start_server());
+  auto runtime = xyco::runtime::Builder::new_multi_thread()
+                     .worker_threads(2)
+                     .max_blocking_threads(2)
+                     .registry<xyco::io::IoRegistry>()
+                     .build()
+                     .unwrap();
+  runtime->spawn(start_server());
   // ensure server prepared to accept new connections
   std::this_thread::sleep_for(std::chrono::seconds(1));
-  rt->spawn(start_client());
-  rt->spawn(start_client());
-  rt->spawn(start_client());
+  runtime->spawn(start_client());
+  runtime->spawn(start_client());
+  runtime->spawn(start_client());
 
   std::this_thread::sleep_for(wait_seconds);
 }

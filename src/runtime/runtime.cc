@@ -97,8 +97,8 @@ xyco::runtime::Runtime::~Runtime() {
 }
 
 auto xyco::runtime::Runtime::wake(Events &events) -> void {
-  for (auto &ev : events) {
-    auto event_ptr = ev.lock();
+  for (auto &event : events) {
+    auto event_ptr = event.lock();
     if (event_ptr && event_ptr->future_ != nullptr) {
       TRACE("wake {}", *event_ptr);
       register_future(event_ptr->future_);
@@ -110,8 +110,8 @@ auto xyco::runtime::Runtime::wake(Events &events) -> void {
 
 auto xyco::runtime::Runtime::wake_local(Events &events) -> void {
   auto &worker = workers_.find(std::this_thread::get_id())->second;
-  for (auto &ev : events) {
-    auto event_ptr = ev.lock();
+  for (auto &event : events) {
+    auto event_ptr = event.lock();
     if (event_ptr && event_ptr->future_ != nullptr) {
       TRACE("wake local {}", *event_ptr);
       std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
@@ -141,13 +141,13 @@ auto xyco::runtime::Builder::max_blocking_threads(uintptr_t val) -> Builder & {
   return *this;
 }
 
-auto xyco::runtime::Builder::on_worker_start(auto (*f)()->void) -> Builder & {
-  on_start_f_ = f;
+auto xyco::runtime::Builder::on_worker_start(auto (*function)()->void) -> Builder & {
+  on_start_f_ = function;
   return *this;
 }
 
-auto xyco::runtime::Builder::on_worker_stop(auto (*f)()->void) -> Builder & {
-  on_stop_f_ = f;
+auto xyco::runtime::Builder::on_worker_stop(auto (*function)()->void) -> Builder & {
+  on_stop_f_ = function;
   return *this;
 }
 
@@ -156,8 +156,8 @@ auto xyco::runtime::Builder::build() const
   auto runtime = std::make_unique<Runtime>(Runtime::Privater());
   runtime->on_start_f_ = on_start_f_;
   runtime->on_stop_f_ = on_stop_f_;
-  for (const auto &f : registries_) {
-    f(runtime.get());
+  for (const auto &registry_constructor : registries_) {
+    registry_constructor(runtime.get());
   }
   for (auto i = 0; i < worker_num_; i++) {
     auto worker = std::make_unique<Worker>();
