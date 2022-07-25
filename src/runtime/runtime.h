@@ -64,11 +64,11 @@ class Runtime {
   }
 
   template <typename Fn>
-  auto spawn_blocking(Fn &&f) -> void requires(std::is_invocable_v<Fn>) {
-    using Return = decltype(f());
+  auto spawn_blocking(Fn &&function) -> void requires(std::is_invocable_v<Fn>) {
+    using Return = decltype(function());
 
     spawn([=]() -> Future<Return> {
-      co_return co_await AsyncFuture<Return>([=]() { return f(); });
+      co_return co_await AsyncFuture<Return>([=]() { return function(); });
     }());
   }
 
@@ -154,9 +154,9 @@ class Builder {
     return *this;
   }
 
-  auto on_worker_start(auto (*f)()->void) -> Builder &;
+  auto on_worker_start(auto (*function)()->void) -> Builder &;
 
-  auto on_worker_stop(auto (*f)()->void) -> Builder &;
+  auto on_worker_stop(auto (*function)()->void) -> Builder &;
 
   [[nodiscard]] auto build() const -> io::IoResult<std::unique_ptr<Runtime>>;
 

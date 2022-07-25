@@ -74,7 +74,7 @@ class File {
   ~File();
 
  private:
-  File(int fd, std::filesystem::path &&path);
+  File(int file_descriptor, std::filesystem::path &&path);
 
   int fd_;
   std::filesystem::path path_;

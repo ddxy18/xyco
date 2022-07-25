@@ -70,12 +70,12 @@ class TcpStream {
         }
         if (extra->state_.get_field<io::IoExtra::State::Error>() ||
             extra->state_.get_field<io::IoExtra::State::Readable>()) {
-          auto n = ::read(self_->socket_.into_c_fd(), &*begin_,
-                          std::distance(begin_, end_));
-          if (n != -1) {
-            INFO("read {} bytes from {}", n, *self_);
+          auto bytes = ::read(self_->socket_.into_c_fd(), &*begin_,
+                              std::distance(begin_, end_));
+          if (bytes != -1) {
+            INFO("read {} bytes from {}", bytes, *self_);
             extra->state_.set_field<io::IoExtra::State::Readable, false>();
-            return runtime::Ready<CoOutput>{CoOutput::ok(n)};
+            return runtime::Ready<CoOutput>{CoOutput::ok(bytes)};
           }
           if (errno != EAGAIN && errno != EWOULDBLOCK) {
             return runtime::Ready<CoOutput>{
@@ -134,11 +134,11 @@ class TcpStream {
         }
         if (extra->state_.get_field<io::IoExtra::State::Error>() ||
             extra->state_.get_field<io::IoExtra::State::Writable>()) {
-          auto n = ::write(self_->socket_.into_c_fd(), &*begin_,
-                           std::distance(begin_, end_));
-          auto nbytes = io::into_sys_result(n).map(
+          auto bytes = ::write(self_->socket_.into_c_fd(), &*begin_,
+                               std::distance(begin_, end_));
+          auto nbytes = io::into_sys_result(bytes).map(
               [](auto n) -> uintptr_t { return static_cast<uintptr_t>(n); });
-          INFO("write {} bytes to {}", n, self_->socket_);
+          INFO("write {} bytes to {}", bytes, self_->socket_);
           return runtime::Ready<CoOutput>{nbytes};
         }
         self_->event_->future_ = this;

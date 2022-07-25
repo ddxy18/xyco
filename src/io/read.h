@@ -64,7 +64,7 @@ class BufferReadExt {
   }
 
   template <typename Reader, typename B>
-  static auto read_until(Reader &reader, char c) -> runtime::Future<IoResult<B>>
+  static auto read_until(Reader &reader, char character) -> runtime::Future<IoResult<B>>
   requires(BufferReadable<Reader, B> &&DynamicBuffer<B>) {
     B content;
 
@@ -73,7 +73,7 @@ class BufferReadExt {
       if (begin == end) {
         co_return IoResult<B>::ok(content);
       }
-      auto pos = std::find(begin, end, c);
+      auto pos = std::find(begin, end, character);
       if (pos != end) {
         std::advance(pos, 1);
       }

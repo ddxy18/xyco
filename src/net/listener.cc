@@ -115,12 +115,12 @@ auto xyco::net::TcpSocket::set_reuseport(bool reuseport) -> io::IoResult<void> {
 
 auto xyco::net::TcpSocket::new_v4() -> io::IoResult<TcpSocket> {
   return io::into_sys_result(::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0))
-      .map([](auto fd) { return TcpSocket(fd); });
+      .map([](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
 
 auto xyco::net::TcpSocket::new_v6() -> io::IoResult<TcpSocket> {
   return io::into_sys_result(::socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, 0))
-      .map([](auto fd) { return TcpSocket(fd); });
+      .map([](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
 
 xyco::net::TcpSocket::TcpSocket(Socket &&socket) : socket_(std::move(socket)) {}
@@ -225,10 +225,10 @@ auto xyco::net::TcpListener::accept()
           }
           return runtime::Ready<CoOutput>{CoOutput::err(err)};
         }
-        std::string ip(INET_ADDRSTRLEN, 0);
+        std::string ip_addr(INET_ADDRSTRLEN, 0);
         auto sock_addr = SocketAddr::new_v4(
             Ipv4Addr(::inet_ntop(addr_in.sin_family, &addr_in.sin_addr,
-                                 ip.data(), ip.size())),
+                                 ip_addr.data(), ip_addr.size())),
             addr_in.sin_port);
         auto socket = Socket(accept_result.unwrap());
         INFO("accept from {} new connect={{{}, addr:{}}}", self_->socket_,

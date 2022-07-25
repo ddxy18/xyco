@@ -41,8 +41,8 @@ auto xyco::io::IoExtra::print() const -> std::string {
                      interest, fd_);
 }
 
-xyco::io::IoExtra::IoExtra(Interest interest, int fd)
-    : state_(), interest_(interest), fd_(fd) {}
+xyco::io::IoExtra::IoExtra(Interest interest, int file_descriptor)
+    : state_(), interest_(interest), fd_(file_descriptor) {}
 
 auto xyco::io::IoRegistry::Register(std::shared_ptr<runtime::Event> event)
     -> IoResult<void> {

@@ -95,10 +95,10 @@ class Result {
   }
 
   template <typename Fn>
-  auto unwrap_or_else(const Fn& f)
+  auto unwrap_or_else(const Fn& functor)
       -> T requires std::is_invocable_v<Fn, E> &&(!std::is_same_v<E, void>) {
     if (inner_.index() == 2) {
-      return f(std::get<Err<E>>(inner_).inner_);
+      return functor(std::get<Err<E>>(inner_).inner_);
     }
     if constexpr (!std::is_same_v<T, void>) {
       return std::get<Ok<T>>(inner_).inner_;
@@ -106,10 +106,10 @@ class Result {
   }
 
   template <typename Fn>
-  auto unwrap_or_else(const Fn& f)
+  auto unwrap_or_else(const Fn& functor)
       -> T requires std::is_invocable_v<Fn> && std::is_same_v<E, void> {
     if (inner_.index() == 2) {
-      return f();
+      return functor();
     }
     if constexpr (!std::is_same_v<T, void>) {
       return std::get<Ok<T>>(inner_).inner_;
@@ -117,17 +117,17 @@ class Result {
   }
 
   template <typename Fn>
-  [[nodiscard]] auto map(const Fn& f) requires std::is_invocable_v<Fn, T> &&
+  [[nodiscard]] auto map(const Fn& functor) requires std::is_invocable_v<Fn, T> &&
       (!std::is_same_v<T, void>) {
     using MapT =
-        decltype(f(std::get<T>(std::variant<std::monostate, T, Err<E>>())));
+        decltype(functor(std::get<T>(std::variant<std::monostate, T, Err<E>>())));
 
     if (inner_.index() == 1) {
       if constexpr (std::is_same_v<MapT, void>) {
-        f(std::get<Ok<T>>(inner_).inner_);
+        functor(std::get<Ok<T>>(inner_).inner_);
         return Result<void, E>::ok();
       } else {
-        return Result<MapT, E>::ok(f(std::get<Ok<T>>(inner_).inner_));
+        return Result<MapT, E>::ok(functor(std::get<Ok<T>>(inner_).inner_));
       }
     }
     if constexpr (!std::is_same_v<E, void>) {
@@ -138,16 +138,16 @@ class Result {
   }
 
   template <typename Fn>
-  [[nodiscard]] auto map(const Fn& f) -> Result<decltype(f()), E>
+  [[nodiscard]] auto map(const Fn& functor) -> Result<decltype(functor()), E>
   requires std::is_invocable_v<Fn> && std::is_same_v<T, void> {
-    using MapT = decltype(f());
+    using MapT = decltype(functor());
 
     if (inner_.index() == 1) {
       if constexpr (std::is_same_v<MapT, void>) {
-        f();
+        functor();
         return Result<void, E>::ok();
       } else {
-        return Result<MapT, E>::ok(f());
+        return Result<MapT, E>::ok(functor());
       }
     }
     if constexpr (!std::is_same_v<E, void>) {
@@ -158,17 +158,17 @@ class Result {
   }
 
   template <typename Fn>
-  [[nodiscard]] auto map_err(const Fn& f) requires std::is_invocable_v<Fn, E> &&
+  [[nodiscard]] auto map_err(const Fn& functor) requires std::is_invocable_v<Fn, E> &&
       (!std::is_same_v<E, void>) {
     using MapE =
-        decltype(f(std::get<E>(std::variant<std::monostate, Ok<T>, E>())));
+        decltype(functor(std::get<E>(std::variant<std::monostate, Ok<T>, E>())));
 
     if (inner_.index() == 2) {
       if constexpr (std::is_same_v<MapE, void>) {
-        f(std::get<Err<E>>(inner_).inner_);
+        functor(std::get<Err<E>>(inner_).inner_);
         return Result<T, void>::err();
       } else {
-        return Result<T, MapE>::err(f(std::get<Err<E>>(inner_).inner_));
+        return Result<T, MapE>::err(functor(std::get<Err<E>>(inner_).inner_));
       }
     }
     if constexpr (std::is_same_v<T, void>) {
@@ -179,16 +179,16 @@ class Result {
   }
 
   template <typename Fn>
-  [[nodiscard]] auto map_err(const Fn& f) -> Result<T, decltype(f())>
+  [[nodiscard]] auto map_err(const Fn& functor) -> Result<T, decltype(functor())>
   requires std::is_invocable_v<Fn> && std::is_same_v<E, void> {
-    using MapE = decltype(f());
+    using MapE = decltype(functor());
 
     if (inner_.index() == 2) {
       if constexpr (std::is_same_v<MapE, void>) {
-        f();
+        functor();
         return Result<T, void>::err();
       } else {
-        return Result<T, MapE>::err(f());
+        return Result<T, MapE>::err(functor());
       }
     }
     if constexpr (std::is_same_v<T, void>) {

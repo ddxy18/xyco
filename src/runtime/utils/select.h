@@ -51,7 +51,6 @@ class SelectFuture
 
   SelectFuture(Future<T1> &&future1, Future<T2> &&future2)
       : Future<CoOutput>(nullptr),
-        ready_(false),
         futures_(std::move(future1), std::move(future2)) {}
 
  private:
@@ -85,7 +84,7 @@ class SelectFuture
     }
   }
 
-  bool ready_;
+  bool ready_{};
 
   std::mutex result_mutex_;
   std::variant<std::monostate, TypeWrapper<T1>, TypeWrapper<T2>> result_;

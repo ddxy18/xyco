@@ -26,11 +26,9 @@ class JoinFuture : public Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
 
   JoinFuture(Future<T1> &&future1, Future<T2> &&future2)
       : Future<CoOutput>(nullptr),
-        ready_(false),
         future1_(std::move(future1)),
         future2_(std::move(future2)),
-        result_({}, {}),
-        registered_(false) {}
+        result_({}, {}) {}
 
  private:
   template <typename T, int Index>
@@ -60,11 +58,11 @@ class JoinFuture : public Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
     }
   }
 
-  bool ready_;
+  bool ready_{};
   std::pair<std::optional<TypeWrapper<T1>>, std::optional<TypeWrapper<T2>>>
       result_;
   std::mutex mutex_;
-  bool registered_;
+  bool registered_{};
   Future<T1> &&future1_;
   Future<T2> &&future2_;
 };
