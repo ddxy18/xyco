@@ -7,7 +7,7 @@ on:
       - 'build/*'
 
 env:
-  llvm_version: 13
+  llvm_version: 14
 
 jobs:
   rust-tool:
@@ -40,7 +40,7 @@ jobs:
   cpp-build:
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:21.10
+      image: ubuntu:22.04
     steps:
       - run: |
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
@@ -51,7 +51,7 @@ jobs:
         run: |
           apt install -y cmake
           apt install -y clang-$llvm_version clang-tidy-$llvm_version
-          apt install -y libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-dev
+          apt install -y libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev
           ln -s /usr/bin/clang-tidy-$llvm_version /usr/bin/clang-tidy
           ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
           ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
@@ -74,19 +74,19 @@ jobs:
           cmake --build ./build --config Release --target xyco
           echo '[target.x86_64-unknown-linux-gnu]' >> $HOME/.cargo/config.toml
           echo 'rustflags = ["-C", "linker=clang"]' >> $HOME/.cargo/config.toml
-          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source=src --build=build --extra-arg="-I/usr/lib/llvm-13/include/c++/v1/"
+          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source=src --build=build --extra-arg="-I/usr/lib/llvm-$llvm_version/include/c++/v1/"
 
   cpp-test:
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:21.10
+      image: ubuntu:22.04
     steps:
       - name: install essential packages
         run: |
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
           apt-get -y update && apt-get -y upgrade
           apt install -y binutils git cmake \
-          clang-$llvm_version libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-dev
+          clang-$llvm_version libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev
           ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
           ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
       - uses: actions/checkout@v2
