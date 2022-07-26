@@ -11,6 +11,8 @@ std::unique_ptr<xyco::runtime::Runtime> TestRuntimeCtx::runtime_(
         .max_blocking_threads(1)
         .registry<xyco::io::IoRegistry>()
         .registry<xyco::time::TimeRegistry>()
+        .on_worker_start([]() {})
+        .on_worker_stop([]() {})
         .build()
         .unwrap());
 
