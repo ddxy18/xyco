@@ -142,6 +142,18 @@ TEST_F(WithServerTest, TcpSocket_connect) {
   });
 }
 
+TEST_F(WithServerTest, TcpStream_flush) {
+  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+    auto client = (co_await xyco::net::TcpSocket::new_v4().unwrap().connect(
+                       xyco::net::SocketAddr::new_v4(ip_, port_)))
+                      .unwrap();
+    (co_await listener_->accept()).unwrap();
+    auto flush_result = co_await client.flush();
+
+    CO_ASSERT_EQ(flush_result.is_ok(), true);
+  });
+}
+
 TEST_F(WithServerTest, TcpSocket_new_v6) {
   ASSERT_EQ(xyco::net::TcpSocket::new_v6().is_ok(), true);
 }

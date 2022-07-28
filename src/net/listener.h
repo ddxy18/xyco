@@ -174,7 +174,7 @@ class TcpStream {
     co_return co_await Future(begin, end, this);
   }
 
-  static auto flush() -> Future<utils::Result<void>>;
+  auto flush() -> Future<utils::Result<void>>;
 
   [[nodiscard]] auto shutdown(io::Shutdown shutdown) const
       -> Future<utils::Result<void>>;

@@ -139,6 +139,7 @@ auto xyco::net::TcpStream::connect(SocketAddr addr)
   co_return co_await socket.unwrap().connect(addr);
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 auto xyco::net::TcpStream::flush() -> Future<utils::Result<void>> {
   co_return utils::Result<void>::ok();
 }
