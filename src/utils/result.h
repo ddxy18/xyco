@@ -73,7 +73,7 @@ class Result {
       } else {
         ERROR("unwrap err:{}", std::get<Err<E>>(inner_).inner_);
       }
-      panic();
+      xyco::utils::panic();
     }
     if constexpr (!std::is_same_v<T, void>) {
       return std::move(std::get<Ok<T>>(inner_).inner_);
@@ -87,7 +87,7 @@ class Result {
       } else {
         ERROR("unwrap_err err:{}", std::get<Ok<T>>(inner_).inner_);
       }
-      panic();
+      xyco::utils::panic();
     }
     if constexpr (!std::is_same_v<E, void>) {
       return std::get<Err<E>>(inner_).inner_;
@@ -117,10 +117,11 @@ class Result {
   }
 
   template <typename Fn>
-  [[nodiscard]] auto map(const Fn& functor) requires std::is_invocable_v<Fn, T> &&
+  [[nodiscard]] auto map(
+      const Fn& functor) requires std::is_invocable_v<Fn, T> &&
       (!std::is_same_v<T, void>) {
-    using MapT =
-        decltype(functor(std::get<T>(std::variant<std::monostate, T, Err<E>>())));
+    using MapT = decltype(functor(
+        std::get<T>(std::variant<std::monostate, T, Err<E>>())));
 
     if (inner_.index() == 1) {
       if constexpr (std::is_same_v<MapT, void>) {
@@ -158,10 +159,11 @@ class Result {
   }
 
   template <typename Fn>
-  [[nodiscard]] auto map_err(const Fn& functor) requires std::is_invocable_v<Fn, E> &&
+  [[nodiscard]] auto map_err(
+      const Fn& functor) requires std::is_invocable_v<Fn, E> &&
       (!std::is_same_v<E, void>) {
-    using MapE =
-        decltype(functor(std::get<E>(std::variant<std::monostate, Ok<T>, E>())));
+    using MapE = decltype(functor(
+        std::get<E>(std::variant<std::monostate, Ok<T>, E>())));
 
     if (inner_.index() == 2) {
       if constexpr (std::is_same_v<MapE, void>) {
@@ -179,7 +181,8 @@ class Result {
   }
 
   template <typename Fn>
-  [[nodiscard]] auto map_err(const Fn& functor) -> Result<T, decltype(functor())>
+  [[nodiscard]] auto map_err(const Fn& functor)
+      -> Result<T, decltype(functor())>
   requires std::is_invocable_v<Fn> && std::is_same_v<E, void> {
     using MapE = decltype(functor());
 
