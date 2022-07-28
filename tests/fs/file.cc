@@ -183,7 +183,7 @@ TEST_F(FileTest, rename_file) {
     auto file = (co_await xyco::fs::File::create(file_path)).unwrap();
 
     auto new_file_path = std::string(file_path).append("1");
-    (co_await(xyco::fs::rename(file_path, new_file_path))).unwrap();
+    (co_await (xyco::fs::rename(file_path, new_file_path))).unwrap();
 
     auto open_new_file_result = (co_await xyco::fs::File::open(new_file_path));
     CO_ASSERT_EQ(open_new_file_result.is_ok(), true);
@@ -197,7 +197,7 @@ TEST_F(FileTest, rename_nonexist_file) {
     auto file_path = std::string(fs_root_).append(path);
 
     auto new_file_path = std::string(file_path).append("1");
-    auto rename_result = co_await(xyco::fs::rename(file_path, new_file_path));
+    auto rename_result = co_await (xyco::fs::rename(file_path, new_file_path));
 
     CO_ASSERT_EQ(rename_result.is_err(), true);
   });
@@ -210,10 +210,18 @@ TEST_F(FileTest, remove_file) {
     auto file_path = std::string(fs_root_).append(path);
     auto file = (co_await xyco::fs::File::create(file_path)).unwrap();
 
-    (co_await(xyco::fs::remove(file_path))).unwrap();
+    (co_await (xyco::fs::remove(file_path))).unwrap();
 
     auto open_result = (co_await xyco::fs::File::open(file_path));
     CO_ASSERT_EQ(open_result.is_ok(), false);
+  });
+}
+
+TEST_F(FileTest, remove_file_permission_denied) {
+  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+    auto remove_result = co_await (xyco::fs::remove("/proc/1"));
+
+    CO_ASSERT_EQ(remove_result.is_ok(), false);
   });
 }
 
@@ -226,13 +234,15 @@ TEST_F(FileTest, copy_file) {
     (co_await file.resize(4)).unwrap();
 
     auto new_file_path = std::string(file_path).append("_copy");
-    (co_await(xyco::fs::copy_file(
+    (co_await (xyco::fs::copy_file(
          file_path, new_file_path,
          std::filesystem::copy_options::overwrite_existing)))
         .unwrap();
 
     auto new_file_size =
-        (co_await(co_await xyco::fs::File::open(new_file_path)).unwrap().size())
+        (co_await (co_await xyco::fs::File::open(new_file_path))
+             .unwrap()
+             .size())
             .unwrap();
 
     CO_ASSERT_EQ(new_file_size, 4);
@@ -246,7 +256,7 @@ TEST_F(FileTest, copy_nonexist_file) {
     auto file_path = std::string(fs_root_).append(path);
 
     auto new_file_path = std::string(file_path).append("_copy");
-    auto copy_result = co_await(
+    auto copy_result = co_await (
         xyco::fs::copy_file(file_path, new_file_path,
                             std::filesystem::copy_options::overwrite_existing));
 
@@ -261,7 +271,7 @@ TEST_F(FileTest, operate_removed_file) {
     auto file_path = std::string(fs_root_).append(path);
     auto file = (co_await xyco::fs::File::create(file_path)).unwrap();
 
-    (co_await(xyco::fs::remove(file_path))).unwrap();
+    (co_await (xyco::fs::remove(file_path))).unwrap();
 
     auto resize_result = co_await file.resize(4);
     CO_ASSERT_EQ(resize_result.is_err(), true);
