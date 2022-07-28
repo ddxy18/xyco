@@ -133,7 +133,7 @@ auto xyco::net::NetRegistry::select(runtime::Events &events,
 
 xyco::net::NetRegistry::NetRegistry() : epfd_(::epoll_create(1)) {
   if (epfd_ == -1) {
-    panic();
+    utils::panic();
   }
 }
 

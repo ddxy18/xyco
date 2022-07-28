@@ -114,7 +114,7 @@ struct fmt::formatter<Frame> : public fmt::formatter<std::string> {
   }
 };
 
-auto panic() -> void {
+auto xyco::utils::panic() -> void {
   auto unwind_info = fmt::format("panic!\n{}", fmt::join(unwind(), "\n"));
   ERROR(unwind_info);
   throw std::runtime_error(unwind_info);
