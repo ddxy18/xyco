@@ -3,13 +3,13 @@
 
 #include <filesystem>
 
-#include "io/utils.h"
+#include "utils/error.h"
 
 namespace xyco::io {
 class File {
  public:
-  auto open(std::filesystem::path path) -> IoResult<File>;
-  auto create(std::filesystem::path path) -> IoResult<File>;
+  auto open(std::filesystem::path path) -> utils::Result<File>;
+  auto create(std::filesystem::path path) -> utils::Result<File>;
 };
 }  // namespace xyco::io
 

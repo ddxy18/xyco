@@ -3,7 +3,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "io/utils.h"
+#include "utils/error.h"
 
 auto xyco::net::SocketAddrV4::get_port() const -> uint16_t {
   return inner_.sin_port;
@@ -74,7 +74,7 @@ auto xyco::net::Socket::operator=(Socket&& socket) noexcept -> Socket& {
 
 xyco::net::Socket::~Socket() {
   if (fd_ != -1) {
-    io::into_sys_result(::close(fd_)).unwrap();
+    utils::into_sys_result(::close(fd_)).unwrap();
   }
 }
 

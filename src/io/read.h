@@ -6,20 +6,21 @@
 
 #include "io/utils.h"
 #include "runtime/future.h"
+#include "utils/error.h"
 
 namespace xyco::io {
 template <typename Reader, typename Iterator>
 concept Readable = requires(Reader reader, Iterator begin, Iterator end) {
   {
     reader.read(begin, end)
-    } -> std::same_as<runtime::Future<IoResult<uintptr_t>>>;
+    } -> std::same_as<runtime::Future<utils::Result<uintptr_t>>>;
 };
 
 template <typename Reader, typename Buffer>
 concept BufferReadable = requires(Reader reader, Buffer buffer) {
   {
     reader.fill_buffer()
-    } -> std::same_as<runtime::Future<io::IoResult<std::pair<
+    } -> std::same_as<runtime::Future<utils::Result<std::pair<
         decltype(std::begin(buffer)), decltype(std::begin(buffer))>>>>;
   { reader.consume(0) } -> std::same_as<void>;
 };
@@ -28,7 +29,7 @@ class ReadExt {
  public:
   template <typename Reader, typename B>
   static auto read(Reader &reader, B &buffer)
-      -> runtime::Future<IoResult<uintptr_t>>
+      -> runtime::Future<utils::Result<uintptr_t>>
   requires(Readable<Reader, decltype(std::begin(buffer))> &&Buffer<B>) {
     co_return co_await reader.read(std::begin(buffer), std::end(buffer));
   }
@@ -36,7 +37,7 @@ class ReadExt {
   template <typename Reader, typename V, std::size_t N>
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
   static auto read(Reader &reader, V (&buffer)[N])
-      -> runtime::Future<IoResult<uintptr_t>>
+      -> runtime::Future<utils::Result<uintptr_t>>
   requires(Readable<Reader, decltype(std::begin(buffer))>
                &&Buffer<decltype(buffer)>) {
     auto span = std::span(buffer);
@@ -47,14 +48,14 @@ class ReadExt {
 class BufferReadExt {
  public:
   template <typename Reader, typename B>
-  static auto read_to_end(Reader &reader) -> runtime::Future<IoResult<B>>
+  static auto read_to_end(Reader &reader) -> runtime::Future<utils::Result<B>>
   requires(BufferReadable<Reader, B> &&DynamicBuffer<B>) {
     B content;
 
     while (true) {
       auto [begin, end] = (co_await reader.fill_buffer()).unwrap();
       if (begin == end) {
-        co_return IoResult<B>::ok(content);
+        co_return utils::Result<B>::ok(content);
       }
       auto prev_size = std::size(content);
       content.resize(prev_size + std::distance(begin, end));
@@ -64,14 +65,15 @@ class BufferReadExt {
   }
 
   template <typename Reader, typename B>
-  static auto read_until(Reader &reader, char character) -> runtime::Future<IoResult<B>>
+  static auto read_until(Reader &reader, char character)
+      -> runtime::Future<utils::Result<B>>
   requires(BufferReadable<Reader, B> &&DynamicBuffer<B>) {
     B content;
 
     while (true) {
       auto [begin, end] = (co_await reader.fill_buffer()).unwrap();
       if (begin == end) {
-        co_return IoResult<B>::ok(content);
+        co_return utils::Result<B>::ok(content);
       }
       auto pos = std::find(begin, end, character);
       if (pos != end) {
@@ -82,15 +84,15 @@ class BufferReadExt {
       std::copy(begin, pos, std::begin(content) + prev_size);
       reader.consume(std::distance(begin, pos));
       if (pos != end) {
-        co_return IoResult<B>::ok(content);
+        co_return utils::Result<B>::ok(content);
       }
     }
   }
 
   template <typename Reader, typename B>
-  static auto read_line(Reader &reader) -> runtime::Future<IoResult<B>>
+  static auto read_line(Reader &reader) -> runtime::Future<utils::Result<B>>
   requires(BufferReadable<Reader, B> &&DynamicBuffer<B>) {
-    co_return(co_await read_until<Reader, B>(reader, '\n')).map([](auto line) {
+    co_return (co_await read_until<Reader, B>(reader, '\n')).map([](auto line) {
       line.resize(std::size(line) - 1);
       return line;
     });

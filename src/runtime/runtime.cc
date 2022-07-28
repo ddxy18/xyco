@@ -152,7 +152,7 @@ auto xyco::runtime::Builder::on_worker_stop(auto (*function)()->void) -> Builder
 }
 
 auto xyco::runtime::Builder::build() const
-    -> io::IoResult<std::unique_ptr<Runtime>> {
+    -> utils::Result<std::unique_ptr<Runtime>> {
   auto runtime = std::make_unique<Runtime>(Runtime::Privater());
   runtime->on_start_f_ = on_start_f_;
   runtime->on_stop_f_ = on_stop_f_;
@@ -165,7 +165,7 @@ auto xyco::runtime::Builder::build() const
     runtime->workers_.emplace(worker->get_native_id(), std::move(worker));
   }
 
-  return io::IoResult<std::unique_ptr<Runtime>>::ok(std::move(runtime));
+  return utils::Result<std::unique_ptr<Runtime>>::ok(std::move(runtime));
 }
 
 auto xyco::runtime::Builder::default_f() -> void {}

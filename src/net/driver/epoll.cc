@@ -51,13 +51,13 @@ struct fmt::formatter<epoll_event> : public fmt::formatter<bool> {
 };
 
 auto xyco::net::NetRegistry::Register(std::shared_ptr<runtime::Event> event)
-    -> io::IoResult<void> {
+    -> utils::Result<void> {
   auto *extra = dynamic_cast<io::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{
       .events = static_cast<uint32_t>(to_sys((extra->interest_))),
       .data = {.ptr = event.get()}};
 
-  auto result = io::into_sys_result(
+  auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_ADD, extra->fd_, &epoll_event));
   if (result.is_ok()) {
     TRACE("epoll_ctl add:{}", epoll_event);
@@ -69,12 +69,12 @@ auto xyco::net::NetRegistry::Register(std::shared_ptr<runtime::Event> event)
 }
 
 auto xyco::net::NetRegistry::reregister(std::shared_ptr<runtime::Event> event)
-    -> io::IoResult<void> {
+    -> utils::Result<void> {
   auto *extra = dynamic_cast<io::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
   epoll_event.data.ptr = event.get();
 
-  auto result = io::into_sys_result(
+  auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_MOD, extra->fd_, &epoll_event));
   if (result.is_ok()) {
     TRACE("epoll_ctl mod:{}", epoll_event);
@@ -84,12 +84,12 @@ auto xyco::net::NetRegistry::reregister(std::shared_ptr<runtime::Event> event)
 }
 
 auto xyco::net::NetRegistry::deregister(std::shared_ptr<runtime::Event> event)
-    -> io::IoResult<void> {
+    -> utils::Result<void> {
   auto *extra = dynamic_cast<io::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
   epoll_event.data.ptr = event.get();
 
-  auto result = io::into_sys_result(
+  auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_DEL, extra->fd_, &epoll_event));
   if (result.is_ok()) {
     registered_events_.erase(
@@ -103,18 +103,18 @@ auto xyco::net::NetRegistry::deregister(std::shared_ptr<runtime::Event> event)
 
 auto xyco::net::NetRegistry::select(runtime::Events &events,
                                     std::chrono::milliseconds timeout)
-    -> io::IoResult<void> {
+    -> utils::Result<void> {
   static auto epoll_events = std::array<epoll_event, MAX_EVENTS>();
 
-  auto select_result = io::into_sys_result(
+  auto select_result = utils::into_sys_result(
       ::epoll_wait(epfd_, epoll_events.data(), MAX_EVENTS,
                    static_cast<int>(std::min(timeout, MAX_TIMEOUT).count())));
   if (select_result.is_err()) {
     auto err = select_result.unwrap_err();
     if (err.errno_ != EINTR) {
-      return io::IoResult<void>::err(err);
+      return utils::Result<void>::err(err);
     }
-    return io::IoResult<void>::ok();
+    return utils::Result<void>::ok();
   }
   auto ready_len = select_result.unwrap();
   for (auto i = 0; i < ready_len; i++) {
@@ -128,7 +128,7 @@ auto xyco::net::NetRegistry::select(runtime::Events &events,
     TRACE("select {}", *ready_event->get());
     events.push_back(*ready_event);
   }
-  return io::IoResult<void>::ok();
+  return utils::Result<void>::ok();
 }
 
 xyco::net::NetRegistry::NetRegistry() : epfd_(::epoll_create(1)) {

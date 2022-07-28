@@ -6,6 +6,7 @@
 
 #include "io/utils.h"
 #include "runtime/future.h"
+#include "utils/error.h"
 
 namespace xyco::io {
 enum class Shutdown { Read, Write, All };
@@ -14,20 +15,20 @@ template <typename Writer, typename Iterator>
 concept Writable = requires(Writer writer, Iterator begin, Iterator end) {
   {
     writer.write(begin, end)
-    } -> std::same_as<runtime::Future<IoResult<uintptr_t>>>;
+    } -> std::same_as<runtime::Future<utils::Result<uintptr_t>>>;
 
-  { writer.flush() } -> std::same_as<runtime::Future<IoResult<void>>>;
+  { writer.flush() } -> std::same_as<runtime::Future<utils::Result<void>>>;
 
   {
     writer.shutdown(io::Shutdown::All)
-    } -> std::same_as<runtime::Future<IoResult<void>>>;
+    } -> std::same_as<runtime::Future<utils::Result<void>>>;
 };
 
 class WriteExt {
  public:
   template <typename Writer, typename B>
   static auto write(Writer &writer, const B &buffer)
-      -> runtime::Future<IoResult<uintptr_t>>
+      -> runtime::Future<utils::Result<uintptr_t>>
   requires(Writable<Writer, decltype(std::begin(buffer))> &&Buffer<B>) {
     co_return co_await writer.write(std::begin(buffer), std::end(buffer));
   }
@@ -35,7 +36,7 @@ class WriteExt {
   template <typename Writer, typename V, std::size_t N>
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
   static auto write(Writer &writer, const V (&buffer)[N])
-      -> runtime::Future<IoResult<uintptr_t>>
+      -> runtime::Future<utils::Result<uintptr_t>>
   requires(Writable<Writer, decltype(std::begin(buffer))>
                &&Buffer<decltype(buffer)>) {
     auto span = std::span(buffer);
@@ -44,7 +45,7 @@ class WriteExt {
 
   template <typename Writer, typename B>
   static auto write_all(Writer &writer, const B &buffer)
-      -> runtime::Future<IoResult<void>>
+      -> runtime::Future<utils::Result<void>>
   requires(Writable<Writer, decltype(std::begin(buffer))> &&Buffer<B>) {
     auto buf_size = std::size(buffer);
     auto total_write = 0;
@@ -61,17 +62,17 @@ class WriteExt {
         auto error = write_result.unwrap_err();
         if (error.errno_ != EAGAIN && error.errno_ != EWOULDBLOCK &&
             error.errno_ != EINTR) {
-          co_return IoResult<void>::err(error);
+          co_return utils::Result<void>::err(error);
         }
       }
     }
-    co_return IoResult<void>::ok();
+    co_return utils::Result<void>::ok();
   }
 
   template <typename Writer, typename V, std::size_t N>
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
   static auto write_all(Writer &writer, const V (&buffer)[N])
-      -> runtime::Future<IoResult<void>>
+      -> runtime::Future<utils::Result<void>>
   requires(Writable<Writer, decltype(std::begin(buffer))>
                &&Buffer<decltype(buffer)>) {
     auto span = std::span(buffer);

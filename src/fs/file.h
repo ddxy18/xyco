@@ -7,8 +7,8 @@
 
 #include <filesystem>
 
-#include "io/utils.h"
 #include "runtime/async_future.h"
+#include "utils/error.h"
 
 namespace xyco::fs {
 class File {
@@ -16,52 +16,53 @@ class File {
 
  public:
   static auto create(std::filesystem::path &&path)
-      -> runtime::Future<io::IoResult<File>>;
+      -> runtime::Future<utils::Result<File>>;
 
   static auto open(std::filesystem::path &&path)
-      -> runtime::Future<io::IoResult<File>>;
+      -> runtime::Future<utils::Result<File>>;
 
-  auto resize(uintmax_t size) -> runtime::Future<io::IoResult<void>>;
+  auto resize(uintmax_t size) -> runtime::Future<utils::Result<void>>;
 
-  [[nodiscard]] auto size() const -> runtime::Future<io::IoResult<uintmax_t>>;
+  [[nodiscard]] auto size() const -> runtime::Future<utils::Result<uintmax_t>>;
 
-  auto status() -> runtime::Future<io::IoResult<std::filesystem::file_status>>;
+  auto status() -> runtime::Future<utils::Result<std::filesystem::file_status>>;
 
   [[nodiscard]] auto set_permissions(std::filesystem::perms prms,
                                      std::filesystem::perm_options opts =
                                          std::filesystem::perm_options::replace)
-      const -> runtime::Future<io::IoResult<void>>;
+      const -> runtime::Future<utils::Result<void>>;
 
   [[nodiscard]] auto modified() const
-      -> runtime::Future<io::IoResult<timespec>>;
+      -> runtime::Future<utils::Result<timespec>>;
 
   [[nodiscard]] auto accessed() const
-      -> runtime::Future<io::IoResult<timespec>>;
+      -> runtime::Future<utils::Result<timespec>>;
 
-  [[nodiscard]] auto created() const -> runtime::Future<io::IoResult<timespec>>;
+  [[nodiscard]] auto created() const
+      -> runtime::Future<utils::Result<timespec>>;
 
   template <typename Iterator>
   auto read(Iterator begin, Iterator end)
-      -> runtime::Future<io::IoResult<uintptr_t>> {
-    co_return co_await runtime::AsyncFuture<io::IoResult<uintptr_t>>([&]() {
-      return io::into_sys_result(
+      -> runtime::Future<utils::Result<uintptr_t>> {
+    co_return co_await runtime::AsyncFuture<utils::Result<uintptr_t>>([&]() {
+      return utils::into_sys_result(
           ::read(fd_, &*begin, std::distance(begin, end)));
     });
   }
 
   template <typename Iterator>
   auto write(Iterator begin, Iterator end)
-      -> runtime::Future<io::IoResult<uintptr_t>> {
-    co_return co_await runtime::AsyncFuture<io::IoResult<uintptr_t>>([&]() {
-      return io::into_sys_result(
+      -> runtime::Future<utils::Result<uintptr_t>> {
+    co_return co_await runtime::AsyncFuture<utils::Result<uintptr_t>>([&]() {
+      return utils::into_sys_result(
           ::write(fd_, &*begin, std::distance(begin, end)));
     });
   }
 
-  [[nodiscard]] auto flush() const -> runtime::Future<io::IoResult<void>>;
+  [[nodiscard]] auto flush() const -> runtime::Future<utils::Result<void>>;
 
   [[nodiscard]] auto seek(off64_t offset, int whence) const
-      -> runtime::Future<io::IoResult<off64_t>>;
+      -> runtime::Future<utils::Result<off64_t>>;
 
   File(const File &file) = delete;
 
@@ -83,7 +84,7 @@ class File {
 class OpenOptions {
  public:
   auto open(std::filesystem::path &&path)
-      -> runtime::Future<io::IoResult<File>>;
+      -> runtime::Future<utils::Result<File>>;
 
   auto read(bool read) -> OpenOptions &;
 
@@ -104,9 +105,9 @@ class OpenOptions {
   OpenOptions();
 
  private:
-  [[nodiscard]] auto get_access_mode() const -> io::IoResult<int>;
+  [[nodiscard]] auto get_access_mode() const -> utils::Result<int>;
 
-  [[nodiscard]] auto get_creation_mode() const -> io::IoResult<int>;
+  [[nodiscard]] auto get_creation_mode() const -> utils::Result<int>;
 
   const int default_mode_ = 0666;
 
