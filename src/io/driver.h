@@ -3,6 +3,7 @@
 
 #include "net/driver/mod.h"
 #include "runtime/registry.h"
+#include "utils/error.h"
 
 namespace xyco::io {
 class IoExtra : public runtime::Extra {
@@ -50,17 +51,17 @@ class IoExtra : public runtime::Extra {
 class IoRegistry : public runtime::Registry {
  public:
   [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
-      -> IoResult<void> override;
+      -> utils::Result<void> override;
 
   [[nodiscard]] auto reregister(std::shared_ptr<runtime::Event> event)
-      -> IoResult<void> override;
+      -> utils::Result<void> override;
 
   [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
-      -> IoResult<void> override;
+      -> utils::Result<void> override;
 
   [[nodiscard]] auto select(runtime::Events& events,
                             std::chrono::milliseconds timeout)
-      -> IoResult<void> override;
+      -> utils::Result<void> override;
 
  private:
   net::NetRegistry registry_;

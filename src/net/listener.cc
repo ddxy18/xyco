@@ -7,15 +7,15 @@
 #include <cstdint>
 #include <variant>
 
-#include "io/driver.h"
 #include "runtime/async_future.h"
 
 template <typename T>
 using Future = xyco::runtime::Future<T>;
 
-auto xyco::net::TcpSocket::bind(SocketAddr addr) -> Future<io::IoResult<void>> {
-  auto bind_result = co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
-    return io::into_sys_result(
+auto xyco::net::TcpSocket::bind(SocketAddr addr)
+    -> Future<utils::Result<void>> {
+  auto bind_result = co_await runtime::AsyncFuture<utils::Result<int>>([&]() {
+    return utils::into_sys_result(
         ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
   });
   if (bind_result.is_ok()) {
@@ -26,8 +26,8 @@ auto xyco::net::TcpSocket::bind(SocketAddr addr) -> Future<io::IoResult<void>> {
 }
 
 auto xyco::net::TcpSocket::connect(SocketAddr addr)
-    -> Future<io::IoResult<TcpStream>> {
-  using CoOutput = io::IoResult<TcpStream>;
+    -> Future<utils::Result<TcpStream>> {
+  using CoOutput = utils::Result<TcpStream>;
 
   class Future : public runtime::Future<CoOutput> {
    public:
@@ -53,7 +53,7 @@ auto xyco::net::TcpSocket::connect(SocketAddr addr)
           runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(
               event_);
           return runtime::Ready<CoOutput>{CoOutput::err(
-              io::IoError{ret, strerror_l(ret, uselocale(nullptr))})};
+              utils::Error{ret, strerror_l(ret, uselocale(nullptr))})};
         }
         INFO("{} connect to {}", socket_, addr_);
         runtime::RuntimeCtx::get_ctx()->driver().deregister<io::IoRegistry>(
@@ -75,79 +75,84 @@ auto xyco::net::TcpSocket::connect(SocketAddr addr)
     std::shared_ptr<runtime::Event> event_;
   };
 
-  auto connect_result = co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
-    return io::into_sys_result(
-        ::connect(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
-  });
+  auto connect_result =
+      co_await runtime::AsyncFuture<utils::Result<int>>([&]() {
+        return utils::into_sys_result(::connect(
+            socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
+      });
   if (connect_result.is_ok()) {
     co_return CoOutput::ok(TcpStream(std::move(socket_), true));
   }
   auto err = connect_result.unwrap_err().errno_;
   if (err != EINPROGRESS && err != EAGAIN) {
     WARN("{} connect fail{{errno={}}}", socket_, errno);
-    co_return CoOutput::err(io::IoError{.errno_ = err});
+    co_return CoOutput::err(utils::Error{.errno_ = err});
   }
   co_return co_await Future(addr, socket_);
 }
 
 auto xyco::net::TcpSocket::listen(int backlog)
-    -> Future<io::IoResult<TcpListener>> {
-  auto listen_result = co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
-    return io::into_sys_result(::listen(socket_.into_c_fd(), backlog));
+    -> Future<utils::Result<TcpListener>> {
+  auto listen_result = co_await runtime::AsyncFuture<utils::Result<int>>([&]() {
+    return utils::into_sys_result(::listen(socket_.into_c_fd(), backlog));
   });
   ASYNC_TRY(listen_result.map([&](auto n) { return TcpListener(Socket(-1)); }));
   INFO("{} listening", socket_);
 
-  co_return io::IoResult<TcpListener>::ok(TcpListener(std::move(socket_)));
+  co_return utils::Result<TcpListener>::ok(TcpListener(std::move(socket_)));
 }
 
-auto xyco::net::TcpSocket::set_reuseaddr(bool reuseaddr) -> io::IoResult<void> {
+auto xyco::net::TcpSocket::set_reuseaddr(bool reuseaddr)
+    -> utils::Result<void> {
   int optval = static_cast<int>(reuseaddr);
-  return io::into_sys_result(::setsockopt(
+  return utils::into_sys_result(::setsockopt(
       socket_.into_c_fd(), SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
 }
 
-auto xyco::net::TcpSocket::set_reuseport(bool reuseport) -> io::IoResult<void> {
+auto xyco::net::TcpSocket::set_reuseport(bool reuseport)
+    -> utils::Result<void> {
   int optval = static_cast<int>(reuseport);
-  return io::into_sys_result(::setsockopt(
+  return utils::into_sys_result(::setsockopt(
       socket_.into_c_fd(), SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)));
 }
 
-auto xyco::net::TcpSocket::new_v4() -> io::IoResult<TcpSocket> {
-  return io::into_sys_result(::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0))
+auto xyco::net::TcpSocket::new_v4() -> utils::Result<TcpSocket> {
+  return utils::into_sys_result(
+             ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0))
       .map([](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
 
-auto xyco::net::TcpSocket::new_v6() -> io::IoResult<TcpSocket> {
-  return io::into_sys_result(::socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, 0))
+auto xyco::net::TcpSocket::new_v6() -> utils::Result<TcpSocket> {
+  return utils::into_sys_result(
+             ::socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, 0))
       .map([](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
 
 xyco::net::TcpSocket::TcpSocket(Socket &&socket) : socket_(std::move(socket)) {}
 
 auto xyco::net::TcpStream::connect(SocketAddr addr)
-    -> Future<io::IoResult<TcpStream>> {
+    -> Future<utils::Result<TcpStream>> {
   auto socket = addr.is_v4() ? TcpSocket::new_v4() : TcpSocket::new_v6();
   if (socket.is_err()) {
-    co_return io::IoResult<TcpStream>::err(socket.unwrap_err());
+    co_return utils::Result<TcpStream>::err(socket.unwrap_err());
   }
   co_return co_await socket.unwrap().connect(addr);
 }
 
-auto xyco::net::TcpStream::flush() -> Future<io::IoResult<void>> {
-  co_return io::IoResult<void>::ok();
+auto xyco::net::TcpStream::flush() -> Future<utils::Result<void>> {
+  co_return utils::Result<void>::ok();
 }
 
 auto xyco::net::TcpStream::shutdown(io::Shutdown shutdown) const
-    -> Future<io::IoResult<void>> {
-  ASYNC_TRY(co_await runtime::AsyncFuture<io::IoResult<int>>([&]() {
-    return io::into_sys_result(::shutdown(
+    -> Future<utils::Result<void>> {
+  ASYNC_TRY(co_await runtime::AsyncFuture<utils::Result<int>>([&]() {
+    return utils::into_sys_result(::shutdown(
         socket_.into_c_fd(),
         static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
   }));
   INFO("shutdown {}", socket_);
 
-  co_return io::IoResult<void>::ok();
+  co_return utils::Result<void>::ok();
 }
 
 xyco::net::TcpStream::~TcpStream() {
@@ -173,7 +178,7 @@ xyco::net::TcpStream::TcpStream(Socket &&socket, bool writable, bool readable)
 }
 
 auto xyco::net::TcpListener::bind(SocketAddr addr)
-    -> Future<io::IoResult<TcpListener>> {
+    -> Future<utils::Result<TcpListener>> {
   using runtime::Handle;
   using runtime::Ready;
 
@@ -181,19 +186,19 @@ auto xyco::net::TcpListener::bind(SocketAddr addr)
 
   auto socket_result = TcpSocket::new_v4();
   if (socket_result.is_err()) {
-    co_return io::IoResult<TcpListener>::err(socket_result.unwrap_err());
+    co_return utils::Result<TcpListener>::err(socket_result.unwrap_err());
   }
   auto tcp_socket = socket_result.unwrap();
   auto bind_result = co_await tcp_socket.bind(addr);
   if (bind_result.is_err()) {
-    co_return io::IoResult<TcpListener>::err(bind_result.unwrap_err());
+    co_return utils::Result<TcpListener>::err(bind_result.unwrap_err());
   }
   co_return co_await tcp_socket.listen(max_pending_connection);
 }
 
 auto xyco::net::TcpListener::accept()
-    -> Future<io::IoResult<std::pair<TcpStream, SocketAddr>>> {
-  using CoOutput = io::IoResult<std::pair<TcpStream, SocketAddr>>;
+    -> Future<utils::Result<std::pair<TcpStream, SocketAddr>>> {
+  using CoOutput = utils::Result<std::pair<TcpStream, SocketAddr>>;
 
   class Future : public runtime::Future<CoOutput> {
    public:
@@ -210,7 +215,7 @@ auto xyco::net::TcpListener::accept()
           extra->state_.get_field<io::IoExtra::State::Readable>()) {
         sockaddr_in addr_in{};
         socklen_t addrlen = sizeof(addr_in);
-        auto accept_result = io::into_sys_result(
+        auto accept_result = utils::into_sys_result(
             ::accept4(self_->socket_.into_c_fd(),
                       static_cast<sockaddr *>(static_cast<void *>(&addr_in)),
                       &addrlen, SOCK_NONBLOCK));

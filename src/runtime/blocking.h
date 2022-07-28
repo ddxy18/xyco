@@ -71,17 +71,17 @@ class BlockingRegistry : public runtime::Registry {
   explicit BlockingRegistry(uintptr_t woker_num);
 
   [[nodiscard]] auto Register(std::shared_ptr<Event> event)
-      -> io::IoResult<void> override;
+      -> utils::Result<void> override;
 
   [[nodiscard]] auto reregister(std::shared_ptr<Event> event)
-      -> io::IoResult<void> override;
+      -> utils::Result<void> override;
 
   [[nodiscard]] auto deregister(std::shared_ptr<Event> event)
-      -> io::IoResult<void> override;
+      -> utils::Result<void> override;
 
   [[nodiscard]] auto select(runtime::Events& events,
                             std::chrono::milliseconds timeout)
-      -> io::IoResult<void> override;
+      -> utils::Result<void> override;
 
  private:
   runtime::Events events_;

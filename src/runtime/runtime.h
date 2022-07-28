@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "driver.h"
+#include "utils/error.h"
 #include "future.h"
 
 namespace xyco::runtime {
@@ -158,7 +159,7 @@ class Builder {
 
   auto on_worker_stop(auto (*function)()->void) -> Builder &;
 
-  [[nodiscard]] auto build() const -> io::IoResult<std::unique_ptr<Runtime>>;
+  [[nodiscard]] auto build() const -> utils::Result<std::unique_ptr<Runtime>>;
 
  private:
   static auto default_f() -> void;

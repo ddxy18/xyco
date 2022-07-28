@@ -5,23 +5,6 @@
 #include "utils/result.h"
 
 namespace xyco::io {
-class IoError;
-
-template <typename T>
-using IoResult = Result<T, IoError>;
-
-enum class ErrorKind : int { Uncategorized = -2, Unsupported };
-
-class IoError {
- public:
-  static auto from_sys_error() -> IoError;
-
-  int errno_;
-  std::string info_;
-};
-
-auto into_sys_result(int return_value) -> IoResult<int>;
-
 template <typename Container>
 concept Buffer = requires(Container container) {
   std::size(container);
@@ -35,12 +18,5 @@ concept DynamicBuffer = requires(Container container) {
   container.resize(0);
 };
 }  // namespace xyco::io
-
-template <>
-struct fmt::formatter<xyco::io::IoError> : public fmt::formatter<bool> {
-  template <typename FormatContext>
-  auto format(const xyco::io::IoError& err, FormatContext& ctx) const
-      -> decltype(ctx.out());
-};
 
 #endif  // XYCO_IO_UTILS_H_

@@ -6,7 +6,7 @@
 #include "time/driver.h"
 
 TEST(FmtTypeTest, IoError) {
-  auto io_error = xyco::io::IoError();
+  auto io_error = xyco::utils::Error();
   io_error.errno_ = EINTR;
 
   auto fmt_str = fmt::format("{}", io_error);
@@ -15,14 +15,14 @@ TEST(FmtTypeTest, IoError) {
 }
 
 TEST(FmtTypeTest, file_IoError) {
-  auto io_error = xyco::io::IoError();
-  io_error.errno_ = std::__to_underlying(xyco::io::ErrorKind::Unsupported);
+  auto io_error = xyco::utils::Error();
+  io_error.errno_ = std::__to_underlying(xyco::utils::ErrorKind::Unsupported);
 
   auto fmt_str = fmt::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Unsupported, info=}");
 
-  io_error.errno_ = std::__to_underlying(xyco::io::ErrorKind::Uncategorized);
+  io_error.errno_ = std::__to_underlying(xyco::utils::ErrorKind::Uncategorized);
   fmt_str = fmt::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Uncategorized, info=}");

@@ -72,29 +72,29 @@ xyco::runtime::BlockingRegistry::BlockingRegistry(uintptr_t woker_num)
 }
 
 auto xyco::runtime::BlockingRegistry::Register(std::shared_ptr<Event> event)
-    -> io::IoResult<void> {
+    -> utils::Result<void> {
   {
     std::scoped_lock<std::mutex> lock_guard(mutex_);
     events_.push_back(event);
   }
   pool_.spawn(runtime::Task(
       dynamic_cast<AsyncFutureExtra*>(event->extra_.get())->before_extra_));
-  return io::IoResult<void>::ok();
+  return utils::Result<void>::ok();
 }
 
 auto xyco::runtime::BlockingRegistry::reregister(std::shared_ptr<Event> event)
-    -> io::IoResult<void> {
-  return io::IoResult<void>::ok();
+    -> utils::Result<void> {
+  return utils::Result<void>::ok();
 }
 
 auto xyco::runtime::BlockingRegistry::deregister(std::shared_ptr<Event> event)
-    -> io::IoResult<void> {
-  return io::IoResult<void>::ok();
+    -> utils::Result<void> {
+  return utils::Result<void>::ok();
 }
 
 auto xyco::runtime::BlockingRegistry::select(runtime::Events& events,
                                              std::chrono::milliseconds timeout)
-    -> io::IoResult<void> {
+    -> utils::Result<void> {
   decltype(events_) new_events;
 
   std::scoped_lock<std::mutex> lock_guard(mutex_);
@@ -112,7 +112,7 @@ auto xyco::runtime::BlockingRegistry::select(runtime::Events& events,
       });
   events_ = new_events;
 
-  return io::IoResult<void>::ok();
+  return utils::Result<void>::ok();
 }
 
 template <typename FormatContext>

@@ -1,7 +1,6 @@
 #include "driver.h"
 
 #include "io/utils.h"
-#include "net/driver/epoll.h"
 #include "runtime/future.h"
 #include "runtime/runtime.h"
 
@@ -45,23 +44,23 @@ xyco::io::IoExtra::IoExtra(Interest interest, int file_descriptor)
     : state_(), interest_(interest), fd_(file_descriptor) {}
 
 auto xyco::io::IoRegistry::Register(std::shared_ptr<runtime::Event> event)
-    -> IoResult<void> {
+    -> utils::Result<void> {
   return registry_.Register(std::move(event));
 }
 
 auto xyco::io::IoRegistry::reregister(std::shared_ptr<runtime::Event> event)
-    -> IoResult<void> {
+    -> utils::Result<void> {
   return registry_.reregister(std::move(event));
 }
 
 auto xyco::io::IoRegistry::deregister(std::shared_ptr<runtime::Event> event)
-    -> IoResult<void> {
+    -> utils::Result<void> {
   return registry_.deregister(std::move(event));
 }
 
 auto xyco::io::IoRegistry::select(runtime::Events& events,
                                   std::chrono::milliseconds timeout)
-    -> IoResult<void> {
+    -> utils::Result<void> {
   return registry_.select(events, timeout);
 }
 

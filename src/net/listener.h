@@ -7,6 +7,7 @@
 #include "io/mod.h"
 #include "net/socket.h"
 #include "runtime/runtime.h"
+#include "utils/error.h"
 
 namespace xyco::net {
 class TcpStream;
@@ -19,19 +20,19 @@ class TcpSocket {
   friend struct fmt::formatter<TcpSocket>;
 
  public:
-  auto bind(SocketAddr addr) -> Future<io::IoResult<void>>;
+  auto bind(SocketAddr addr) -> Future<utils::Result<void>>;
 
-  auto connect(SocketAddr addr) -> Future<io::IoResult<TcpStream>>;
+  auto connect(SocketAddr addr) -> Future<utils::Result<TcpStream>>;
 
-  auto listen(int backlog) -> Future<io::IoResult<TcpListener>>;
+  auto listen(int backlog) -> Future<utils::Result<TcpListener>>;
 
-  auto set_reuseaddr(bool reuseaddr) -> io::IoResult<void>;
+  auto set_reuseaddr(bool reuseaddr) -> utils::Result<void>;
 
-  auto set_reuseport(bool reuseport) -> io::IoResult<void>;
+  auto set_reuseport(bool reuseport) -> utils::Result<void>;
 
-  static auto new_v4() -> io::IoResult<TcpSocket>;
+  static auto new_v4() -> utils::Result<TcpSocket>;
 
-  static auto new_v6() -> io::IoResult<TcpSocket>;
+  static auto new_v6() -> utils::Result<TcpSocket>;
 
  private:
   TcpSocket(Socket &&socket);
@@ -48,11 +49,11 @@ class TcpStream {
   friend class TcpListener;
 
  public:
-  static auto connect(SocketAddr addr) -> Future<io::IoResult<TcpStream>>;
+  static auto connect(SocketAddr addr) -> Future<utils::Result<TcpStream>>;
 
   template <typename Iterator>
-  auto read(Iterator begin, Iterator end) -> Future<io::IoResult<uintptr_t>> {
-    using CoOutput = io::IoResult<uintptr_t>;
+  auto read(Iterator begin, Iterator end) -> Future<utils::Result<uintptr_t>> {
+    using CoOutput = utils::Result<uintptr_t>;
 
     class Future : public runtime::Future<CoOutput> {
      public:
@@ -79,7 +80,7 @@ class TcpStream {
           }
           if (errno != EAGAIN && errno != EWOULDBLOCK) {
             return runtime::Ready<CoOutput>{
-                CoOutput::err(io::into_sys_result(-1).unwrap_err())};
+                CoOutput::err(utils::into_sys_result(-1).unwrap_err())};
           }
         }
         self_->event_->future_ = this;
@@ -116,8 +117,8 @@ class TcpStream {
   }
 
   template <typename Iterator>
-  auto write(Iterator begin, Iterator end) -> Future<io::IoResult<uintptr_t>> {
-    using CoOutput = io::IoResult<uintptr_t>;
+  auto write(Iterator begin, Iterator end) -> Future<utils::Result<uintptr_t>> {
+    using CoOutput = utils::Result<uintptr_t>;
 
     class Future : public runtime::Future<CoOutput> {
      public:
@@ -136,7 +137,7 @@ class TcpStream {
             extra->state_.get_field<io::IoExtra::State::Writable>()) {
           auto bytes = ::write(self_->socket_.into_c_fd(), &*begin_,
                                std::distance(begin_, end_));
-          auto nbytes = io::into_sys_result(bytes).map(
+          auto nbytes = utils::into_sys_result(bytes).map(
               [](auto n) -> uintptr_t { return static_cast<uintptr_t>(n); });
           INFO("write {} bytes to {}", bytes, self_->socket_);
           return runtime::Ready<CoOutput>{nbytes};
@@ -173,10 +174,10 @@ class TcpStream {
     co_return co_await Future(begin, end, this);
   }
 
-  static auto flush() -> Future<io::IoResult<void>>;
+  static auto flush() -> Future<utils::Result<void>>;
 
   [[nodiscard]] auto shutdown(io::Shutdown shutdown) const
-      -> Future<io::IoResult<void>>;
+      -> Future<utils::Result<void>>;
 
   TcpStream(const TcpStream &tcp_stream) = delete;
 
@@ -204,9 +205,9 @@ class TcpListener {
   using Future = runtime::Future<T>;
 
  public:
-  static auto bind(SocketAddr addr) -> Future<io::IoResult<TcpListener>>;
+  static auto bind(SocketAddr addr) -> Future<utils::Result<TcpListener>>;
 
-  auto accept() -> Future<io::IoResult<std::pair<TcpStream, SocketAddr>>>;
+  auto accept() -> Future<utils::Result<std::pair<TcpStream, SocketAddr>>>;
 
   TcpListener(const TcpListener &tcp_listener) = delete;
 

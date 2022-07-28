@@ -1,6 +1,5 @@
 #include "driver.h"
 
-#include "io/utils.h"
 #include "spdlog/fmt/chrono.h"
 
 auto xyco::time::TimeExtra::print() const -> std::string {
@@ -12,29 +11,29 @@ xyco::time::TimeExtra::TimeExtra(
     : expire_time_(expire_time) {}
 
 auto xyco::time::TimeRegistry::Register(std::shared_ptr<runtime::Event> event)
-    -> io::IoResult<void> {
+    -> utils::Result<void> {
   wheel_.insert_event(event);
 
-  return io::IoResult<void>::ok();
+  return utils::Result<void>::ok();
 }
 
 // TODO(dongxiaoyu): support update expire time and cancel event
 auto xyco::time::TimeRegistry::reregister(std::shared_ptr<runtime::Event> event)
-    -> io::IoResult<void> {
-  return io::IoResult<void>::ok();
+    -> utils::Result<void> {
+  return utils::Result<void>::ok();
 }
 
 auto xyco::time::TimeRegistry::deregister(std::shared_ptr<runtime::Event> event)
-    -> io::IoResult<void> {
-  return io::IoResult<void>::ok();
+    -> utils::Result<void> {
+  return utils::Result<void>::ok();
 }
 
 auto xyco::time::TimeRegistry::select(runtime::Events &events,
                                       std::chrono::milliseconds timeout)
-    -> io::IoResult<void> {
+    -> utils::Result<void> {
   wheel_.expire(events);
 
-  return io::IoResult<void>::ok();
+  return utils::Result<void>::ok();
 }
 
 template <typename FormatContext>
