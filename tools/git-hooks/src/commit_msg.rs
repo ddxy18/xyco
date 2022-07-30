@@ -221,7 +221,7 @@ mod tests {
             path: temp_file.path().to_path_buf(),
         };
 
-        assert!(msg.check().is_ok());
+        msg.check().unwrap();
     }
 
     #[test]
@@ -233,7 +233,7 @@ mod tests {
             path: temp_file.path().to_path_buf(),
         };
 
-        assert!(msg.check().is_ok());
+        msg.check().unwrap();
     }
 
     #[test]
@@ -247,7 +247,7 @@ mod tests {
             path: temp_file.path().to_path_buf(),
         };
 
-        assert!(msg.check().is_ok());
+        msg.check().unwrap();
     }
 
     #[test]
@@ -261,7 +261,7 @@ mod tests {
             path: temp_file.path().to_path_buf(),
         };
 
-        assert!(msg.check().is_ok());
+        msg.check().unwrap();
     }
 
     #[test]

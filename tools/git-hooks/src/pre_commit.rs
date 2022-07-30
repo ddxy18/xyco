@@ -343,7 +343,7 @@ mod tests {
             path: temp_dir.path().to_path_buf(),
         };
 
-        assert!(ClangFmt::check(Arc::new(pre_commit)).is_ok());
+        ClangFmt::check(Arc::new(pre_commit)).unwrap();
     }
 
     #[test]
