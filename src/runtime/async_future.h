@@ -22,6 +22,7 @@ class AsyncFuture : public Future<Return> {
     gsl::owner<Return *> ret = gsl::owner<Return *>(
         dynamic_cast<AsyncFutureExtra *>(event_->extra_.get())->after_extra_);
     auto result = std::move(*ret);
+    RuntimeCtx::get_ctx()->driver().deregister<BlockingRegistry>(event_);
     delete ret;
 
     return Ready<Return>{std::move(result)};
