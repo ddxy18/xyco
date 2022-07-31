@@ -141,12 +141,14 @@ auto xyco::runtime::Builder::max_blocking_threads(uintptr_t val) -> Builder & {
   return *this;
 }
 
-auto xyco::runtime::Builder::on_worker_start(auto (*function)()->void) -> Builder & {
+auto xyco::runtime::Builder::on_worker_start(auto(*function)()->void)
+    -> Builder & {
   on_start_f_ = function;
   return *this;
 }
 
-auto xyco::runtime::Builder::on_worker_stop(auto (*function)()->void) -> Builder & {
+auto xyco::runtime::Builder::on_worker_stop(auto(*function)()->void)
+    -> Builder & {
   on_stop_f_ = function;
   return *this;
 }

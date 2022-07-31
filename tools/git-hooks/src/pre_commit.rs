@@ -47,9 +47,9 @@ fn get_source_paths(root_path: PathBuf) -> Vec<PathBuf> {
 pub trait FileCheck {
     fn per_file_check(me: Arc<Self>, path: PathBuf) -> Result<()>;
 
-    fn get_root_path(me: Arc<Self>) -> PathBuf;
+    fn get_root_path(me: Arc<Self>) -> Vec<PathBuf>;
 
-    fn sub_dir_self(me: Arc<Self>, path: PathBuf) -> Self;
+    fn sub_dir_self(me: Arc<Self>, path: Vec<PathBuf>) -> Self;
 
     fn check(me: Arc<Self>) -> Result<()>
     where
@@ -58,7 +58,10 @@ pub trait FileCheck {
         Self: Send,
         Self: 'static,
     {
-        let paths = get_source_paths(Self::get_root_path(me.clone()));
+        let paths = Self::get_root_path(me.clone())
+            .into_iter()
+            .map(get_source_paths)
+            .fold(vec![], |acc: Vec<PathBuf>, paths| [acc, paths].concat());
         let n = std::cmp::min(paths.len(), num_cpus::get());
 
         let mut out = vec![];
@@ -121,7 +124,7 @@ pub trait FileCheck {
 #[derive(structopt::StructOpt)]
 pub struct ClangFmt {
     #[structopt(short = "s", long = "source")]
-    path: PathBuf,
+    path: Vec<PathBuf>,
 }
 
 #[derive(structopt::StructOpt)]
@@ -129,7 +132,7 @@ pub struct ClangTidy {
     #[structopt(short, long = "build")]
     build_path: PathBuf,
     #[structopt(short = "s", long = "source")]
-    root_path: PathBuf,
+    root_path: Vec<PathBuf>,
     #[structopt(long)]
     checks: Option<String>,
     #[structopt(long)]
@@ -171,11 +174,11 @@ impl FileCheck for ClangFmt {
         })
     }
 
-    fn get_root_path(me: Arc<Self>) -> PathBuf {
+    fn get_root_path(me: Arc<Self>) -> Vec<PathBuf> {
         me.path.clone()
     }
 
-    fn sub_dir_self(_me: Arc<Self>, path: PathBuf) -> Self {
+    fn sub_dir_self(_me: Arc<Self>, path: Vec<PathBuf>) -> Self {
         Self { path }
     }
 }
@@ -208,11 +211,11 @@ impl FileCheck for ClangTidy {
             })
     }
 
-    fn get_root_path(me: Arc<Self>) -> PathBuf {
+    fn get_root_path(me: Arc<Self>) -> Vec<PathBuf> {
         me.root_path.clone()
     }
 
-    fn sub_dir_self(me: Arc<Self>, path: PathBuf) -> Self {
+    fn sub_dir_self(me: Arc<Self>, path: Vec<PathBuf>) -> Self {
         Self {
             build_path: me.build_path.clone(),
             root_path: path,
@@ -316,7 +319,7 @@ mod tests {
         .unwrap();
 
         let pre_commit = ClangFmt {
-            path: temp_dir.path().to_path_buf(),
+            path: vec![temp_dir.path().to_path_buf()],
         };
         if let ErrorType::Diff(e) = &ClangFmt::check(Arc::new(pre_commit))
             .err()
@@ -340,7 +343,7 @@ mod tests {
         file.write_all("#include <iostream>".as_bytes()).unwrap();
 
         let pre_commit = ClangFmt {
-            path: temp_dir.path().to_path_buf(),
+            path: vec![temp_dir.path().to_path_buf()],
         };
 
         ClangFmt::check(Arc::new(pre_commit)).unwrap();
@@ -365,7 +368,7 @@ mod tests {
         .unwrap();
 
         let pre_commit = ClangFmt {
-            path: temp_dir.path().to_path_buf(),
+            path: vec![temp_dir.path().to_path_buf()],
         };
 
         assert_matches!(ClangFmt::check(Arc::new(pre_commit)).err(),Some(err) if err.downcast_ref::<DiffsError>().unwrap().errs.len() == 2);
@@ -402,10 +405,10 @@ mod tests {
             .unwrap();
 
         let pre_commit = ClangTidy {
-            root_path: temp_dir.path().to_path_buf(),
+            root_path: vec![temp_dir.path().to_path_buf()],
             build_path: temp_dir.path().join("build"),
             checks: Some(String::from("modernize-*")),
-            extra_arg: String::from("-I/usr/lib/llvm-13/include/c++/v1/"),
+            extra_arg: String::from("-I/usr/lib/llvm-14/include/c++/v1/"),
         };
         assert_matches!(ClangTidy::check(Arc::new(pre_commit)).err(),Some(e) if e.downcast_ref::<DiffsError>().unwrap().errs.len() == 1);
     }

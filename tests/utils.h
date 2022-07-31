@@ -83,7 +83,8 @@ class TestRuntimeCtx {
     return {co_outer, false};
   }
 
- private : static std::unique_ptr<xyco::runtime::Runtime> runtime_;
+ private:
+  static std::unique_ptr<xyco::runtime::Runtime> runtime_;
 };
 
 #endif  // XYWEBSERVER_TEST_UTILS_H_

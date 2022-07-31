@@ -7,5 +7,5 @@
 #
 # To enable this hook, rename this file to "pre-commit".
 
-cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format -s src &&
+cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format -s src benchmark tests &&
 cargo fmt --manifest-path tools/Cargo.toml --all
