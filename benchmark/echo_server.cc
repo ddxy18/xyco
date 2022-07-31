@@ -43,10 +43,11 @@ class Server {
   static constexpr int LISTEN_BACKLOG = 5000;
 };
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 auto main() -> int {
   const char *ip_addr = "127.0.0.1";
   constexpr uint16_t port = 8080;
-
+  // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
   auto server = Server(xyco::runtime::Builder::new_multi_thread()
                            .worker_threads(1)
                            .max_blocking_threads(1)
