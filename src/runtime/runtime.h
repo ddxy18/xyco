@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "driver.h"
-#include "utils/error.h"
 #include "future.h"
+#include "utils/error.h"
 
 namespace xyco::runtime {
 class Runtime;
@@ -135,8 +135,8 @@ class Runtime {
   std::mutex handle_mutex_;
   Driver driver_;
 
-  auto (*on_start_f_)() -> void{};
-  auto (*on_stop_f_)() -> void{};
+  auto(*on_start_f_)() -> void{};
+  auto(*on_stop_f_)() -> void{};
 };
 
 class Builder {
@@ -155,9 +155,9 @@ class Builder {
     return *this;
   }
 
-  auto on_worker_start(auto (*function)()->void) -> Builder &;
+  auto on_worker_start(auto(*function)()->void) -> Builder &;
 
-  auto on_worker_stop(auto (*function)()->void) -> Builder &;
+  auto on_worker_stop(auto(*function)()->void) -> Builder &;
 
   [[nodiscard]] auto build() const -> utils::Result<std::unique_ptr<Runtime>>;
 
@@ -166,8 +166,8 @@ class Builder {
 
   uintptr_t worker_num_;
 
-  auto (*on_start_f_)() -> void;
-  auto (*on_stop_f_)() -> void;
+  auto(*on_start_f_)() -> void;
+  auto(*on_stop_f_)() -> void;
 
   std::vector<std::function<void(Runtime *)>> registries_;
 };

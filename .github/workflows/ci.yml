@@ -50,9 +50,10 @@ jobs:
       - name: install essential packages
         run: |
           apt install -y cmake
-          apt install -y clang-$llvm_version clang-tidy-$llvm_version
+          apt install -y clang-$llvm_version clang-tidy-$llvm_version clang-format-$llvm_version
           apt install -y libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev
           ln -s /usr/bin/clang-tidy-$llvm_version /usr/bin/clang-tidy
+          ln -s /usr/bin/clang-format-$llvm_version /usr/bin/clang-format
           ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
           ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
       - uses: actions/cache@v2
@@ -74,7 +75,8 @@ jobs:
           cmake --build ./build --config Release --target xyco
           echo '[target.x86_64-unknown-linux-gnu]' >> $HOME/.cargo/config.toml
           echo 'rustflags = ["-C", "linker=clang"]' >> $HOME/.cargo/config.toml
-          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source=src --build=build --extra-arg="-I/usr/lib/llvm-$llvm_version/include/c++/v1/"
+          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format --source src benchmark tests
+          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source src benchmark --build build --extra-arg="-I/usr/lib/llvm-$llvm_version/include/c++/v1/"
 
   cpp-test:
     runs-on: ubuntu-latest
