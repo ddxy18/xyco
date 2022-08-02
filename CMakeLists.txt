@@ -32,8 +32,7 @@ FetchContent_MakeAvailable(spdlog)
 include_directories(src)
 include_directories(/usr/include/libunwind)
 
-file(GLOB_RECURSE xyco_src_lib "src/fs/*.cc" "src/io/*.cc"
-     "src/net/*.cc" "src/runtime/*.cc" "src/sync/*.cc" "src/time/*.cc" "src/utils/*.cc")
+file(GLOB_RECURSE xyco_src_lib "src/fs/*.cc" "src/io/*.cc" "src/net/*.cc" "src/runtime/*.cc" "src/sync/*.cc" "src/time/*.cc" "src/utils/*.cc")
 
 add_subdirectory(src)
 

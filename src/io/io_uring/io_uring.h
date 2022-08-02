@@ -3,7 +3,6 @@
 
 #include <liburing.h>
 
-#include <mutex>
 #include <vector>
 
 #include "runtime/registry.h"
