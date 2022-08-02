@@ -18,7 +18,7 @@ class StatxExtraFields {
   statx_timestamp stx_btime_;
 };
 
-auto file_attr(int file_descriptor) -> xyco::runtime::Future<
+auto epoll_file_attr(int file_descriptor) -> xyco::runtime::Future<
     xyco::utils::Result<std::pair<struct stat64, StatxExtraFields>>> {
   struct statx stx {};
   struct stat64 stat {};
@@ -56,27 +56,27 @@ auto file_attr(int file_descriptor) -> xyco::runtime::Future<
             });
 }
 
-auto xyco::fs::File::modified() const
+auto xyco::fs::epoll::File::modified() const
     -> runtime::Future<utils::Result<timespec>> {
-  co_return (co_await file_attr(fd_)).map([](auto pair) {
+  co_return (co_await epoll_file_attr(fd_)).map([](auto pair) {
     auto stat = pair.first;
     return timespec{.tv_sec = stat.st_mtim.tv_sec,
                     .tv_nsec = stat.st_mtim.tv_nsec};
   });
 }
 
-auto xyco::fs::File::accessed() const
+auto xyco::fs::epoll::File::accessed() const
     -> runtime::Future<utils::Result<timespec>> {
-  co_return (co_await file_attr(fd_)).map([](auto pair) {
+  co_return (co_await epoll_file_attr(fd_)).map([](auto pair) {
     auto stat = pair.first;
     return timespec{.tv_sec = stat.st_atim.tv_sec,
                     .tv_nsec = stat.st_atim.tv_nsec};
   });
 }
 
-auto xyco::fs::File::created() const
+auto xyco::fs::epoll::File::created() const
     -> runtime::Future<utils::Result<timespec>> {
-  auto result = co_await file_attr(fd_);
+  auto result = co_await epoll_file_attr(fd_);
   if (result.is_ok()) {
     auto ext = result.unwrap().second;
     if ((ext.stx_mask_ & STATX_BTIME) != 0) {
@@ -92,18 +92,18 @@ auto xyco::fs::File::created() const
       .info_ = "creation time is not available on this platform currently"});
 }
 
-auto xyco::fs::File::create(std::filesystem::path&& path)
+auto xyco::fs::epoll::File::create(std::filesystem::path&& path)
     -> runtime::Future<utils::Result<File>> {
   co_return co_await OpenOptions().write(true).create(true).truncate(true).open(
       std::move(path));
 }
 
-auto xyco::fs::File::open(std::filesystem::path&& path)
+auto xyco::fs::epoll::File::open(std::filesystem::path&& path)
     -> runtime::Future<utils::Result<File>> {
   co_return co_await OpenOptions().read(true).open(std::move(path));
 }
 
-auto xyco::fs::File::resize(uintmax_t size)
+auto xyco::fs::epoll::File::resize(uintmax_t size)
     -> runtime::Future<utils::Result<void>> {
   co_return co_await runtime::AsyncFuture<utils::Result<void>>([&]() {
     std::error_code error_code;
@@ -115,7 +115,8 @@ auto xyco::fs::File::resize(uintmax_t size)
   });
 }
 
-auto xyco::fs::File::size() const -> runtime::Future<utils::Result<uintmax_t>> {
+auto xyco::fs::epoll::File::size() const
+    -> runtime::Future<utils::Result<uintmax_t>> {
   co_return co_await runtime::AsyncFuture<utils::Result<uintmax_t>>([&]() {
     std::error_code error_code;
     auto len = std::filesystem::file_size(path_, error_code);
@@ -126,7 +127,7 @@ auto xyco::fs::File::size() const -> runtime::Future<utils::Result<uintmax_t>> {
   });
 }
 
-auto xyco::fs::File::status()
+auto xyco::fs::epoll::File::status()
     -> runtime::Future<utils::Result<std::filesystem::file_status>> {
   co_return co_await runtime::AsyncFuture<
       utils::Result<std::filesystem::file_status>>([&]() {
@@ -144,8 +145,8 @@ auto xyco::fs::File::status()
   });
 }
 
-auto xyco::fs::File::set_permissions(std::filesystem::perms prms,
-                                     std::filesystem::perm_options opts) const
+auto xyco::fs::epoll::File::set_permissions(
+    std::filesystem::perms prms, std::filesystem::perm_options opts) const
     -> runtime::Future<utils::Result<void>> {
   co_return co_await runtime::AsyncFuture<utils::Result<void>>([&]() {
     std::error_code error_code;
@@ -157,12 +158,13 @@ auto xyco::fs::File::set_permissions(std::filesystem::perms prms,
   });
 }
 
-auto xyco::fs::File::flush() const -> runtime::Future<utils::Result<void>> {
+auto xyco::fs::epoll::File::flush() const
+    -> runtime::Future<utils::Result<void>> {
   co_return co_await runtime::AsyncFuture<utils::Result<void>>(
       [=]() { return utils::into_sys_result(::fsync(fd_)); });
 }
 
-auto xyco::fs::File::seek(off64_t offset, int whence) const
+auto xyco::fs::epoll::File::seek(off64_t offset, int whence) const
     -> runtime::Future<utils::Result<off64_t>> {
   co_return co_await runtime::AsyncFuture<utils::Result<off64_t>>([=]() {
     auto return_offset = ::lseek64(fd_, offset, whence);
@@ -174,11 +176,11 @@ auto xyco::fs::File::seek(off64_t offset, int whence) const
   });
 }
 
-xyco::fs::File::File(File&& file) noexcept : fd_(-1) {
+xyco::fs::epoll::File::File(File&& file) noexcept : fd_(-1) {
   *this = std::move(file);
 }
 
-auto xyco::fs::File::operator=(File&& file) noexcept -> File& {
+auto xyco::fs::epoll::File::operator=(File&& file) noexcept -> File& {
   fd_ = file.fd_;
   path_ = file.path_;
   file.fd_ = -1;
@@ -186,16 +188,16 @@ auto xyco::fs::File::operator=(File&& file) noexcept -> File& {
   return *this;
 }
 
-xyco::fs::File::~File() {
+xyco::fs::epoll::File::~File() {
   if (fd_ != -1) {
     ::close(fd_);
   }
 }
 
-xyco::fs::File::File(int file_descriptor, std::filesystem::path&& path)
+xyco::fs::epoll::File::File(int file_descriptor, std::filesystem::path&& path)
     : fd_(file_descriptor), path_(std::move(path)) {}
 
-auto xyco::fs::OpenOptions::open(std::filesystem::path&& path)
+auto xyco::fs::epoll::OpenOptions::open(std::filesystem::path&& path)
     -> runtime::Future<utils::Result<File>> {
   co_return co_await runtime::AsyncFuture<utils::Result<File>>([&]() {
     auto access_mode = get_access_mode();
@@ -219,47 +221,47 @@ auto xyco::fs::OpenOptions::open(std::filesystem::path&& path)
   });
 }
 
-auto xyco::fs::OpenOptions::read(bool read) -> OpenOptions& {
+auto xyco::fs::epoll::OpenOptions::read(bool read) -> OpenOptions& {
   read_ = read;
   return *this;
 }
 
-auto xyco::fs::OpenOptions::write(bool write) -> OpenOptions& {
+auto xyco::fs::epoll::OpenOptions::write(bool write) -> OpenOptions& {
   write_ = write;
   return *this;
 }
 
-auto xyco::fs::OpenOptions::truncate(bool truncate) -> OpenOptions& {
+auto xyco::fs::epoll::OpenOptions::truncate(bool truncate) -> OpenOptions& {
   truncate_ = truncate;
   return *this;
 }
 
-auto xyco::fs::OpenOptions::append(bool append) -> OpenOptions& {
+auto xyco::fs::epoll::OpenOptions::append(bool append) -> OpenOptions& {
   append_ = true;
   return *this;
 }
 
-auto xyco::fs::OpenOptions::create(bool create) -> OpenOptions& {
+auto xyco::fs::epoll::OpenOptions::create(bool create) -> OpenOptions& {
   create_ = create;
   return *this;
 }
 
-auto xyco::fs::OpenOptions::create_new(bool create_new) -> OpenOptions& {
+auto xyco::fs::epoll::OpenOptions::create_new(bool create_new) -> OpenOptions& {
   create_new_ = create_new;
   return *this;
 }
 
-auto xyco::fs::OpenOptions::custom_flags(int32_t flags) -> OpenOptions& {
+auto xyco::fs::epoll::OpenOptions::custom_flags(int32_t flags) -> OpenOptions& {
   custom_flags_ = flags;
   return *this;
 }
 
-auto xyco::fs::OpenOptions::mode(uint32_t mode) -> OpenOptions& {
+auto xyco::fs::epoll::OpenOptions::mode(uint32_t mode) -> OpenOptions& {
   mode_ = mode;
   return *this;
 }
 
-xyco::fs::OpenOptions::OpenOptions()
+xyco::fs::epoll::OpenOptions::OpenOptions()
     : read_(false),
       write_(false),
       append_(false),
@@ -269,7 +271,8 @@ xyco::fs::OpenOptions::OpenOptions()
       custom_flags_(0),
       mode_(default_mode_) {}
 
-auto xyco::fs::OpenOptions::get_access_mode() const -> utils::Result<int> {
+auto xyco::fs::epoll::OpenOptions::get_access_mode() const
+    -> utils::Result<int> {
   if (read_ && !write_ && !append_) {
     return utils::Result<int>::ok(O_RDONLY);
   }
@@ -288,7 +291,8 @@ auto xyco::fs::OpenOptions::get_access_mode() const -> utils::Result<int> {
   return utils::Result<int>::err(utils::Error{.errno_ = EINVAL});
 }
 
-auto xyco::fs::OpenOptions::get_creation_mode() const -> utils::Result<int> {
+auto xyco::fs::epoll::OpenOptions::get_creation_mode() const
+    -> utils::Result<int> {
   if (!write_ && !append_) {
     if (truncate_ || create_ || create_new_) {
       return utils::Result<int>::err(utils::Error{.errno_ = EINVAL});
