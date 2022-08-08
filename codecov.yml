@@ -1,23 +1,18 @@
-coverage:
-  status:
-    project:
-      default: false
-      tests:
-        target: 98%
-        if_not_found: failure
-        if_ci_failed: error
-        paths:
-          - tests/
-      lib:
+flag_management:
+  default_rules:
+    statuses:
+      - type: project
         target: 90%
-        if_not_found: failure
-        if_ci_failed: error
-        paths:
-          - src/
-    patch:
-      default:
+      - type: patch
         target: 90%
-        if_not_found: failure
-        if_ci_failed: error
-        paths:
-          - src/
+  individual_flags:
+    - name: epoll
+      paths:
+        - !src/fs/io_uring/
+        - !src/io/io_uring/
+        - !src/net/io_uring/
+    - name: uring
+      paths:
+        - !src/fs/io_epoll/
+        - !src/io/io_epoll/
+        - !src/net/io_epoll/
