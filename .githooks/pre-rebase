@@ -15,5 +15,5 @@
 # merged to 'next' branch from getting rebased, because allowing it
 # would result in rebasing already published history.
 
-cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format -s src benchmark tests &&
+cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format -s src benchmark tests examples &&
 cargo fmt --manifest-path tools/Cargo.toml --all

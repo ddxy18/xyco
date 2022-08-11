@@ -1,5 +1,3 @@
-include_directories(.)
-
 add_executable(xyco_http_server http_server.cc ${xyco_src_lib})
 target_link_libraries(xyco_http_server GSL)
 target_link_libraries(xyco_http_server spdlog)
