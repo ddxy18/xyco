@@ -2,6 +2,7 @@
 #define XYCO_RUNTIME_RUNTIME_H_
 
 #include <atomic>
+#include <condition_variable>
 #include <exception>
 #include <mutex>
 #include <thread>
@@ -134,6 +135,11 @@ class Runtime {
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
   std::mutex handle_mutex_;
   Driver driver_;
+
+  uintptr_t worker_num_{};
+  std::atomic_int init_worker_num_;
+  std::mutex worker_launch_mutex_;
+  std::condition_variable worker_launch_cv_;
 
   auto(*on_start_f_)() -> void{};
   auto(*on_stop_f_)() -> void{};
