@@ -12,7 +12,20 @@ auto xyco::runtime::Worker::lanuch(Runtime *runtime) -> void {
     runtime->on_start_f_();
     RuntimeCtx::set_ctx(runtime);
 
+    // Workers have to add local registry to `Driver` and this modifies non
+    // thread safe container in `Driver`. The container is read only after all
+    // initializing completes. So wait until all workers complete initializing
+    // to avoid concurrent write and read.
+    std::unique_lock<std::mutex> worker_init_lock_guard(
+        runtime->worker_launch_mutex_);
     runtime->driver_.add_thread();
+    if (++runtime->init_worker_num_ == runtime->worker_num_) {
+      worker_init_lock_guard.unlock();
+      runtime->worker_launch_cv_.notify_all();
+    } else {
+      runtime->worker_launch_cv_.wait(worker_init_lock_guard);
+    }
+
     while (!end_) {
       run_loop_once(runtime);
     }
@@ -161,6 +174,8 @@ auto xyco::runtime::Builder::build() const
   for (const auto &registry_constructor : registries_) {
     registry_constructor(runtime.get());
   }
+
+  runtime->worker_num_ = worker_num_;
   for (auto i = 0; i < worker_num_; i++) {
     auto worker = std::make_unique<Worker>();
     worker->lanuch(runtime.get());
