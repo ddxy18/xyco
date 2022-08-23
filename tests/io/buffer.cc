@@ -10,7 +10,7 @@ class BufferTest : public ::testing::Test {
     TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
       listener_ = std::make_unique<net::TcpListener>(
           net::TcpListener((co_await net::TcpListener::bind(
-                                xyco::net::SocketAddr::new_v4(ip_, port_)))
+                                xyco::net::SocketAddr::new_v4({}, port_)))
                                .unwrap()));
     });
   }
