@@ -94,14 +94,12 @@ class StatusLine {
 
 class Server {
  public:
-  Server(std::unique_ptr<xyco::runtime::Runtime> runtime, const char *ip_addr,
-         uint16_t port)
+  Server(std::unique_ptr<xyco::runtime::Runtime> runtime, uint16_t port)
       : runtime_(std::move(runtime)) {
-    auto init_server = [=](const char *ip_addr,
-                           uint16_t port) -> xyco::runtime::Future<void> {
+    auto init_server = [=](uint16_t port) -> xyco::runtime::Future<void> {
       auto tcp_socket = net::TcpSocket::new_v4().unwrap();
       tcp_socket.set_reuseaddr(true).unwrap();
-      (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4(ip_addr, port)))
+      (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port)))
           .unwrap();
       auto listener = (co_await tcp_socket.listen(LISTEN_BACKLOG)).unwrap();
 
@@ -110,7 +108,7 @@ class Server {
         runtime_->spawn(receive_request(std::move(server_stream)));
       }
     };
-    runtime_->spawn(init_server(ip_addr, port));
+    runtime_->spawn(init_server(port));
   }
 
  private:
@@ -234,7 +232,6 @@ class Server {
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 auto main() -> int {
-  const char *ip_addr = "127.0.0.1";
   constexpr uint16_t port = 8080;
 
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
@@ -244,7 +241,7 @@ auto main() -> int {
                            .registry<io::IoRegistry>(4)
                            .build()
                            .unwrap(),
-                       ip_addr, port);
+                       port);
 
   while (true) {
     std::this_thread::sleep_for(std::chrono::seconds(3));

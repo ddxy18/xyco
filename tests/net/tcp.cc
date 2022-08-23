@@ -7,21 +7,20 @@
 
 TEST(TcpTest, reuseaddr) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    const char *ip = "127.0.0.1";
     const uint16_t port = 8081;
 
     {
       auto tcp_socket1 = net::TcpSocket::new_v4().unwrap();
       tcp_socket1.set_reuseaddr(true).unwrap();
       auto result1 =
-          co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4(ip, port));
+          co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4({}, port));
       CO_ASSERT_EQ(result1.is_ok(), true);
     }
     {
       auto tcp_socket2 = net::TcpSocket::new_v4().unwrap();
       tcp_socket2.set_reuseport(true).unwrap();
       auto result2 =
-          co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4(ip, port));
+          co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4({}, port));
       CO_ASSERT_EQ(result2.is_ok(), true);
     }
   });
@@ -29,18 +28,17 @@ TEST(TcpTest, reuseaddr) {
 
 TEST(TcpTest, reuseport) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    const char *ip = "127.0.0.1";
     const uint16_t port = 8082;
 
     auto tcp_socket1 = net::TcpSocket::new_v4().unwrap();
     tcp_socket1.set_reuseport(true).unwrap();
     auto result1 =
-        co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4(ip, port));
+        co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4({}, port));
 
     auto tcp_socket2 = net::TcpSocket::new_v4().unwrap();
     tcp_socket2.set_reuseport(true).unwrap();
     auto result2 =
-        co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4(ip, port));
+        co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4({}, port));
 
     CO_ASSERT_EQ(result1.is_ok(), true);
     CO_ASSERT_EQ(result2.is_ok(), true);
@@ -49,14 +47,13 @@ TEST(TcpTest, reuseport) {
 
 TEST(TcpTest, bind_same_addr) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    const char *ip = "127.0.0.1";
     const uint16_t port = 8083;
 
     auto result1 = co_await net::TcpListener::bind(
-        xyco::net::SocketAddr::new_v4(ip, port));
+        xyco::net::SocketAddr::new_v4({}, port));
 
     auto result2 = co_await net::TcpListener::bind(
-        xyco::net::SocketAddr::new_v4(ip, port));
+        xyco::net::SocketAddr::new_v4({}, port));
 
     CO_ASSERT_EQ(result1.is_ok(), true);
     CO_ASSERT_EQ(result2.is_err(), true);
@@ -65,11 +62,10 @@ TEST(TcpTest, bind_same_addr) {
 
 TEST(TcpTest, TcpSocket_listen) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    const char *ip = "127.0.0.1";
     const uint16_t port = 8084;
 
     auto tcp_socket = net::TcpSocket::new_v4().unwrap();
-    (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4(ip, port)))
+    (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port)))
         .unwrap();
     auto listener = co_await tcp_socket.listen(1);
 
@@ -79,11 +75,10 @@ TEST(TcpTest, TcpSocket_listen) {
 
 TEST(TcpTest, TcpListener_bind) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    const char *ip = "127.0.0.1";
     const uint16_t port = 8085;
 
     auto result = co_await net::TcpListener::bind(
-        xyco::net::SocketAddr::new_v4(ip, port));
+        xyco::net::SocketAddr::new_v4({}, port));
 
     CO_ASSERT_EQ(result.is_ok(), true);
   });
@@ -107,7 +102,7 @@ class WithServerTest : public ::testing::Test {
     TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
       auto tcp_socket = net::TcpSocket::new_v4().unwrap();
       tcp_socket.set_reuseaddr(true).unwrap();
-      (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4(ip_, port_)))
+      (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port_)))
           .unwrap();
       listener_ = std::make_unique<net::TcpListener>(
           net::TcpListener((co_await tcp_socket.listen(1)).unwrap()));
