@@ -18,7 +18,7 @@ TEST(SocketTest, new_v4) {
       static_cast<const void *>(sock_addr.into_c_addr()));
 
   ASSERT_EQ(raw_addr->sin_addr.s_addr, 0b00000001000000000000000001111111);
-  ASSERT_EQ(raw_addr->sin_port, http_port);
+  ASSERT_EQ(ntohs(raw_addr->sin_port), http_port);
 }
 
 TEST(SocketTest, new_v6) {

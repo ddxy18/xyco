@@ -32,7 +32,7 @@ class Ipv4Addr {
   friend class SocketAddr;
 
  public:
-  Ipv4Addr(const char* addr);
+  Ipv4Addr(const char* addr = nullptr);
 
  private:
   in_addr inner_;

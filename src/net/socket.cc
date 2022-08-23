@@ -6,7 +6,7 @@
 #include "utils/error.h"
 
 auto xyco::net::SocketAddrV4::get_port() const -> uint16_t {
-  return inner_.sin_port;
+  return ntohs(inner_.sin_port);
 }
 
 auto xyco::net::SocketAddrV6::get_port() const -> uint16_t {
@@ -14,7 +14,11 @@ auto xyco::net::SocketAddrV6::get_port() const -> uint16_t {
 }
 
 xyco::net::Ipv4Addr::Ipv4Addr(const char* addr) : inner_() {
-  inet_pton(AF_INET, addr, &inner_);
+  if (addr == nullptr) {
+    inner_.s_addr = htonl(INADDR_ANY);
+  } else {
+    ::inet_pton(AF_INET, addr, &inner_);
+  }
 }
 
 xyco::net::Ipv6Addr::Ipv6Addr(const char* addr) : inner_() {
@@ -24,7 +28,7 @@ xyco::net::Ipv6Addr::Ipv6Addr(const char* addr) : inner_() {
 auto xyco::net::SocketAddr::new_v4(Ipv4Addr ip_addr, uint16_t port)
     -> SocketAddr {
   auto addrv4 = SocketAddrV4{};
-  addrv4.inner_.sin_port = port;
+  addrv4.inner_.sin_port = htons(port);
   addrv4.inner_.sin_addr = ip_addr.inner_;
   addrv4.inner_.sin_family = AF_INET;
   auto addr = SocketAddr{};
