@@ -1,6 +1,7 @@
 # build
 build
 tools/target
+bazel-*
 
 # clangd
 .cache
