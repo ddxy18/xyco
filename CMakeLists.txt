@@ -8,12 +8,7 @@ project(
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
-set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 set(CMAKE_CXX_FLAGS "-std=c++20 -stdlib=libc++ -pthread")
-include(CPack)
-
-enable_testing()
 
 include(FetchContent)
 FetchContent_Declare(googletest
@@ -36,12 +31,7 @@ FetchContent_MakeAvailable(asio)
 include_directories(src)
 include_directories(/usr/include/libunwind)
 
-file(GLOB_RECURSE xyco_src_lib "src/fs/*.cc" "src/io/*.cc" "src/net/*.cc" "src/runtime/*.cc" "src/sync/*.cc" "src/time/*.cc" "src/utils/*.cc")
-
 add_subdirectory(src)
-
 add_subdirectory(tests)
-
 add_subdirectory(benchmark)
-
 add_subdirectory(examples)
