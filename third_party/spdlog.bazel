@@ -1,0 +1,11 @@
+cc_library(
+    name = "spdlog",
+    srcs = glob(["src/*.cpp"]),
+    hdrs = glob(["include/spdlog/**/*.h"]),
+    defines = [
+        "SPDLOG_COMPILED_LIB",
+    ],
+    includes = ["include"],
+    linkopts = ["-lpthread"],
+    visibility = ["//visibility:public"],
+)

@@ -1,0 +1,24 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "utils",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["logger.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    strip_include_prefix = "//src",
+    visibility = ["//visibility:public"],
+    deps = ["@spdlog"],
+)
+
+cc_library(
+    name = "logging",
+    srcs = [
+        "logger.cc",
+        "logger.h",
+    ],
+    defines = ["XYCO_ENABLE_LOG"],
+    visibility = ["//visibility:public"],
+    deps = ["@spdlog"],
+)

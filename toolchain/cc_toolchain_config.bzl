@@ -33,7 +33,11 @@ def _impl(ctx):
         ),
         tool_path(
             name = "gcov",
-            path = "/bin/false",
+            path = "/usr/bin/llvm-profdata-14",
+        ),
+        tool_path(
+            name = "llvm-cov",
+            path = "/usr/bin/llvm-cov-14",
         ),
         tool_path(
             name = "nm",
