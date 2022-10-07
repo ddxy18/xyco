@@ -8,11 +8,19 @@ flag_management:
   individual_flags:
     - name: epoll
       paths:
-        - !src/fs/io_uring/
-        - !src/io/io_uring/
-        - !src/net/io_uring/
+        - "src/"
+        - "!src/fs/io_uring/"
+        - "!src/io/io_uring/"
+        - "!src/net/io_uring/"
     - name: uring
       paths:
-        - !src/fs/io_epoll/
-        - !src/io/io_epoll/
-        - !src/net/io_epoll/
+        - "src/"
+        - "!src/fs/epoll/"
+        - "!src/io/epoll/"
+        - "!src/net/epoll/"
+    - name: tests
+      paths:
+        - "tests/"
+      statuses:
+        - type: project
+          target: 98%

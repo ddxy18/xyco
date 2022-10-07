@@ -3,8 +3,8 @@ name: codecov
 on:
   push:
     branches:
-      - 'main'
-      - 'build/*'
+      - "main"
+      - "build/*"
 
 env:
   llvm_version: 14
@@ -46,6 +46,13 @@ jobs:
         with:
           flags: uring
           files: ./build/tests/coverage_uring.txt
+          fail_ci_if_error: true
+          verbose: true
+      - name: upload tests coverage report
+        uses: codecov/codecov-action@v2
+        with:
+          flags: tests
+          files: ./build/tests/coverage_eopll.txt,./build/tests/coverage_uring.txt
           fail_ci_if_error: true
           verbose: true
 
