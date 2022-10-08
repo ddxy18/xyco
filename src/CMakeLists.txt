@@ -1,12 +1,10 @@
 set(CMAKE_CXX_FLAGS "-DXYCO_ENABLE_LOG ${CMAKE_CXX_FLAGS}")
 
 add_executable(xyco_epoll_main main.cc)
-target_link_libraries(xyco_epoll_main io_epoll)
-target_link_libraries(xyco_epoll_main net_epoll)
+target_link_libraries(xyco_epoll_main io_epoll net_epoll runtime)
 
 add_executable(xyco_uring_main main.cc)
-target_link_libraries(xyco_uring_main io_uring)
-target_link_libraries(xyco_uring_main net_uring)
+target_link_libraries(xyco_uring_main io_uring net_uring runtime)
 
 set(fs_epoll_src "fs/utils.cc" "fs/epoll/file.cc")
 set(fs_uring_src "fs/utils.cc" "fs/io_uring/file.cc")
