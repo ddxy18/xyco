@@ -9,9 +9,17 @@
 #include "net/io_uring/listener.h"
 #include "runtime/runtime.h"
 
-namespace net = xyco::net::uring;
-namespace fs = xyco::fs::uring;
-namespace io = xyco::io::uring;
+namespace xyco::fs {
+using namespace uring;
+}
+
+namespace xyco::io {
+using namespace uring;
+}
+
+namespace xyco::net {
+using namespace uring;
+}
 
 class RequestLine {
  public:
@@ -97,7 +105,7 @@ class Server {
   Server(std::unique_ptr<xyco::runtime::Runtime> runtime, uint16_t port)
       : runtime_(std::move(runtime)) {
     auto init_server = [=](uint16_t port) -> xyco::runtime::Future<void> {
-      auto tcp_socket = net::TcpSocket::new_v4().unwrap();
+      auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
       tcp_socket.set_reuseaddr(true).unwrap();
       (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port)))
           .unwrap();
@@ -112,10 +120,10 @@ class Server {
   }
 
  private:
-  auto receive_request(net::TcpStream server_stream)
+  auto receive_request(xyco::net::TcpStream server_stream)
       -> xyco::runtime::Future<void> {
-    auto reader =
-        xyco::io::BufferReader<net::TcpStream, std::string>(server_stream);
+    auto reader = xyco::io::BufferReader<xyco::net::TcpStream, std::string>(
+        server_stream);
     Request request;
     auto line =
         (co_await xyco::io::BufferReadExt::read_line<decltype(reader),
@@ -159,7 +167,8 @@ class Server {
     runtime_->spawn(execute_request(request, std::move(server_stream)));
   }
 
-  static auto execute_request(Request request, net::TcpStream server_stream)
+  static auto execute_request(Request request,
+                              xyco::net::TcpStream server_stream)
       -> xyco::runtime::Future<void> {
     constexpr int SUCCESS_CODE = 200;
     constexpr int NOT_FOUND_CODE = 404;
@@ -169,7 +178,7 @@ class Server {
     status_line.version_ = request.request_line_.version_;
     if (request.request_line_.method_ == RequestLine::Method::Get) {
       auto open_file_result =
-          (co_await fs::File::open(request.request_line_.url_));
+          (co_await xyco::fs::File::open(request.request_line_.url_));
       if (open_file_result.is_err()) {
         status_line.code_ = NOT_FOUND_CODE;
         status_line.reason_ = "ERROR";
@@ -199,7 +208,7 @@ class Server {
                               "\r\n"))
           .unwrap();
       (co_await xyco::io::WriteExt::write_all(server_stream, "\r\n")).unwrap();
-      auto reader = xyco::io::BufferReader<fs::File, std::string>(file);
+      auto reader = xyco::io::BufferReader<xyco::fs::File, std::string>(file);
       std::string line = "a";
       while (!line.empty()) {
         line =
@@ -238,7 +247,7 @@ auto main() -> int {
   auto server = Server(xyco::runtime::Builder::new_multi_thread()
                            .worker_threads(1)
                            .max_blocking_threads(1)
-                           .registry<io::IoRegistry>(4)
+                           .registry<xyco::io::IoRegistry>(4)
                            .build()
                            .unwrap(),
                        port);

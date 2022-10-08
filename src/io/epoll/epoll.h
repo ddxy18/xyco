@@ -21,7 +21,7 @@ class IoRegistry : public runtime::Registry {
                             std::chrono::milliseconds timeout)
       -> utils::Result<void> override;
 
-  IoRegistry();
+  IoRegistry(int entries);
 
   IoRegistry(const IoRegistry &epoll) = delete;
 

@@ -4,15 +4,20 @@
 #include "net/io_uring/listener.h"
 #include "runtime/runtime.h"
 
-namespace net = xyco::net::uring;
-namespace io = xyco::io::uring;
+namespace xyco::io {
+using namespace uring;
+}
+
+namespace xyco::net {
+using namespace uring;
+}
 
 class Server {
  public:
   Server(std::unique_ptr<xyco::runtime::Runtime> runtime, uint16_t port)
       : runtime_(std::move(runtime)) {
     auto init_server = [=](uint16_t port) -> xyco::runtime::Future<void> {
-      auto tcp_socket = net::TcpSocket::new_v4().unwrap();
+      auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
       tcp_socket.set_reuseaddr(true).unwrap();
       (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port)))
           .unwrap();
@@ -27,7 +32,7 @@ class Server {
   }
 
  private:
-  static auto echo(net::TcpStream server_stream)
+  static auto echo(xyco::net::TcpStream server_stream)
       -> xyco::runtime::Future<void> {
     constexpr int buffer_size = 1024;
 
@@ -54,7 +59,7 @@ auto main() -> int {
   auto server = Server(xyco::runtime::Builder::new_multi_thread()
                            .worker_threads(1)
                            .max_blocking_threads(1)
-                           .registry<io::IoRegistry>(4)
+                           .registry<xyco::io::IoRegistry>(4)
                            .build()
                            .unwrap(),
                        port);

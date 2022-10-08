@@ -6,8 +6,16 @@
 #include "io/io_uring/extra.h"
 #include "net/io_uring/listener.h"
 
-namespace net = xyco::net::uring;
-namespace io = xyco::io::uring;
-namespace fs = xyco::fs::uring;
+namespace xyco::fs {
+using namespace uring;
+}
+
+namespace xyco::io {
+using namespace uring;
+}
+
+namespace xyco::net {
+using namespace uring;
+}
 
 #endif  // XYCO_TESTS_COMMON_IO_URING_UTILS_H_

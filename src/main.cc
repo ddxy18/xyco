@@ -4,14 +4,19 @@
 #include "runtime/runtime.h"
 
 using xyco::runtime::Future;
-namespace io = xyco::io::epoll;
-namespace net = xyco::net::epoll;
+namespace xyco::io {
+using namespace epoll;
+}
+
+namespace xyco::net {
+using namespace epoll;
+}
 
 const std::string SERVER_IP = "127.0.0.1";
 const int SERVER_PORT = 8080;
 
 auto start_server() -> Future<void> {
-  auto tcp_socket = net::TcpSocket::new_v4().unwrap();
+  auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
   tcp_socket.set_reuseaddr(true).unwrap();
 
   auto bind_result = (co_await tcp_socket.bind(
@@ -37,13 +42,13 @@ auto start_client() -> Future<void> {
 
   auto start = std::chrono::system_clock::now();
   auto connect_result =
-      (co_await net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
+      (co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
           xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
   while (connect_result.is_err() &&
          std::chrono::system_clock::now() - start <= std::chrono::seconds(2)) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     connect_result =
-        (co_await net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
+        (co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
             xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
   }
   auto connection = connect_result.unwrap();
@@ -59,7 +64,7 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
   auto runtime = xyco::runtime::Builder::new_multi_thread()
                      .worker_threads(2)
                      .max_blocking_threads(2)
-                     .registry<io::IoRegistry>()
+                     .registry<xyco::io::IoRegistry>(4)
                      .build()
                      .unwrap();
   runtime->spawn(start_server());
