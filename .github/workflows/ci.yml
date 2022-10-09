@@ -72,7 +72,7 @@ jobs:
       - name: build
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
-          cmake --build ./build --config Release --target xyco
+          cmake --build ./build --config Release --target all
           echo '[target.x86_64-unknown-linux-gnu]' >> $HOME/.cargo/config.toml
           echo 'rustflags = ["-C", "linker=clang"]' >> $HOME/.cargo/config.toml
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format --source src benchmark tests examples
