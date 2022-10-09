@@ -1,6 +1,6 @@
 #include "utils.h"
 
-#include "io/epoll/epoll.h"
+#include "io/epoll/registry.h"
 #include "time/driver.h"
 
 std::unique_ptr<xyco::runtime::Runtime> TestRuntimeCtx::runtime_(

@@ -1,16 +1,8 @@
-#include "io/epoll/epoll.h"
-#include "io/io_uring/io_uring.h"
-#include "net/epoll/listener.h"
-#include "net/io_uring/listener.h"
+#include "io/read.h"
+#include "io/registry.h"
+#include "io/write.h"
+#include "net/listener.h"
 #include "runtime/runtime.h"
-
-namespace xyco::io {
-using namespace uring;
-}
-
-namespace xyco::net {
-using namespace uring;
-}
 
 class Server {
  public:

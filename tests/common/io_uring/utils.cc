@@ -1,6 +1,6 @@
 #include "utils.h"
 
-#include "io/io_uring/io_uring.h"
+#include "io/io_uring/registry.h"
 #include "time/driver.h"
 
 std::unique_ptr<xyco::runtime::Runtime> TestRuntimeCtx::runtime_(

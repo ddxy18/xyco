@@ -1,25 +1,12 @@
 #include <charconv>
 #include <sstream>
 
-#include "fs/epoll/file.h"
-#include "fs/io_uring/file.h"
+#include "fs/file.h"
 #include "io/buffer_reader.h"
+#include "io/registry.h"
 #include "io/write.h"
-#include "net/epoll/listener.h"
-#include "net/io_uring/listener.h"
+#include "net/listener.h"
 #include "runtime/runtime.h"
-
-namespace xyco::fs {
-using namespace uring;
-}
-
-namespace xyco::io {
-using namespace uring;
-}
-
-namespace xyco::net {
-using namespace uring;
-}
 
 class RequestLine {
  public:

@@ -1,5 +1,5 @@
-#ifndef XYCO_IO_DRIVER_IO_URING_H_
-#define XYCO_IO_DRIVER_IO_URING_H_
+#ifndef XYCO_IO_IO_URING_REGISTRY_H_
+#define XYCO_IO_IO_URING_REGISTRY_H_
 
 #include <liburing.h>
 
@@ -45,4 +45,4 @@ class IoRegistry : public runtime::Registry {
 };
 }  // namespace xyco::io::uring
 
-#endif  // XYCO_IO_DRIVER_IO_URING_H_
+#endif  // XYCO_IO_IO_URING_REGISTRY_H_

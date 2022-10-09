@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include "io/read.h"
+#include "io/write.h"
 #include "utils.h"
 
 // TODO(dongxiaoyu): add failure cases
