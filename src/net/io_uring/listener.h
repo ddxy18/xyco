@@ -4,8 +4,7 @@
 #include <unistd.h>
 
 #include "io/io_uring/extra.h"
-#include "io/io_uring/io_uring.h"
-#include "io/mod.h"
+#include "io/io_uring/registry.h"
 #include "net/socket.h"
 #include "runtime/runtime.h"
 

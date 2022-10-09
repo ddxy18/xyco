@@ -8,10 +8,10 @@ class BufferTest : public ::testing::Test {
  protected:
   static void SetUpTestSuite() {
     TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-      listener_ = std::make_unique<net::TcpListener>(
-          net::TcpListener((co_await net::TcpListener::bind(
-                                xyco::net::SocketAddr::new_v4({}, port_)))
-                               .unwrap()));
+      listener_ = std::make_unique<xyco::net::TcpListener>(
+          xyco::net::TcpListener((co_await xyco::net::TcpListener::bind(
+                                      xyco::net::SocketAddr::new_v4({}, port_)))
+                                     .unwrap()));
     });
   }
 
@@ -25,12 +25,12 @@ class BufferTest : public ::testing::Test {
 
   void SetUp() override {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-      client_ = std::make_unique<net::TcpStream>(
-          net::TcpStream((co_await net::TcpStream::connect(
-                              xyco::net::SocketAddr::new_v4(ip_, port_)))
-                             .unwrap()));
-      server_ = std::make_unique<net::TcpStream>(
-          net::TcpStream((co_await listener_->accept()).unwrap().first));
+      client_ = std::make_unique<xyco::net::TcpStream>(
+          xyco::net::TcpStream((co_await xyco::net::TcpStream::connect(
+                                    xyco::net::SocketAddr::new_v4(ip_, port_)))
+                                   .unwrap()));
+      server_ = std::make_unique<xyco::net::TcpStream>(
+          xyco::net::TcpStream((co_await listener_->accept()).unwrap().first));
     });
   }
 
@@ -43,15 +43,15 @@ class BufferTest : public ::testing::Test {
     });
   }
 
-  static std::unique_ptr<net::TcpListener> listener_;
+  static std::unique_ptr<xyco::net::TcpListener> listener_;
   static const char *ip_;
   static const uint16_t port_;
 
-  std::unique_ptr<net::TcpStream> client_;
-  std::unique_ptr<net::TcpStream> server_;
+  std::unique_ptr<xyco::net::TcpStream> client_;
+  std::unique_ptr<xyco::net::TcpStream> server_;
 };
 
-std::unique_ptr<net::TcpListener> BufferTest::listener_;
+std::unique_ptr<xyco::net::TcpListener> BufferTest::listener_;
 const char *BufferTest::ip_ = "127.0.0.1";
 const uint16_t BufferTest::port_ = 8088;
 
@@ -67,7 +67,7 @@ TEST_F(BufferTest, concept) {
   char c_array_buffer[1];
   xyco::io::ReadExt::read(*server_, c_array_buffer);
 
-  xyco::io::BufferReader<net::TcpStream, std::string> reader(*server_);
+  xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
   xyco::io::BufferReadExt::read_line<decltype(reader), std::string>(reader);
   xyco::io::BufferReadExt::read_line<decltype(reader), std::vector<char>>(
       reader);
@@ -80,7 +80,7 @@ TEST_F(BufferTest, read_to_end) {
         (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
 
-    xyco::io::BufferReader<net::TcpStream, std::string> reader(*server_);
+    xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
     auto readed =
         (co_await xyco::io::BufferReadExt::read_to_end<decltype(reader),
                                                        std::string>(reader))
@@ -98,7 +98,7 @@ TEST_F(BufferTest, read_until) {
         (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
 
-    xyco::io::BufferReader<net::TcpStream, std::string> reader(*server_);
+    xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
     auto line =
         (co_await xyco::io::BufferReadExt::read_until<decltype(reader),
                                                       std::string>(reader, 'c'))
@@ -116,7 +116,7 @@ TEST_F(BufferTest, read_until_eof) {
         (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
 
-    xyco::io::BufferReader<net::TcpStream, std::string> reader(*server_);
+    xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
     auto line =
         (co_await xyco::io::BufferReadExt::read_until<decltype(reader),
                                                       std::string>(reader, 'c'))
@@ -136,7 +136,7 @@ TEST_F(BufferTest, read_line) {
         (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
 
-    xyco::io::BufferReader<net::TcpStream, std::string> reader(*server_);
+    xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
     auto line =
         (co_await xyco::io::BufferReadExt::read_line<decltype(reader),
                                                      std::string>(reader))
@@ -154,7 +154,7 @@ TEST_F(BufferTest, buffer_read) {
         (co_await xyco::io::WriteExt::write(*client_, write_bytes)).unwrap();
     (co_await client_->shutdown(xyco::io::Shutdown::All)).unwrap();
 
-    xyco::io::BufferReader<net::TcpStream, std::string> reader(*server_);
+    xyco::io::BufferReader<xyco::net::TcpStream, std::string> reader(*server_);
     auto readed = std::string(2, 0);
     auto read_bytes =
         (co_await reader.read(readed.begin(), readed.end())).unwrap();

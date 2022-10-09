@@ -1,5 +1,5 @@
-#ifndef XYCO_NET_EPOLL_H_
-#define XYCO_NET_EPOLL_H_
+#ifndef XYCO_NET_EPOLL_REGISTRY_H_
+#define XYCO_NET_EPOLL_REGISTRY_H_
 
 #include <vector>
 
@@ -21,7 +21,7 @@ class IoRegistry : public runtime::Registry {
                             std::chrono::milliseconds timeout)
       -> utils::Result<void> override;
 
-  IoRegistry();
+  IoRegistry(int entries);
 
   IoRegistry(const IoRegistry &epoll) = delete;
 
@@ -43,4 +43,4 @@ class IoRegistry : public runtime::Registry {
 };
 }  // namespace xyco::io::epoll
 
-#endif  // XYCO_NET_EPOLL_H_
+#endif  // XYCO_NET_EPOLL_REGISTRY_H_

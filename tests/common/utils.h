@@ -5,6 +5,9 @@
 
 #include <gsl/pointers>
 
+#include "fs/file.h"
+#include "io/extra.h"
+#include "net/listener.h"
 #include "runtime/runtime.h"
 
 #define CO_ASSERT_EQ(val1, val2)               \

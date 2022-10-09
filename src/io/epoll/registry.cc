@@ -1,4 +1,4 @@
-#include "epoll.h"
+#include "registry.h"
 
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -131,7 +131,8 @@ auto xyco::io::epoll::IoRegistry::select(runtime::Events &events,
   return utils::Result<void>::ok();
 }
 
-xyco::io::epoll::IoRegistry::IoRegistry() : epfd_(::epoll_create(1)) {
+xyco::io::epoll::IoRegistry::IoRegistry(int entries)
+    : epfd_(::epoll_create(entries)) {
   if (epfd_ == -1) {
     utils::panic();
   }
