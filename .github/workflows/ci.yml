@@ -13,8 +13,8 @@ jobs:
   rust-tool:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry/index/
@@ -46,17 +46,17 @@ jobs:
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
           apt-get -y update && apt-get -y upgrade
           apt-get install -y curl git binutils
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: install essential packages
         run: |
-          apt install -y cmake
+          apt install -y cmake ninja-build
           apt install -y clang-$llvm_version clang-tidy-$llvm_version clang-format-$llvm_version
           apt install -y libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev liburing-dev
           ln -s /usr/bin/clang-tidy-$llvm_version /usr/bin/clang-tidy
           ln -s /usr/bin/clang-format-$llvm_version /usr/bin/clang-format
           ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
           ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry/index/
@@ -71,7 +71,7 @@ jobs:
           default: true
       - name: build
         run: |
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang++ -S . -B ./build -G "Ninja"
           cmake --build ./build --config Release --target all
           echo '[target.x86_64-unknown-linux-gnu]' >> $HOME/.cargo/config.toml
           echo 'rustflags = ["-C", "linker=clang"]' >> $HOME/.cargo/config.toml
@@ -87,14 +87,14 @@ jobs:
         run: |
           ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
           apt-get -y update && apt-get -y upgrade
-          apt install -y binutils git cmake \
+          apt install -y binutils git cmake ninja-build \
           clang-$llvm_version libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev liburing-dev
           ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
           ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: test
         run: |
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -DCMAKE_CXX_COMPILER:FILEPATH=clang++ -S . -B ./build -G "Unix Makefiles"
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang++ -S . -B ./build -G "Ninja"
           cmake --build ./build --config Release --target xyco_test_epoll xyco_test_uring
           LLVM_PROFILE_FILE="./build/tests/xyco_test_epoll.profraw" ./build/tests/xyco_test_epoll --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle --gtest_brief=1
           llvm-profdata-$llvm_version merge -sparse ./build/tests/xyco_test_epoll.profraw -o ./build/tests/xyco_test_epoll.profdata
@@ -103,21 +103,21 @@ jobs:
           llvm-profdata-$llvm_version merge -sparse ./build/tests/xyco_test_uring.profraw -o ./build/tests/xyco_test_uring.profdata
           llvm-cov-$llvm_version show ./build/tests/xyco_test_uring -ignore-filename-regex=./build -instr-profile=./build/tests/xyco_test_uring.profdata > ./build/tests/coverage_uring.txt
       - name: upload epoll coverage report
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           flags: epoll
           files: ./build/tests/coverage_eopll.txt
           fail_ci_if_error: true
           verbose: true
       - name: upload uring coverage report
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           flags: uring
           files: ./build/tests/coverage_uring.txt
           fail_ci_if_error: true
           verbose: true
       - name: upload tests coverage report
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           flags: tests
           files: ./build/tests/coverage_eopll.txt,./build/tests/coverage_uring.txt
