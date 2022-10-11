@@ -1,10 +1,8 @@
-set(CMAKE_CXX_FLAGS "-DXYCO_ENABLE_LOG ${CMAKE_CXX_FLAGS}")
-
 add_executable(xyco_epoll_main main.cc)
-target_link_libraries(xyco_epoll_main io_epoll net_epoll runtime)
+target_link_libraries(xyco_epoll_main io_epoll net_epoll runtime logging)
 
 add_executable(xyco_uring_main main.cc)
-target_link_libraries(xyco_uring_main io_uring net_uring runtime)
+target_link_libraries(xyco_uring_main io_uring net_uring runtime logging)
 
 set(fs_epoll_src "fs/utils.cc" "fs/epoll/file.cc")
 set(fs_uring_src "fs/utils.cc" "fs/io_uring/file.cc")
@@ -22,7 +20,7 @@ set(runtime_src "runtime/blocking.cc" "runtime/driver.cc" "runtime/future.cc" "r
 
 set(time_src "time/driver.cc" "time/wheel.cc")
 
-set(utils_src "utils/error.cc" "utils/logger.cc" "utils/panic.cc")
+set(utils_src "utils/error.cc" "utils/panic.cc")
 
 add_library(fs_epoll ${fs_epoll_src})
 target_link_libraries(fs_epoll io_epoll runtime utils)
@@ -59,3 +57,7 @@ target_link_libraries(time runtime spdlog)
 
 add_library(utils ${utils_src})
 target_link_libraries(utils spdlog)
+
+add_library(logging "utils/logger.cc")
+target_link_libraries(logging spdlog)
+target_compile_definitions(logging PUBLIC XYCO_ENABLE_LOG)
