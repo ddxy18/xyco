@@ -15,33 +15,32 @@ jobs:
     steps:
       - name: install essential packages
         run: |
-          sudo apt-get install -y ninja-build lcov default-jdk libunwind-$llvm_version-dev liburing-dev
+          sudo apt-get install -y lcov libunwind-$llvm_version-dev liburing-dev
       - uses: actions/checkout@v3
       - name: test
         run: |
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang++-$llvm_version -S . -B ./build -G "Ninja"
-          cmake --build ./build --config Release --target xyco_test_epoll xyco_test_uring
           bazel coverage --config=opt --config=coverage --test_output=all //tests:xyco_test_epoll --test_arg=--gtest_repeat=100 --test_arg=--gtest_break_on_failure --test_arg=--gtest_shuffle
           bazel coverage --config=opt --config=coverage --test_output=all //tests:xyco_test_uring --test_arg=--gtest_repeat=100 --test_arg=--gtest_break_on_failure --test_arg=--gtest_shuffle
+          mv $(bazel info bazel-testlogs)/tests/xyco_test_epoll/coverage.dat coverage_epoll.dat && mv $(bazel info bazel-testlogs)/tests/xyco_test_uring/coverage.dat coverage_uring.dat
       - name: upload epoll coverage report
         uses: codecov/codecov-action@v3
         with:
           flags: epoll
-          files: $(bazel info bazel-testlogs)/tests/xyco_test_epoll/coverage.dat
+          files: coverage_epoll.dat
           fail_ci_if_error: true
           verbose: true
       - name: upload uring coverage report
         uses: codecov/codecov-action@v3
         with:
           flags: uring
-          files: $(bazel info bazel-testlogs)/tests/xyco_test_uring/coverage.dat
+          files: coverage_uring.dat
           fail_ci_if_error: true
           verbose: true
       - name: upload tests coverage report
         uses: codecov/codecov-action@v3
         with:
           flags: tests
-          files: $(bazel info bazel-testlogs)/tests/xyco_test_epoll/coverage.dat,$(bazel info bazel-testlogs)/tests/xyco_test_uring/coverage.dat
+          files: coverage_epoll.dat,coverage_uring.dat
           fail_ci_if_error: true
           verbose: true
 
