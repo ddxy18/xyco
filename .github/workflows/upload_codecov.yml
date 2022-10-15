@@ -11,27 +11,20 @@ env:
 
 jobs:
   test-codecov:
-    runs-on: ubuntu-latest
-    container:
-      image: ubuntu:22.04
+    runs-on: ubuntu-22.04
     steps:
       - name: install essential packages
         run: |
-          ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
-          apt-get -y update && apt-get -y upgrade
-          apt install -y binutils git cmake ninja-build \
-          clang-$llvm_version libc++-$llvm_version-dev libc++abi-$llvm_version-dev libunwind-$llvm_version-dev liburing-dev
-          ln -s /usr/bin/clang-$llvm_version /usr/bin/clang
-          ln -s /usr/bin/clang++-$llvm_version /usr/bin/clang++
+          sudo apt install -y ninja-build libunwind-$llvm_version-dev liburing-dev
       - uses: actions/checkout@v3
       - name: test
         run: |
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang++ -S . -B ./build -G "Ninja"
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang++-$llvm_version -S . -B ./build -G "Ninja"
           cmake --build ./build --config Release --target xyco_test_epoll xyco_test_uring
-          LLVM_PROFILE_FILE="./build/tests/xyco_test_epoll.profraw" ./build/tests/xyco_test_epoll --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle --gtest_brief=1
+          sudo LLVM_PROFILE_FILE="./build/tests/xyco_test_epoll.profraw" ./build/tests/xyco_test_epoll --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle
           llvm-profdata-$llvm_version merge -sparse ./build/tests/xyco_test_epoll.profraw -o ./build/tests/xyco_test_epoll.profdata
           llvm-cov-$llvm_version show ./build/tests/xyco_test_epoll -ignore-filename-regex=./build -instr-profile=./build/tests/xyco_test_epoll.profdata > ./build/tests/coverage_eopll.txt
-          LLVM_PROFILE_FILE="./build/tests/xyco_test_uring.profraw" ./build/tests/xyco_test_uring --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle --gtest_brief=1
+          sudo LLVM_PROFILE_FILE="./build/tests/xyco_test_uring.profraw" ./build/tests/xyco_test_uring --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle
           llvm-profdata-$llvm_version merge -sparse ./build/tests/xyco_test_uring.profraw -o ./build/tests/xyco_test_uring.profdata
           llvm-cov-$llvm_version show ./build/tests/xyco_test_uring -ignore-filename-regex=./build -instr-profile=./build/tests/xyco_test_uring.profdata > ./build/tests/coverage_uring.txt
       - name: upload epoll coverage report
@@ -57,7 +50,7 @@ jobs:
           verbose: true
 
   push-dev-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: docker/login-action@v2
