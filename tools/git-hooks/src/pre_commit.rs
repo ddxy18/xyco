@@ -125,6 +125,8 @@ pub trait FileCheck {
 pub struct ClangFmt {
     #[structopt(short = "s", long = "source")]
     path: Vec<PathBuf>,
+    #[structopt(long)]
+    tool_version: Option<String>,
 }
 
 #[derive(structopt::StructOpt)]
@@ -136,17 +138,23 @@ pub struct ClangTidy {
     #[structopt(long)]
     checks: Option<String>,
     #[structopt(long)]
+    tool_version: Option<String>,
+    #[structopt(long)]
     extra_arg: String,
 }
 
 impl FileCheck for ClangFmt {
-    fn per_file_check(_me: Arc<Self>, path: PathBuf) -> Result<()> {
-        let clang_format = Command::new("clang-format")
-            .arg("--Werror")
-            .arg("--style=file")
-            .arg(&path)
-            .stdout(Stdio::piped())
-            .spawn()?;
+    fn per_file_check(me: Arc<Self>, path: PathBuf) -> Result<()> {
+        let clang_format = Command::new(if me.tool_version.is_none() {
+            String::from("clang-format")
+        } else {
+            format!("clang-format-{}", me.tool_version.clone().unwrap())
+        })
+        .arg("--Werror")
+        .arg("--style=file")
+        .arg(&path)
+        .stdout(Stdio::piped())
+        .spawn()?;
         let mut diff = Command::new("diff")
             .arg(&path)
             .stdin(Stdio::piped())
@@ -178,14 +186,21 @@ impl FileCheck for ClangFmt {
         me.path.clone()
     }
 
-    fn sub_dir_self(_me: Arc<Self>, path: Vec<PathBuf>) -> Self {
-        Self { path }
+    fn sub_dir_self(me: Arc<Self>, path: Vec<PathBuf>) -> Self {
+        Self {
+            path,
+            tool_version: me.tool_version.clone(),
+        }
     }
 }
 
 impl FileCheck for ClangTidy {
     fn per_file_check(me: Arc<Self>, path: PathBuf) -> Result<()> {
-        let cmd = &mut Command::new("clang-tidy");
+        let cmd = &mut Command::new(if me.tool_version.is_none() {
+            String::from("clang-tidy")
+        } else {
+            format!("clang-tidy-{}", me.tool_version.clone().unwrap())
+        });
         #[cfg(test)]
         let cmd = cmd.stdout(Stdio::null()).stderr(Stdio::null());
         let cmd = if let Some(checks) = &me.checks {
@@ -220,6 +235,7 @@ impl FileCheck for ClangTidy {
             build_path: me.build_path.clone(),
             root_path: path,
             checks: me.checks.clone(),
+            tool_version: me.tool_version.clone(),
             extra_arg: me.extra_arg.clone(),
         }
     }
@@ -320,6 +336,7 @@ mod tests {
 
         let pre_commit = ClangFmt {
             path: vec![temp_dir.path().to_path_buf()],
+            tool_version: None,
         };
         if let ErrorType::Diff(e) = &ClangFmt::check(Arc::new(pre_commit))
             .err()
@@ -344,6 +361,7 @@ mod tests {
 
         let pre_commit = ClangFmt {
             path: vec![temp_dir.path().to_path_buf()],
+            tool_version: None,
         };
 
         ClangFmt::check(Arc::new(pre_commit)).unwrap();
@@ -369,6 +387,7 @@ mod tests {
 
         let pre_commit = ClangFmt {
             path: vec![temp_dir.path().to_path_buf()],
+            tool_version: None,
         };
 
         assert_matches!(ClangFmt::check(Arc::new(pre_commit)).err(),Some(err) if err.downcast_ref::<DiffsError>().unwrap().errs.len() == 2);
@@ -408,6 +427,7 @@ mod tests {
             root_path: vec![temp_dir.path().to_path_buf()],
             build_path: temp_dir.path().join("build"),
             checks: Some(String::from("modernize-*")),
+            tool_version: None,
             extra_arg: String::from("-I/usr/lib/llvm-14/include/c++/v1/"),
         };
         assert_matches!(ClangTidy::check(Arc::new(pre_commit)).err(),Some(e) if e.downcast_ref::<DiffsError>().unwrap().errs.len() == 1);
