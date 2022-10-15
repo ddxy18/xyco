@@ -63,7 +63,8 @@ TEST(TcpTest, bind_same_addr) {
 
 TEST(TcpTest, TcpSocket_listen) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    const uint16_t port = 8084;
+    // Skip 8084 since the port is occupied by github runner.
+    const uint16_t port = 8085;
 
     auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
     (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port)))
@@ -76,7 +77,7 @@ TEST(TcpTest, TcpSocket_listen) {
 
 TEST(TcpTest, TcpListener_bind) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    const uint16_t port = 8085;
+    const uint16_t port = 8086;
 
     auto result = co_await xyco::net::TcpListener::bind(
         xyco::net::SocketAddr::new_v4({}, port));
