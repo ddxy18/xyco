@@ -1,0 +1,62 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_library(
+    name = "io_epoll",
+    srcs = glob([
+        "*.cc",
+        "epoll/*.cc",
+    ]),
+    hdrs = glob([
+        "*.h",
+        "standalone/epoll/io/*.h",
+        "epoll/*.h",
+    ]),
+    includes = ["standalone/epoll"],
+    strip_include_prefix = "//src",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/runtime",
+        "//src/utils",
+        "@spdlog",
+    ],
+)
+
+cc_library(
+    name = "io_uring",
+    srcs = glob([
+        "*.cc",
+        "io_uring/*.cc",
+    ]),
+    hdrs = glob([
+        "*.h",
+        "standalone/io_uring/io/*.h",
+        "io_uring/*.h",
+    ]),
+    includes = ["standalone/io_uring"],
+    linkopts = ["-luring"],
+    strip_include_prefix = "//src",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/runtime",
+        "//src/utils",
+        "@spdlog",
+    ],
+)
+
+cc_library(
+    name = "io_all",
+    srcs = glob(["**/*.cc"]),
+    hdrs = glob([
+        "*.h",
+        "epoll/*.h",
+        "io_uring/*.h",
+    ]),
+    linkopts = ["-luring"],
+    strip_include_prefix = "//src",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/runtime",
+        "//src/utils",
+        "@spdlog",
+    ],
+)

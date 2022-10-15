@@ -1,0 +1,23 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "xyco_epoll_http_server",
+    srcs = ["http_server.cc"],
+    deps = [
+        "//src/fs:fs_epoll",
+        "//src/io:io_epoll",
+        "//src/net:net_epoll",
+        "//src/runtime",
+    ],
+)
+
+cc_binary(
+    name = "xyco_uring_http_server",
+    srcs = ["http_server.cc"],
+    deps = [
+        "//src/fs:fs_uring",
+        "//src/io:io_uring",
+        "//src/net:net_uring",
+        "//src/runtime",
+    ],
+)

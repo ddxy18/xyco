@@ -46,6 +46,7 @@ jobs:
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang++-$llvm_version -S . -B ./build -G "Ninja"
           cmake --build ./build --config Release --target all
+          bazel build --config=opt //benchmark:all //examples:all //src:all //tests:all
           rustup override set nightly
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format --source src benchmark tests examples --tool-version $llvm_version
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source src benchmark examples --build build --tool-version $llvm_version --extra-arg="-I/usr/lib/llvm-$llvm_version/include/c++/v1/"
@@ -55,36 +56,31 @@ jobs:
     steps:
       - name: install essential packages
         run: |
-          sudo apt-get install -y ninja-build libunwind-$llvm_version-dev liburing-dev
+          sudo apt-get install -y lcov libunwind-$llvm_version-dev liburing-dev
       - uses: actions/checkout@v3
       - name: test
         run: |
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang++-$llvm_version -S . -B ./build -G "Ninja"
-          cmake --build ./build --config Release --target xyco_test_epoll xyco_test_uring
-          sudo LLVM_PROFILE_FILE="./build/tests/xyco_test_epoll.profraw" ./build/tests/xyco_test_epoll --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle
-          llvm-profdata-$llvm_version merge -sparse ./build/tests/xyco_test_epoll.profraw -o ./build/tests/xyco_test_epoll.profdata
-          llvm-cov-$llvm_version show ./build/tests/xyco_test_epoll -ignore-filename-regex=./build -instr-profile=./build/tests/xyco_test_epoll.profdata > ./build/tests/coverage_eopll.txt
-          sudo LLVM_PROFILE_FILE="./build/tests/xyco_test_uring.profraw" ./build/tests/xyco_test_uring --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle
-          llvm-profdata-$llvm_version merge -sparse ./build/tests/xyco_test_uring.profraw -o ./build/tests/xyco_test_uring.profdata
-          llvm-cov-$llvm_version show ./build/tests/xyco_test_uring -ignore-filename-regex=./build -instr-profile=./build/tests/xyco_test_uring.profdata > ./build/tests/coverage_uring.txt
+          bazel coverage --config=opt --config=coverage --test_output=all //tests:xyco_test_epoll --test_arg=--gtest_repeat=100 --test_arg=--gtest_break_on_failure --test_arg=--gtest_shuffle
+          bazel coverage --config=opt --config=coverage --test_output=all //tests:xyco_test_uring --test_arg=--gtest_repeat=100 --test_arg=--gtest_break_on_failure --test_arg=--gtest_shuffle
+          mv $(bazel info bazel-testlogs)/tests/xyco_test_epoll/coverage.dat coverage_epoll.dat && mv $(bazel info bazel-testlogs)/tests/xyco_test_uring/coverage.dat coverage_uring.dat
       - name: upload epoll coverage report
         uses: codecov/codecov-action@v3
         with:
           flags: epoll
-          files: ./build/tests/coverage_eopll.txt
+          files: coverage_epoll.dat
           fail_ci_if_error: true
           verbose: true
       - name: upload uring coverage report
         uses: codecov/codecov-action@v3
         with:
           flags: uring
-          files: ./build/tests/coverage_uring.txt
+          files: coverage_uring.dat
           fail_ci_if_error: true
           verbose: true
       - name: upload tests coverage report
         uses: codecov/codecov-action@v3
         with:
           flags: tests
-          files: ./build/tests/coverage_eopll.txt,./build/tests/coverage_uring.txt
+          files: coverage_epoll.dat,coverage_uring.dat
           fail_ci_if_error: true
           verbose: true
