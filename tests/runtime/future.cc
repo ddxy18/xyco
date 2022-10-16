@@ -93,7 +93,29 @@ TEST_F(NoRuntimeTest, NeverRun) {
   ASSERT_EQ(co_result, -1);
 }
 
-TEST(InRuntimeDeathTest, coroutine_exception) {
+TEST(RuntimeDeathTest, terminate) {
+  EXPECT_DEATH(
+      {
+        // Default handler bypasses process finalization which skips coverage
+        // data flushing. So use `exit` as terminate handler to produce correct
+        // coverage statistics.
+        std::set_terminate([] { std::exit(-1); });
+
+        auto rt = xyco::runtime::Builder::new_multi_thread()
+                      .worker_threads(1)
+                      .max_blocking_threads(1)
+                      .build()
+                      .unwrap();
+        rt->spawn([]() -> xyco::runtime::Future<void> {
+          throw std::runtime_error("");
+          co_return;
+        }());
+        std::this_thread::sleep_for(time_deviation);
+      },
+      "");
+}
+
+TEST(RuntimeDeathTest, coroutine_exception) {
   auto rt = xyco::runtime::Builder::new_multi_thread()
                 .worker_threads(2)
                 .max_blocking_threads(1)

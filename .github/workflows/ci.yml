@@ -60,8 +60,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: test
         run: |
-          bazel coverage --config=opt --config=coverage --test_output=all //tests:xyco_test_epoll --test_arg=--gtest_repeat=100 --test_arg=--gtest_break_on_failure --test_arg=--gtest_shuffle
-          bazel coverage --config=opt --config=coverage --test_output=all //tests:xyco_test_uring --test_arg=--gtest_repeat=100 --test_arg=--gtest_break_on_failure --test_arg=--gtest_shuffle
+          bazel coverage --config=opt --config=coverage --test_output=all //tests:xyco_test_epoll --test_arg=--gtest_repeat=100 --test_arg=--gtest_break_on_failure --test_arg=--gtest_shuffle --test_arg=--gtest_death_test_style=threadsafe
+          bazel coverage --config=opt --config=coverage --test_output=all //tests:xyco_test_uring --test_arg=--gtest_repeat=100 --test_arg=--gtest_break_on_failure --test_arg=--gtest_shuffle --test_arg=--gtest_death_test_style=threadsafe
           mv $(bazel info bazel-testlogs)/tests/xyco_test_epoll/coverage.dat coverage_epoll.dat && mv $(bazel info bazel-testlogs)/tests/xyco_test_uring/coverage.dat coverage_uring.dat
       - name: upload epoll coverage report
         uses: codecov/codecov-action@v3
