@@ -211,8 +211,7 @@ auto xyco::fs::uring::OpenOptions::open(std::filesystem::path&& path)
           [](auto n) { return File(-1, std::filesystem::path()); });
     }
 
-    int flags = O_CLOEXEC | access_mode.unwrap() | creation_mode.unwrap() |
-                (custom_flags_ & O_ACCMODE);
+    int flags = O_CLOEXEC | access_mode.unwrap() | creation_mode.unwrap();
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     return utils::into_sys_result(::open(path.c_str(), flags, mode_))
         .map([&](auto file_descriptor) {
@@ -251,11 +250,6 @@ auto xyco::fs::uring::OpenOptions::create_new(bool create_new) -> OpenOptions& {
   return *this;
 }
 
-auto xyco::fs::uring::OpenOptions::custom_flags(int32_t flags) -> OpenOptions& {
-  custom_flags_ = flags;
-  return *this;
-}
-
 auto xyco::fs::uring::OpenOptions::mode(uint32_t mode) -> OpenOptions& {
   mode_ = mode;
   return *this;
@@ -268,7 +262,6 @@ xyco::fs::uring::OpenOptions::OpenOptions()
       truncate_(false),
       create_(false),
       create_new_(false),
-      custom_flags_(0),
       mode_(default_mode_) {}
 
 auto xyco::fs::uring::OpenOptions::get_access_mode() const
