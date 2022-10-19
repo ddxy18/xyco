@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include <array>
+#include <cstdlib>
 #include <sstream>
 #include <vector>
 
@@ -47,7 +48,9 @@ auto addr2line(std::vector<unw_word_t> addresses) -> std::string {
     std::system(cmd.data());
     ::close(STDOUT_FILENO);
     ::close(pipe[1]);
-    std::quick_exit(0);
+    // Uses exit here to flush coverage data.
+    // NOLINTNEXTLINE(concurrency-mt-unsafe)
+    std::exit(0);
   } else if (pid > 0) {
     ::close(pipe[1]);
 
