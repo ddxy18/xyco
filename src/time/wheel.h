@@ -31,7 +31,7 @@ class Wheel {
   Wheel();
 
  private:
-  auto reinsert_level(int level) -> void;
+  auto walk(int steps, runtime::Events &events) -> void;
 
   constexpr static int level_num_ = 5;
 

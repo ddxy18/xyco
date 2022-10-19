@@ -6,45 +6,42 @@ xyco::time::Level::Level() : current_it_(events_.begin()) {}
 
 auto xyco::time::Wheel::insert_event(std::weak_ptr<runtime::Event> event)
     -> void {
-  auto expire_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-      dynamic_cast<TimeExtra *>(event.lock()->extra_.get())->expire_time_ -
-      now_);
+  auto total_steps =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          dynamic_cast<TimeExtra *>(event.lock()->extra_.get())->expire_time_ -
+          now_)
+          .count();
 
   auto level = 0;
-  auto tmp_expire_time_ms = expire_time_ms;
-  while ((tmp_expire_time_ms /= Level::slot_num_).count() > 0) {
+  auto steps = 0LL;
+  while (total_steps > 0) {
+    steps = total_steps % Level::slot_num_;
+    auto another_cycle =
+        steps >= std::distance(levels_.at(level).current_it_,
+                               levels_.at(level).events_.end());
+    total_steps =
+        total_steps / Level::slot_num_ + static_cast<int>(another_cycle);
     level++;
   }
+  level = std::max(--level, 0);
 
-  auto *slot_it = levels_.at(level).current_it_ + 1;
-  if (slot_it == levels_.at(level).events_.end()) {
-    slot_it = levels_.at(level).events_.begin();
+  auto *slot_it = levels_.at(level).current_it_;
+  if (steps >= std::distance(slot_it, levels_.at(level).events_.end())) {
+    steps -= Level::slot_num_;
   }
-  if (level == 0) {
-    auto steps = expire_time_ms.count() / interval_ms_;
-    slot_it = levels_.at(0).current_it_;
-    if (std::distance(levels_.at(0).current_it_, levels_.at(0).events_.end()) <=
-        steps) {
-      std::advance(slot_it, steps - Level::slot_num_);
-    } else {
-      std::advance(slot_it, steps);
-    }
-  }
+  std::advance(slot_it, steps);
   slot_it->push_back(std::move(event));
 }
 
 auto xyco::time::Wheel::expire(runtime::Events &events) -> void {
   auto now = std::chrono::system_clock::now();
-  while (now > now_) {
-    events.insert(events.end(), levels_[0].current_it_->begin(),
-                  levels_[0].current_it_->end());
-    levels_[0].current_it_->clear();
-    now_ += std::chrono::milliseconds(interval_ms_);
-    levels_[0].current_it_++;
-    if (levels_[0].current_it_ == levels_[0].events_.end()) {
-      reinsert_level(1);
-      levels_[0].current_it_ = levels_[0].events_.begin();
-    }
+  if (now > now_) {
+    auto steps =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now - now_)
+            .count() /
+        interval_ms_;
+    walk(static_cast<int>(steps), events);
+    now_ = now;
   }
 }
 
@@ -52,18 +49,69 @@ xyco::time::Wheel::Wheel()
     : now_(std::chrono::duration_cast<std::chrono::milliseconds>(
           std::chrono::system_clock::now().time_since_epoch())) {}
 
-auto xyco::time::Wheel::reinsert_level(int level) -> void {
-  if (level == level_num_ - 1) {
-    return;
+auto xyco::time::Wheel::walk(int steps, runtime::Events &events) -> void {
+  auto level = 0;
+  auto level_steps = std::array<int, Level::slot_num_>();
+  while (steps > 0) {
+    level_steps.at(level) = steps % Level::slot_num_;
+    auto another_cycle =
+        level_steps.at(level) >= std::distance(levels_.at(level).current_it_,
+                                               levels_.at(level).events_.end());
+    steps = steps / Level::slot_num_ + static_cast<int>(another_cycle);
+    level++;
   }
-  if (levels_.at(level).current_it_ == levels_.at(level).events_.end()) {
-    reinsert_level(level + 1);
-    levels_.at(level).current_it_ = levels_.at(level).events_.begin();
+  level = std::max(--level, 0);
+
+  for (auto i = 0; i < level; i++) {
+    auto *slot_it = levels_.at(i).current_it_;
+    for (auto j = 0; j < Level::slot_num_; j++) {
+      events.insert(events.end(), slot_it->begin(), slot_it->end());
+      slot_it->clear();
+      std::advance(slot_it, 1);
+      if (slot_it == levels_.at(i).events_.end()) {
+        slot_it = levels_.at(i).events_.begin();
+      }
+    }
+    auto tmp_steps = level_steps.at(i);
+    if (tmp_steps >= std::distance(slot_it, levels_.at(i).events_.end())) {
+      tmp_steps -= Level::slot_num_;
+    }
+    std::advance(slot_it, tmp_steps);
+    levels_.at(i).current_it_ = slot_it;
   }
-  for (auto it = levels_.at(level).current_it_->begin();
-       it < levels_.at(level).current_it_->end(); it++) {
+
+  for (auto i = 0; i < level_steps.at(level); i++) {
+    auto *slot_it = levels_.at(level).current_it_;
+    events.insert(events.end(), slot_it->begin(), slot_it->end());
+    slot_it->clear();
+    std::advance(slot_it, 1);
+    if (slot_it == levels_.at(level).events_.end()) {
+      slot_it = levels_.at(level).events_.begin();
+    }
+    levels_.at(level).current_it_ = slot_it;
+  }
+
+  // Move current and next slot events to lower level which helps to distinguish
+  // the correct sequence of them.
+  auto *slot_it = levels_.at(level).current_it_;
+  auto reinsert_events = runtime::Events(slot_it->begin(), slot_it->end());
+  slot_it->clear();
+  for (auto it = reinsert_events.begin(); it < reinsert_events.end(); it++) {
     insert_event(*it);
   }
-  levels_.at(level).current_it_->clear();
-  levels_.at(level).current_it_++;
+  std::advance(slot_it, 1);
+  if (slot_it == levels_.at(level).events_.end()) {
+    slot_it = levels_.at(level).events_.begin();
+  }
+  reinsert_events = runtime::Events(slot_it->begin(), slot_it->end());
+  slot_it->clear();
+  for (auto it = reinsert_events.begin(); it < reinsert_events.end(); it++) {
+    insert_event(*it);
+  }
+
+  // Take all events at `levels_[0].current_it_` again since `insert_event` may
+  // push some other events here.
+  slot_it = levels_.at(0).current_it_;
+  events.insert(events.end(), slot_it->begin(), slot_it->end());
+  slot_it->clear();
 }
