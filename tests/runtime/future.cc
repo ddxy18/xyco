@@ -118,26 +118,28 @@ TEST(RuntimeDeathTest, terminate) {
 TEST(RuntimeDeathTest, coroutine_exception) {
   EXPECT_EXIT(
       {
-        auto rt = xyco::runtime::Builder::new_multi_thread()
-                      .worker_threads(2)
-                      .max_blocking_threads(1)
-                      .build()
-                      .unwrap();
-        rt->spawn([]() -> xyco::runtime::Future<void> {
-          throw std::runtime_error("");
-          co_return;
-        }());
+        // Wrap it in a block to coverage dtor of `Runtime`.
+        {
+          auto rt = xyco::runtime::Builder::new_multi_thread()
+                        .worker_threads(2)
+                        .max_blocking_threads(1)
+                        .build()
+                        .unwrap();
+          rt->spawn([]() -> xyco::runtime::Future<void> {
+            throw std::runtime_error("");
+            co_return;
+          }());
 
-        std::atomic_int result = -1;
-        auto fut = [&]() -> xyco::runtime::Future<void> {
-          result = 1;
-          co_return;
-        };
-        rt->spawn(fut());
-        std::this_thread::sleep_for(time_deviation);
+          std::atomic_int result = -1;
+          auto fut = [&]() -> xyco::runtime::Future<void> {
+            result = 1;
+            co_return;
+          };
+          rt->spawn(fut());
+          std::this_thread::sleep_for(time_deviation);
 
-        ASSERT_EQ(result, 1);
-
+          ASSERT_EQ(result, 1);
+        }
         std::exit(0);
       },
       testing::ExitedWithCode(0), "");
@@ -181,22 +183,23 @@ std::atomic_bool DropAsserter::dropped_ = false;
 TEST(RuntimeDeathTest, drop_parameter) {
   EXPECT_EXIT(
       {
-        auto rt = xyco::runtime::Builder::new_multi_thread()
-                      .worker_threads(1)
-                      .max_blocking_threads(1)
-                      .build()
-                      .unwrap();
+        {
+          auto rt = xyco::runtime::Builder::new_multi_thread()
+                        .worker_threads(1)
+                        .max_blocking_threads(1)
+                        .build()
+                        .unwrap();
 
-        auto drop_asserter = DropAsserter(2);
-        rt->spawn(
-            [](DropAsserter drop_asserter) -> xyco::runtime::Future<void> {
-              co_return;
-            }(std::move(drop_asserter)));
+          auto drop_asserter = DropAsserter(2);
+          rt->spawn(
+              [](DropAsserter drop_asserter) -> xyco::runtime::Future<void> {
+                co_return;
+              }(std::move(drop_asserter)));
 
-        std::this_thread::sleep_for(time_deviation);
+          std::this_thread::sleep_for(time_deviation);
 
-        DropAsserter::assert_drop();
-
+          DropAsserter::assert_drop();
+        }
         std::exit(0);
       },
       testing::ExitedWithCode(0), "");
