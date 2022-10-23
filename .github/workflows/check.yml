@@ -1,10 +1,8 @@
-name: xyco ci
+name: Check
 
 on:
-  pull_request:
-    branches:
-      - "main"
-      - "build/*"
+  pull_request_review_comment:
+    types: [created, edited]
 
 env:
   llvm_version: 14
@@ -23,11 +21,13 @@ jobs:
             tools/target/
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
       - run: |
+          echo ${{ github.event.comment.body }}
           rustup override set nightly && rustup component add clippy
           cargo clippy --manifest-path tools/Cargo.toml --all-targets -- -D warnings
           cargo test --manifest-path ./tools/Cargo.toml
 
   cpp-build:
+    if: ${{ github.event.comment.body == 'check' }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -52,6 +52,7 @@ jobs:
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source src benchmark examples --build build --tool-version $llvm_version --extra-arg="-I/usr/lib/llvm-$llvm_version/include/c++/v1/"
 
   cpp-test:
+    if: ${{ github.event.comment.body == 'check' }}
     runs-on: ubuntu-22.04
     steps:
       - name: install essential packages
