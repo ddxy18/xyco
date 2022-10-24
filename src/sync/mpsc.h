@@ -202,8 +202,7 @@ class Receiver {
 template <typename Value, size_t Size>
 auto channel() -> std::pair<Sender<Value, Size>, Receiver<Value, Size>> {
   auto shared = std::make_shared<Shared<Value, Size>>();
-  return {Sender<Value, Size>(shared),
-          Receiver<Value, Size>(std::move(shared))};
+  return {Sender<Value, Size>(shared), Receiver<Value, Size>(shared)};
 }
 }  // namespace xyco::sync::mpsc
 
