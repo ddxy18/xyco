@@ -121,6 +121,11 @@ class Awaitable {
     // async function's return type
     if (future_.self_) {
       future_.self_.resume();
+      if (future_.exception_ptr_) {
+        // Resume the current coroutine to rethrow the uncaught exception
+        // immediately.
+        return false;
+      }
       auto ret = !future_.return_.has_value();
       if (ret) {
         future_.has_suspend_ = true;
@@ -142,36 +147,23 @@ class Awaitable {
     return ret;
   }
 
-  auto await_resume() -> Output requires(!std::is_same_v<Output, void>) {
+  auto await_resume() -> Output {
     if (future_.waiting_) {
       Handle<PromiseBase>::from_address(future_.waiting_.address())
           .promise()
           .set_waited(nullptr);
     }
 
-    if (future_.cancelled_) {
-      throw CancelException();
-    }
-    auto return_v = std::move(future_.return_);
-    if (!return_v.has_value()) {
-      std::rethrow_exception(std::current_exception());
-    }
-    return std::move(return_v.value());
-  }
-
-  auto await_resume() -> void requires(std::is_same_v<Output, void>) {
-    if (future_.waiting_) {
-      Handle<PromiseBase>::from_address(future_.waiting_.address())
-          .promise()
-          .set_waited(nullptr);
+    if (future_.exception_ptr_) {
+      std::rethrow_exception(future_.exception_ptr_);
     }
 
     if (future_.cancelled_) {
       throw CancelException();
     }
-    auto ptr = future_.self_ ? future_.exception_ptr_ : nullptr;
-    if (ptr) {
-      std::rethrow_exception(ptr);
+
+    if constexpr (!std::is_same_v<Output, void>) {
+      return std::move(std::move(future_.return_).value());
     }
   }
 
@@ -212,7 +204,9 @@ class Future : public FutureBase {
       return {future_->has_suspend_ ? future_->waiting_ : nullptr};
     }
 
-    auto unhandled_exception() -> void {}
+    auto unhandled_exception() -> void {
+      future_->exception_ptr_ = std::current_exception();
+    }
 
     auto return_value(Output &&value) -> void {
       future_->return_ = std::forward<Output>(value);
@@ -293,6 +287,8 @@ class Future : public FutureBase {
 
  private:
   std::optional<Output> return_{};
+  std::exception_ptr exception_ptr_;
+
   Handle<promise_type> self_;
   bool has_suspend_{};
   Handle<void> waiting_;
@@ -358,6 +354,7 @@ class Future<void> : public FutureBase {
  private:
   std::optional<bool> return_{};
   std::exception_ptr exception_ptr_;
+
   Handle<promise_type> self_;
   bool has_suspend_{};
   Handle<void> waiting_;
