@@ -1,7 +1,7 @@
 include(GoogleTest)
 
-set(test_epoll_src "common/utils.cc" "fs/file.cc" "io/buffer.cc" "net/socket.cc" "net/tcp.cc" "runtime/future.cc" "runtime/join.cc" "runtime/select.cc" "sync/mpsc.cc" "sync/oneshot.cc" "time/sleep.cc" "time/timeout.cc" "utils/result_test.cc" "utils/epoll/fmt_test.cc" "utils/fmt_test.cc")
-set(test_uring_src "common/utils.cc" "fs/file.cc" "io/buffer.cc" "net/socket.cc" "net/tcp.cc" "runtime/future.cc" "runtime/join.cc" "runtime/select.cc" "sync/mpsc.cc" "sync/oneshot.cc" "time/sleep.cc" "time/timeout.cc" "utils/result_test.cc" "utils/io_uring/fmt_test.cc" "utils/fmt_test.cc")
+set(test_epoll_src "common/utils.cc" "fs/file.cc" "io/buffer.cc" "net/socket.cc" "net/tcp.cc" "runtime/future.cc" "runtime/join.cc" "runtime/select.cc" "sync/mpsc.cc" "sync/oneshot.cc" "time/clock.cc" "time/sleep.cc" "time/timeout.cc" "utils/result_test.cc" "utils/epoll/fmt_test.cc" "utils/fmt_test.cc")
+set(test_uring_src "common/utils.cc" "fs/file.cc" "io/buffer.cc" "net/socket.cc" "net/tcp.cc" "runtime/future.cc" "runtime/join.cc" "runtime/select.cc" "sync/mpsc.cc" "sync/oneshot.cc" "time/clock.cc" "time/sleep.cc" "time/timeout.cc" "utils/result_test.cc" "utils/io_uring/fmt_test.cc" "utils/fmt_test.cc")
 
 add_library(common_epoll ${test_epoll_src})
 target_link_libraries(common_epoll fs_epoll io_epoll net_epoll runtime time gtest GSL)
