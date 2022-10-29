@@ -35,7 +35,7 @@ class IoRegistry : public runtime::Registry {
 
  private:
   constexpr static std::chrono::milliseconds MAX_TIMEOUT =
-      std::chrono::milliseconds(2);
+      std::chrono::milliseconds(1);
   constexpr static int MAX_EVENTS = 10000;
 
   int epfd_;

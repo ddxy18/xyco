@@ -106,11 +106,14 @@ TEST(RuntimeDeathTest, terminate) {
                       .max_blocking_threads(1)
                       .build()
                       .unwrap();
+        // Waits a few ms to complete runtime workers initialization.
+        std::this_thread::sleep_for(wait_interval);
+
         rt->spawn([]() -> xyco::runtime::Future<void> {
           throw std::runtime_error("");
           co_return;
         }());
-        std::this_thread::sleep_for(2 * wait_interval);
+        std::this_thread::sleep_for(wait_interval);
       },
       "");
 }
@@ -125,6 +128,8 @@ TEST(RuntimeDeathTest, coroutine_exception) {
                         .max_blocking_threads(1)
                         .build()
                         .unwrap();
+          std::this_thread::sleep_for(wait_interval);
+
           rt->spawn([]() -> xyco::runtime::Future<void> {
             throw std::runtime_error("");
             co_return;
@@ -189,6 +194,7 @@ TEST(RuntimeDeathTest, drop_parameter) {
                         .max_blocking_threads(1)
                         .build()
                         .unwrap();
+          std::this_thread::sleep_for(wait_interval);
 
           auto drop_asserter = DropAsserter(2);
           rt->spawn(

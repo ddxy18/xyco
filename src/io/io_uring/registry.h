@@ -11,7 +11,7 @@ namespace xyco::io::uring {
 class IoRegistry : public runtime::Registry {
  public:
   constexpr static std::chrono::milliseconds MAX_TIMEOUT =
-      std::chrono::milliseconds(2);
+      std::chrono::milliseconds(1);
   static const int MAX_EVENTS = 10000;
 
   [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)

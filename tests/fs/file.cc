@@ -86,6 +86,16 @@ TEST_F(FileTest, create_file) {
     auto create_result = co_await xyco::fs::File::create(file_path);
 
     CO_ASSERT_EQ(create_result.is_ok(), true);
+
+    std::string content = "abc";
+    (co_await create_result.unwrap().write(content.begin(), content.end()))
+        .unwrap();
+    auto open_result =
+        co_await xyco::fs::OpenOptions().write(true).create(true).open(
+            file_path);
+
+    auto size = (co_await open_result.unwrap().size()).unwrap();
+    CO_ASSERT_EQ(size, content.size());
   });
 }
 
@@ -99,6 +109,63 @@ TEST_F(FileTest, create_new_file) {
             file_path);
 
     CO_ASSERT_EQ(open_result.is_ok(), true);
+  });
+}
+
+TEST_F(FileTest, truncate_file) {
+  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+    const char *path = "test_truncate_file";
+
+    auto file_path = (std::string(fs_root_).append(path));
+    auto create_result = co_await xyco::fs::File::create(file_path);
+    std::string content = "abc";
+    (co_await create_result.unwrap().write(content.begin(), content.end()))
+        .unwrap();
+    auto truncate_result =
+        co_await xyco::fs::OpenOptions().write(true).truncate(true).open(
+            file_path);
+
+    auto size = (co_await truncate_result.unwrap().size()).unwrap();
+    CO_ASSERT_EQ(size, 0);
+  });
+}
+
+TEST_F(FileTest, append_file) {
+  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+    const char *path = "test_append_file";
+
+    auto file_path = (std::string(fs_root_).append(path));
+    auto create_result = co_await xyco::fs::File::create(file_path);
+    std::string content = "abc";
+    (co_await create_result.unwrap().write(content.begin(), content.end()))
+        .unwrap();
+    auto append_result =
+        co_await xyco::fs::OpenOptions().read(true).append(true).open(
+            file_path);
+    (co_await append_result.unwrap().write(content.begin(), content.end()))
+        .unwrap();
+
+    auto size = (co_await append_result.unwrap().size()).unwrap();
+    CO_ASSERT_EQ(size, 6);
+  });
+}
+
+TEST_F(FileTest, file_permisssion) {
+  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+    const char *path = "test_permission_file";
+
+    auto file_path = (std::string(fs_root_).append(path));
+    (co_await xyco::fs::OpenOptions()
+         .create(true)
+         .write(true)
+         .truncate(true)
+         .mode(0400)
+         .open(file_path))
+        .unwrap();
+    auto open_result =
+        co_await xyco::fs::OpenOptions().write(true).open(file_path);
+
+    CO_ASSERT_EQ(open_result.unwrap_err().errno_, EACCES);
   });
 }
 

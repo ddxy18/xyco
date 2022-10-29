@@ -101,8 +101,6 @@ class OpenOptions {
 
   auto create_new(bool create_new) -> OpenOptions &;
 
-  auto custom_flags(int32_t flags) -> OpenOptions &;
-
   auto mode(uint32_t mode) -> OpenOptions &;
 
   OpenOptions();
@@ -122,7 +120,6 @@ class OpenOptions {
   bool create_;
   bool create_new_;
   // system-specific
-  int32_t custom_flags_;
   mode_t mode_;
 };
 }  // namespace xyco::fs::epoll
