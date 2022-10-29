@@ -1,8 +1,7 @@
 #ifndef XYCO_TIME_SLEEP_H
 #define XYCO_TIME_SLEEP_H
 
-#include <chrono>
-
+#include "clock.h"
 #include "runtime/runtime.h"
 #include "time/driver.h"
 
@@ -22,7 +21,7 @@ auto sleep(std::chrono::duration<Rep, Ratio> duration)
       if (!ready_) {
         ready_ = true;
         auto *extra = dynamic_cast<TimeExtra *>(event_->extra_.get());
-        extra->expire_time_ = std::chrono::system_clock::now() + duration_;
+        extra->expire_time_ = Clock::now() + duration_;
         event_->future_ = this;
         runtime::RuntimeCtx::get_ctx()->driver().Register<TimeRegistry>(event_);
 

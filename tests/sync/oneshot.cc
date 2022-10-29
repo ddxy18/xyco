@@ -73,7 +73,7 @@ TEST(OneshotTest, receive_first) {
     });
   });
 
-  std::this_thread::sleep_for(time_deviation);  // wait receive pending
+  std::this_thread::sleep_for(wait_interval);  // wait receive pending
 
   std::thread send([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {

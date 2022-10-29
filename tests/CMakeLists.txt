@@ -12,10 +12,8 @@ set(CMAKE_CXX_FLAGS "-fprofile-instr-generate -fcoverage-mapping ${CMAKE_CXX_FLA
 
 include_directories(common)
 
-add_executable(xyco_test_epoll ${test_epoll_src})
-target_link_libraries(xyco_test_epoll common_epoll gtest_main)
+add_executable(xyco_test_epoll ${test_epoll_src} main.cc)
 gtest_discover_tests(xyco_test_epoll)
 
-add_executable(xyco_test_uring ${test_uring_src})
-target_link_libraries(xyco_test_uring common_uring gtest_main)
+add_executable(xyco_test_uring ${test_uring_src} main.cc)
 gtest_discover_tests(xyco_test_uring)
