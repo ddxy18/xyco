@@ -24,7 +24,7 @@ impl SubCheck {
 }
 
 fn get_source_paths(root_path: PathBuf) -> Vec<PathBuf> {
-    if let Ok(dir) = std::fs::read_dir(&root_path) {
+    if let Ok(dir) = std::fs::read_dir(root_path) {
         return dir
             .filter_map(|entry| {
                 if let Ok(entry) = entry {
