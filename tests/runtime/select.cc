@@ -18,31 +18,36 @@ TEST(SelectTest, select_immediate_ready) {
 }
 
 TEST(SelectTest, select_delay) {
-  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    auto common_value = -1;
-    auto co1 = [&]() -> xyco::runtime::Future<int> {
-      co_await xyco::time::sleep(2 * time_deviation);
+  constexpr std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3);
 
-      common_value = 1;
+  TestRuntimeCtx::co_run(
+      [&]() -> xyco::runtime::Future<void> {
+        auto common_value = -1;
+        auto co1 = [&]() -> xyco::runtime::Future<int> {
+          co_await xyco::time::sleep(2 * timeout_ms);
 
-      co_return 1;
-    };
+          common_value = 1;
 
-    auto co2 = [&]() -> xyco::runtime::Future<std::string> {
-      co_await xyco::time::sleep(time_deviation);
+          co_return 1;
+        };
 
-      common_value = 2;
+        auto co2 = [&]() -> xyco::runtime::Future<std::string> {
+          co_await xyco::time::sleep(timeout_ms);
 
-      co_return "abc";
-    };
+          common_value = 2;
 
-    auto result = co_await xyco::runtime::select(co1(), co2());
+          co_return "abc";
+        };
 
-    co_await xyco::time::sleep(std::chrono::milliseconds(3 * time_deviation));
+        auto result = co_await xyco::runtime::select(co1(), co2());
 
-    CO_ASSERT_EQ(std::get<1>(result).inner_, "abc");
-    CO_ASSERT_EQ(common_value, 2);  // co1 is cancelled
-  });
+        co_await xyco::time::sleep(timeout_ms + std::chrono::milliseconds(1));
+
+        CO_ASSERT_EQ(std::get<1>(result).inner_, "abc");
+        CO_ASSERT_EQ(common_value, 2);  // co1 is cancelled
+      },
+      {timeout_ms + std::chrono::milliseconds(1),
+       timeout_ms + std::chrono::milliseconds(2)});
 }
 
 TEST(SelectTest, select_void) {

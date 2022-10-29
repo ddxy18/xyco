@@ -18,7 +18,7 @@ cc_test(
         "//src/sync",
         "//src/time",
         "//src/utils",
-        "@googletest//:gtest_main",
+        "@googletest//:gtest",
     ],
 )
 
@@ -40,6 +40,6 @@ cc_test(
         "//src/sync",
         "//src/time",
         "//src/utils",
-        "@googletest//:gtest_main",
+        "@googletest//:gtest",
     ],
 )

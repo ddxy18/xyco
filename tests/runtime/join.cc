@@ -19,24 +19,28 @@ TEST(JoinTest, join_immediate_ready) {
 }
 
 TEST(JoinTest, join_delay) {
-  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    auto co1 = []() -> xyco::runtime::Future<int> {
-      co_await xyco::time::sleep(2 * time_deviation);
+  constexpr std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3);
 
-      co_return 1;
-    };
+  TestRuntimeCtx::co_run(
+      [&]() -> xyco::runtime::Future<void> {
+        auto co1 = [&timeout_ms]() -> xyco::runtime::Future<int> {
+          co_await xyco::time::sleep(2 * timeout_ms);
 
-    auto co2 = []() -> xyco::runtime::Future<std::string> {
-      co_await xyco::time::sleep(time_deviation);
+          co_return 1;
+        };
 
-      co_return "abc";
-    };
+        auto co2 = [&timeout_ms]() -> xyco::runtime::Future<std::string> {
+          co_await xyco::time::sleep(timeout_ms);
 
-    auto result = co_await xyco::runtime::join(co1(), co2());
+          co_return "abc";
+        };
 
-    CO_ASSERT_EQ(result.first.inner_, 1);
-    CO_ASSERT_EQ(result.second.inner_, "abc");
-  });
+        auto result = co_await xyco::runtime::join(co1(), co2());
+
+        CO_ASSERT_EQ(result.first.inner_, 1);
+        CO_ASSERT_EQ(result.second.inner_, "abc");
+      },
+      {timeout_ms + std::chrono::milliseconds(1), timeout_ms});
 }
 
 TEST(JoinTest, join_void) {

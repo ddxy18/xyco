@@ -64,7 +64,7 @@ TEST(MpscTest, send_to_full_channel) {
     });
   });
 
-  std::this_thread::sleep_for(time_deviation);  // wait sender pending
+  std::this_thread::sleep_for(wait_interval);  // wait sender pending
 
   std::thread receive([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
@@ -91,7 +91,7 @@ TEST(MpscTest, receive_from_empty_channel) {
     });
   });
 
-  std::this_thread::sleep_for(time_deviation);  // wait receive pending
+  std::this_thread::sleep_for(wait_interval);  // wait receive pending
 
   std::thread send([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {

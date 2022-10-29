@@ -5,18 +5,21 @@
 #include "utils.h"
 
 TEST(SleepTest, sleep_accuracy) {
-  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    constexpr std::chrono::milliseconds timeout_ms =
-        std::chrono::milliseconds(10);
+  constexpr std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3);
 
-    auto before_run = std::chrono::system_clock::now();
-    co_await xyco::time::sleep(timeout_ms);
-    auto interval = std::chrono::duration_cast<std::chrono::milliseconds>(
-                        std::chrono::system_clock::now() - before_run)
-                        .count();
+  TestRuntimeCtx::co_run(
+      [&]() -> xyco::runtime::Future<void> {
+        auto before_run = xyco::time::Clock::now();
 
-    CO_ASSERT_EQ(interval >= (timeout_ms - time_deviation).count() &&
-                     interval <= (timeout_ms + time_deviation).count(),
-                 true);
-  });
+        co_await xyco::time::sleep(timeout_ms);
+        auto interval = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            xyco::time::Clock::now() - before_run)
+                            .count();
+
+        CO_ASSERT_EQ(
+            interval >= (timeout_ms - std::chrono::milliseconds(1)).count() &&
+                interval <= (timeout_ms + std::chrono::milliseconds(1)).count(),
+            true);
+      },
+      {timeout_ms + std::chrono::milliseconds(1)});
 }

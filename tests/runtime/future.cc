@@ -110,7 +110,7 @@ TEST(RuntimeDeathTest, terminate) {
           throw std::runtime_error("");
           co_return;
         }());
-        std::this_thread::sleep_for(2 * time_deviation);
+        std::this_thread::sleep_for(2 * wait_interval);
       },
       "");
 }
@@ -136,7 +136,7 @@ TEST(RuntimeDeathTest, coroutine_exception) {
             co_return;
           };
           rt->spawn(fut());
-          std::this_thread::sleep_for(time_deviation);
+          std::this_thread::sleep_for(wait_interval);
 
           ASSERT_EQ(result, 1);
         }
@@ -196,7 +196,7 @@ TEST(RuntimeDeathTest, drop_parameter) {
                 co_return;
               }(std::move(drop_asserter)));
 
-          std::this_thread::sleep_for(time_deviation);
+          std::this_thread::sleep_for(wait_interval);
 
           DropAsserter::assert_drop();
         }

@@ -18,7 +18,7 @@ set(net_all_src "net/socket.cc" "net/epoll/listener.cc" "net/io_uring/listener.c
 
 set(runtime_src "runtime/blocking.cc" "runtime/driver.cc" "runtime/future.cc" "runtime/registry.cc" "runtime/runtime.cc")
 
-set(time_src "time/driver.cc" "time/wheel.cc")
+set(time_src "time/driver.cc" "time/wheel.cc" "time/clock.cc")
 
 set(utils_src "utils/error.cc" "utils/panic.cc")
 

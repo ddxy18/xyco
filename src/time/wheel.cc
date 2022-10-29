@@ -1,5 +1,6 @@
 #include "wheel.h"
 
+#include "time/clock.h"
 #include "time/driver.h"
 
 xyco::time::Level::Level() : current_it_(events_.begin()) {}
@@ -34,20 +35,18 @@ auto xyco::time::Wheel::insert_event(std::weak_ptr<runtime::Event> event)
 }
 
 auto xyco::time::Wheel::expire(runtime::Events &events) -> void {
-  auto now = std::chrono::system_clock::now();
+  auto now = Clock::now();
   if (now > now_) {
     auto steps =
         std::chrono::duration_cast<std::chrono::milliseconds>(now - now_)
             .count() /
         interval_ms_;
-    walk(static_cast<int>(steps), events);
     now_ = now;
+    walk(static_cast<int>(steps), events);
   }
 }
 
-xyco::time::Wheel::Wheel()
-    : now_(std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::system_clock::now().time_since_epoch())) {}
+xyco::time::Wheel::Wheel() : now_(Clock::now()) {}
 
 auto xyco::time::Wheel::walk(int steps, runtime::Events &events) -> void {
   auto level = 0;
