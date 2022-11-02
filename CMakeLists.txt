@@ -21,7 +21,7 @@ FetchContent_Declare(GSL
 FetchContent_MakeAvailable(GSL)
 FetchContent_Declare(spdlog
                      GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
-                     GIT_TAG v1.x)
+                     GIT_TAG v1.10.0)
 FetchContent_MakeAvailable(spdlog)
 FetchContent_Declare(asio
                      GIT_REPOSITORY "https://github.com/chriskohlhoff/asio.git"
