@@ -2,7 +2,6 @@
 
 #include <gsl/pointers>
 
-#include "runtime/runtime.h"
 #include "utils.h"
 
 class InRuntimeTest : public ::testing::Test {
@@ -101,19 +100,21 @@ TEST(RuntimeDeathTest, terminate) {
         // coverage statistics.
         std::set_terminate([] { std::exit(-1); });
 
-        auto rt = xyco::runtime::Builder::new_multi_thread()
-                      .worker_threads(1)
-                      .max_blocking_threads(1)
-                      .build()
-                      .unwrap();
-        // Waits a few ms to complete runtime workers initialization.
-        std::this_thread::sleep_for(wait_interval);
+        auto runtime = xyco::runtime::Builder::new_multi_thread()
+                           .worker_threads(1)
+                           .max_blocking_threads(1)
+                           .build()
+                           .unwrap();
 
-        rt->spawn([]() -> xyco::runtime::Future<void> {
+        runtime->spawn([]() -> xyco::runtime::Future<void> {
           throw std::runtime_error("");
           co_return;
         }());
-        std::this_thread::sleep_for(wait_interval);
+
+        while (true) {
+          // Calls `sleep_for` to avoid while loop being optimized out.
+          std::this_thread::sleep_for(wait_interval);
+        }
       },
       "");
 }
@@ -123,14 +124,13 @@ TEST(RuntimeDeathTest, coroutine_exception) {
       {
         // Wrap it in a block to coverage dtor of `Runtime`.
         {
-          auto rt = xyco::runtime::Builder::new_multi_thread()
-                        .worker_threads(2)
-                        .max_blocking_threads(1)
-                        .build()
-                        .unwrap();
-          std::this_thread::sleep_for(wait_interval);
+          auto runtime = xyco::runtime::Builder::new_multi_thread()
+                             .worker_threads(2)
+                             .max_blocking_threads(1)
+                             .build()
+                             .unwrap();
 
-          rt->spawn([]() -> xyco::runtime::Future<void> {
+          runtime->spawn([]() -> xyco::runtime::Future<void> {
             throw std::runtime_error("");
             co_return;
           }());
@@ -140,10 +140,11 @@ TEST(RuntimeDeathTest, coroutine_exception) {
             result = 1;
             co_return;
           };
-          rt->spawn(fut());
-          std::this_thread::sleep_for(wait_interval);
+          runtime->spawn(fut());
 
-          ASSERT_EQ(result, 1);
+          while (result == -1) {
+            std::this_thread::sleep_for(wait_interval);
+          }
         }
         std::exit(0);
       },
@@ -169,7 +170,11 @@ class DropAsserter {
     return *this;
   }
 
-  static auto assert_drop() { ASSERT_EQ(dropped_, true); }
+  static auto assert_drop() {
+    while (!dropped_) {
+      std::this_thread::sleep_for(wait_interval);
+    }
+  }
 
   ~DropAsserter() {
     if (member_ != -1) {
@@ -189,20 +194,17 @@ TEST(RuntimeDeathTest, drop_parameter) {
   EXPECT_EXIT(
       {
         {
-          auto rt = xyco::runtime::Builder::new_multi_thread()
-                        .worker_threads(1)
-                        .max_blocking_threads(1)
-                        .build()
-                        .unwrap();
-          std::this_thread::sleep_for(wait_interval);
+          auto runtime = xyco::runtime::Builder::new_multi_thread()
+                             .worker_threads(1)
+                             .max_blocking_threads(1)
+                             .build()
+                             .unwrap();
 
           auto drop_asserter = DropAsserter(2);
-          rt->spawn(
+          runtime->spawn(
               [](DropAsserter drop_asserter) -> xyco::runtime::Future<void> {
                 co_return;
               }(std::move(drop_asserter)));
-
-          std::this_thread::sleep_for(wait_interval);
 
           DropAsserter::assert_drop();
         }
