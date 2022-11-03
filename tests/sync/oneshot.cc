@@ -23,7 +23,10 @@ TEST(OneshotTest, success) {
 TEST(OneshotTest, sender_close) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
-    sender.xyco::sync::oneshot::Sender<int>::~Sender();
+    {
+      auto tmp_sender =
+          std::move(sender);  // Destructed early to mock sender closed.
+    }
     auto value = (co_await receiver.receive());
 
     CO_ASSERT_EQ(value.is_err(), true);
@@ -33,7 +36,10 @@ TEST(OneshotTest, sender_close) {
 TEST(OneshotTest, receiver_close) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
-    receiver.xyco::sync::oneshot::Receiver<int>::~Receiver();
+    {
+      auto tmp_receiver =
+          std::move(receiver);  // Destructed early to mock receiver closed.
+    }
     auto send_result = co_await sender.send(1);
 
     CO_ASSERT_EQ(send_result.unwrap_err(), 1);

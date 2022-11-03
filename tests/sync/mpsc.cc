@@ -34,7 +34,10 @@ TEST(MpscTest, multi_sender) {
 TEST(MpscTest, receiver_close) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::mpsc::channel<int, 1>();
-    receiver.xyco::sync::mpsc::Receiver<int, 1>::~Receiver();
+    {
+      auto tmp_receiver =
+          std::move(receiver);  // Destructed early to mock receiver closed.
+    }
     auto send_result = co_await sender.send(1);
 
     CO_ASSERT_EQ(send_result.unwrap_err(), 1);
@@ -44,7 +47,10 @@ TEST(MpscTest, receiver_close) {
 TEST(MpscTest, sender_close) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::mpsc::channel<int, 1>();
-    sender.xyco::sync::mpsc::Sender<int, 1>::~Sender();
+    {
+      auto tmp_sender =
+          std::move(sender);  // Destructed early to mock sender closed.
+    }
     auto receive_result = co_await receiver.receive();
 
     CO_ASSERT_EQ(receive_result.has_value(), false);
