@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdlib>
+#include <iostream>
 #include <sstream>
 #include <vector>
 
@@ -117,8 +118,10 @@ struct fmt::formatter<Frame> : public fmt::formatter<std::string> {
   }
 };
 
-auto xyco::utils::panic() -> void {
-  auto unwind_info = fmt::format("panic!\n{}", fmt::join(unwind(), "\n"));
+auto xyco::utils::panic(std::string info) -> void {
+  auto unwind_info =
+      fmt::format("Panic:{}\n{}\n", info, fmt::join(unwind(), "\n"));
+  std::cerr << unwind_info;
   ERROR(unwind_info);
   throw std::runtime_error(unwind_info);
 }
