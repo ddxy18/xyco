@@ -9,7 +9,10 @@ cc_library(
     hdrs = glob(["*.h"]),
     strip_include_prefix = "//src",
     visibility = ["//visibility:public"],
-    deps = ["@spdlog"],
+    deps = [
+        "@spdlog",
+        "@stacktrace",
+    ],
 )
 
 cc_library(

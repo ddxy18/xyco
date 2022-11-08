@@ -1,9 +1,9 @@
 build --crosstool_top=//toolchain:clang_suite
 build --linkopt=-lc++
 build --linkopt=-lm
+build --linkopt=-rdynamic
 build --cxxopt=-std=c++20
 build --cxxopt=-stdlib=libc++
-build --cxxopt=-I/usr/include/libunwind
 build --cpu=k8
 build --host_crosstool_top=@bazel_tools//tools/cpp:toolchain
 

@@ -1,0 +1,10 @@
+cc_library(
+    name = "stacktrace",
+    hdrs = glob([
+        "include/boost/**/*.hpp",
+        "include/boost/**/detail/*.ipp",
+    ]),
+    srcs = glob(["src/addr2line.cpp"]),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)

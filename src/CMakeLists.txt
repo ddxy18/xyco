@@ -56,7 +56,7 @@ add_library(time ${time_src})
 target_link_libraries(time runtime spdlog)
 
 add_library(utils ${utils_src})
-target_link_libraries(utils spdlog)
+target_link_libraries(utils spdlog ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
 
 add_library(logging "utils/logger.cc")
 target_link_libraries(logging spdlog)

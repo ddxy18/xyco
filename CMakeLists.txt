@@ -23,13 +23,11 @@ FetchContent_Declare(spdlog
                      GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
                      GIT_TAG v1.10.0)
 FetchContent_MakeAvailable(spdlog)
-FetchContent_Declare(asio
-                     GIT_REPOSITORY "https://github.com/chriskohlhoff/asio.git"
-                     GIT_TAG master)
-FetchContent_MakeAvailable(asio)
 
 include_directories(src)
-include_directories(/usr/include/libunwind)
+add_link_options(-rdynamic)
+
+find_package(Boost REQUIRED)
 
 add_subdirectory(src)
 add_subdirectory(tests)
