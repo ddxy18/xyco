@@ -29,7 +29,9 @@ FetchContent_Declare(asio
 FetchContent_MakeAvailable(asio)
 
 include_directories(src)
-include_directories(/usr/include/libunwind)
+add_link_options(-rdynamic)
+
+find_package(Boost REQUIRED)
 
 add_subdirectory(src)
 add_subdirectory(tests)

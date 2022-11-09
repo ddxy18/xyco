@@ -18,10 +18,18 @@ http_archive(
 
 http_archive(
     name = "asio",
-    build_file = "//third_party:asio.bazel",
+    build_file = "//third_party/boost:asio.bazel",
     sha256 = "cbcaaba0f66722787b1a7c33afe1befb3a012b5af3ad7da7ff0f6b8c9b7a8a5b",
     strip_prefix = "asio-asio-1-24-0/asio",
     url = "https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-24-0.tar.gz",
+)
+
+http_archive(
+    name = "stacktrace",
+    build_file = "//third_party/boost:stacktrace.bazel",
+    sha256 = "4294f204765f8467c862243dadb356af679b2d118527fab4ac337f28452e8afc",
+    strip_prefix = "stacktrace-boost-1.80.0",
+    url = "https://github.com/boostorg/stacktrace/archive/refs/tags/boost-1.80.0.tar.gz",
 )
 
 http_archive(
