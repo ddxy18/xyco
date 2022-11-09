@@ -17,6 +17,7 @@ auto xyco::runtime::Future<void>::PromiseType::final_suspend() noexcept
 
 auto xyco::runtime::Future<void>::PromiseType::unhandled_exception() -> void {
   future_->exception_ptr_ = std::current_exception();
+  std::cerr << boost::stacktrace::stacktrace();
 }
 
 auto xyco::runtime::Future<void>::PromiseType::return_void() -> void {

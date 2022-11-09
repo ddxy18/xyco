@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: install essential packages
         run: |
-          sudo apt-get install -y lcov libunwind-$llvm_version-dev liburing-dev
+          sudo apt-get install -y lcov libunwind-$llvm_version-dev liburing-dev libboost-all-dev
       - uses: actions/checkout@v3
       - name: test
         run: |

@@ -3,8 +3,11 @@
 
 #include <coroutine>
 #include <exception>
+#include <iostream>
 #include <optional>
 #include <variant>
+
+#include "boost/stacktrace.hpp"
 
 namespace xyco::runtime {
 class Runtime;
@@ -206,6 +209,7 @@ class Future : public FutureBase {
 
     auto unhandled_exception() -> void {
       future_->exception_ptr_ = std::current_exception();
+      std::cerr << boost::stacktrace::stacktrace();
     }
 
     auto return_value(Output &&value) -> void {
