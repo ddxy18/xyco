@@ -6,7 +6,7 @@
 #include "logger.h"
 #include "spdlog/formatter.h"
 
-auto xyco::utils::panic(std::string info) -> void {
+auto xyco::utils::panic(const std::string &info) -> void {
   auto unwind_info = fmt::format("Panic:{}\n{}", info,
                                  to_string(boost::stacktrace::stacktrace()));
 
