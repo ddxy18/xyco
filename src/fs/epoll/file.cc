@@ -316,7 +316,7 @@ template <typename FormatContext>
 auto fmt::formatter<xyco::fs::epoll::File>::format(
     const xyco::fs::epoll::File& file, FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "File{{path_={}}}", file.path_.c_str());
+  return fmt::format_to(ctx.out(), "File{{path_={}}}", file.path_.c_str());
 }
 
 template auto fmt::formatter<xyco::fs::epoll::File>::format(

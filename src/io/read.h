@@ -13,15 +13,15 @@ template <typename Reader, typename Iterator>
 concept Readable = requires(Reader reader, Iterator begin, Iterator end) {
   {
     reader.read(begin, end)
-    } -> std::same_as<runtime::Future<utils::Result<uintptr_t>>>;
+  } -> std::same_as<runtime::Future<utils::Result<uintptr_t>>>;
 };
 
 template <typename Reader, typename Buffer>
 concept BufferReadable = requires(Reader reader, Buffer buffer) {
   {
     reader.fill_buffer()
-    } -> std::same_as<runtime::Future<utils::Result<std::pair<
-        decltype(std::begin(buffer)), decltype(std::begin(buffer))>>>>;
+  } -> std::same_as<runtime::Future<utils::Result<
+      std::pair<decltype(std::begin(buffer)), decltype(std::begin(buffer))>>>>;
   { reader.consume(0) } -> std::same_as<void>;
 };
 
@@ -30,7 +30,8 @@ class ReadExt {
   template <typename Reader, typename B>
   static auto read(Reader &reader, B &buffer)
       -> runtime::Future<utils::Result<uintptr_t>>
-  requires(Readable<Reader, decltype(std::begin(buffer))> &&Buffer<B>) {
+    requires(Readable<Reader, decltype(std::begin(buffer))> && Buffer<B>)
+  {
     co_return co_await reader.read(std::begin(buffer), std::end(buffer));
   }
 
@@ -38,8 +39,9 @@ class ReadExt {
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
   static auto read(Reader &reader, V (&buffer)[N])
       -> runtime::Future<utils::Result<uintptr_t>>
-  requires(Readable<Reader, decltype(std::begin(buffer))>
-               &&Buffer<decltype(buffer)>) {
+    requires(Readable<Reader, decltype(std::begin(buffer))> &&
+             Buffer<decltype(buffer)>)
+  {
     auto span = std::span(buffer);
     co_return co_await read(reader, span);
   }
@@ -49,7 +51,8 @@ class BufferReadExt {
  public:
   template <typename Reader, typename B>
   static auto read_to_end(Reader &reader) -> runtime::Future<utils::Result<B>>
-  requires(BufferReadable<Reader, B> &&DynamicBuffer<B>) {
+    requires(BufferReadable<Reader, B> && DynamicBuffer<B>)
+  {
     B content;
 
     while (true) {
@@ -67,7 +70,8 @@ class BufferReadExt {
   template <typename Reader, typename B>
   static auto read_until(Reader &reader, char character)
       -> runtime::Future<utils::Result<B>>
-  requires(BufferReadable<Reader, B> &&DynamicBuffer<B>) {
+    requires(BufferReadable<Reader, B> && DynamicBuffer<B>)
+  {
     B content;
 
     while (true) {
@@ -88,7 +92,8 @@ class BufferReadExt {
 
   template <typename Reader, typename B>
   static auto read_line(Reader &reader) -> runtime::Future<utils::Result<B>>
-  requires(BufferReadable<Reader, B> &&DynamicBuffer<B>) {
+    requires(BufferReadable<Reader, B> && DynamicBuffer<B>)
+  {
     co_return co_await read_until<Reader, B>(reader, '\n');
   }
 };

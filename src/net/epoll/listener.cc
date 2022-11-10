@@ -300,22 +300,24 @@ template <typename FormatContext>
 auto fmt::formatter<xyco::net::epoll::TcpSocket>::format(
     const xyco::net::epoll::TcpSocket &tcp_socket, FormatContext &ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "TcpSocket{{socket_={}}}", tcp_socket.socket_);
+  return fmt::format_to(ctx.out(), "TcpSocket{{socket_={}}}",
+                        tcp_socket.socket_);
 }
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::net::epoll::TcpStream>::format(
     const xyco::net::epoll::TcpStream &tcp_stream, FormatContext &ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "TcpStream{{socket_={}}}", tcp_stream.socket_);
+  return fmt::format_to(ctx.out(), "TcpStream{{socket_={}}}",
+                        tcp_stream.socket_);
 }
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::net::epoll::TcpListener>::format(
     const xyco::net::epoll::TcpListener &tcp_listener, FormatContext &ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "TcpListener{{socket_={}}}",
-                   tcp_listener.socket_);
+  return fmt::format_to(ctx.out(), "TcpListener{{socket_={}}}",
+                        tcp_listener.socket_);
 }
 
 template auto fmt::formatter<xyco::net::epoll::TcpSocket>::format(

@@ -20,8 +20,8 @@ auto fmt::formatter<xyco::utils::Error>::format(const xyco::utils::Error& err,
                                                 FormatContext& ctx) const
     -> decltype(ctx.out()) {
   if (err.errno_ > 0) {
-    return format_to(ctx.out(), "IoError{{errno={}, info={}}}", err.errno_,
-                     fmt::join(err.info_, ""));
+    return fmt::format_to(ctx.out(), "IoError{{errno={}, info={}}}", err.errno_,
+                          fmt::join(err.info_, ""));
   }
   std::string error_kind;
   switch (err.errno_) {
@@ -31,8 +31,8 @@ auto fmt::formatter<xyco::utils::Error>::format(const xyco::utils::Error& err,
     case std::__to_underlying(xyco::utils::ErrorKind::Unsupported):
       error_kind = std::string("Unsupported");
   }
-  return format_to(ctx.out(), "IoError{{error_kind={}, info={}}}", error_kind,
-                   fmt::join(err.info_, ""));
+  return fmt::format_to(ctx.out(), "IoError{{error_kind={}, info={}}}",
+                        error_kind, fmt::join(err.info_, ""));
 }
 
 template auto fmt::formatter<xyco::utils::Error>::format(

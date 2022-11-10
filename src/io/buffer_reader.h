@@ -6,8 +6,8 @@
 
 namespace xyco::io {
 template <typename Reader, typename B>
-requires(
-    Readable<Reader, typename B::iterator>&& Buffer<B>) class BufferReader {
+  requires(Readable<Reader, typename B::iterator> && Buffer<B>)
+class BufferReader {
  public:
   auto read(typename B::iterator begin, typename B::iterator end)
       -> runtime::Future<utils::Result<uintptr_t>> {

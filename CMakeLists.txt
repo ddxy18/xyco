@@ -8,7 +8,8 @@ project(
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_CXX_FLAGS "-std=c++20 -stdlib=libc++ -pthread")
+add_compile_options(-std=c++20 -stdlib=libc++ -fexperimental-library)
+add_link_options(-lc++ -lm -rdynamic)
 
 include(FetchContent)
 FetchContent_Declare(googletest
@@ -29,7 +30,6 @@ FetchContent_Declare(asio
 FetchContent_MakeAvailable(asio)
 
 include_directories(src)
-add_link_options(-rdynamic)
 
 find_package(Boost REQUIRED)
 

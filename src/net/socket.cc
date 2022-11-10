@@ -106,15 +106,15 @@ auto fmt::formatter<xyco::net::SocketAddr>::format(
     port = std::get<1>(addr.addr_).get_port();
   }
 
-  return format_to(ctx.out(), "SocketAddr{{ip={},port={}}}", ip_addr.c_str(),
-                   port);
+  return fmt::format_to(ctx.out(), "SocketAddr{{ip={},port={}}}",
+                        ip_addr.c_str(), port);
 }
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::net::Socket>::format(const xyco::net::Socket& socket,
                                                FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "Socket{{fd_={}}}", socket.fd_);
+  return fmt::format_to(ctx.out(), "Socket{{fd_={}}}", socket.fd_);
 }
 
 template auto fmt::formatter<xyco::net::SocketAddr>::format(
