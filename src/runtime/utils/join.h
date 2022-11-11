@@ -63,8 +63,8 @@ class JoinFuture : public Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
       result_;
   std::mutex mutex_;
   bool registered_{};
-  Future<T1> &&future1_;
-  Future<T2> &&future2_;
+  Future<T1> future1_;
+  Future<T2> future2_;
 };
 
 template <typename T1, typename T2>

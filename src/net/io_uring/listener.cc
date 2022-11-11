@@ -31,7 +31,7 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
 
   class Future : public runtime::Future<CoOutput> {
    public:
-    explicit Future(SocketAddr addr, Socket &socket)
+    explicit Future(SocketAddr addr, gsl::not_null<Socket *> socket)
         : runtime::Future<CoOutput>(nullptr),
           socket_(socket),
           addr_(addr),
@@ -44,7 +44,7 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
         event_->future_ = this;
         extra->args_ = io::uring::IoExtra::Connect{
             .addr_ = addr_.into_c_addr(), .addrlen_ = sizeof(sockaddr)};
-        extra->fd_ = socket_.into_c_fd();
+        extra->fd_ = socket_->into_c_fd();
         runtime::RuntimeCtx::get_ctx()
             ->driver()
             .Register<io::uring::IoRegistry>(event_);
@@ -57,18 +57,18 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
         return runtime::Ready<CoOutput>{
             CoOutput::err(utils::Error{.errno_ = -extra->return_})};
       }
-      INFO("{} connect to {}", socket_, addr_);
+      INFO("{} connect to {}", *socket_, addr_);
       return runtime::Ready<CoOutput>{
-          CoOutput::ok(TcpStream(std::move(socket_)))};
+          CoOutput::ok(TcpStream(std::move(*socket_)))};
     }
 
    private:
-    Socket &socket_;
+    gsl::not_null<Socket *> socket_;
     SocketAddr addr_;
     std::shared_ptr<runtime::Event> event_;
   };
 
-  co_return co_await Future(addr, socket_);
+  co_return co_await Future(addr, &socket_);
 }
 
 auto xyco::net::uring::TcpSocket::listen(int backlog)

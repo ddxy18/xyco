@@ -38,7 +38,7 @@ auto xyco::runtime::Future<void>::PromiseType::set_waited(
 }
 
 auto xyco::runtime::Future<void>::operator co_await() -> Awaitable<void> {
-  return Awaitable(*this);
+  return Awaitable(this);
 }
 
 auto xyco::runtime::Future<void>::poll(Handle<void> self) -> Poll<void> {

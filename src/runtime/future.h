@@ -3,6 +3,7 @@
 
 #include <coroutine>
 #include <exception>
+#include <gsl/pointers>
 #include <iostream>
 #include <optional>
 #include <variant>
@@ -112,67 +113,68 @@ class Awaitable {
 
  public:
   [[nodiscard]] auto await_ready() const noexcept -> bool {
-    return future_.self_ ? future_.self_.done() : false;
+    return future_->self_ ? future_->self_.done() : false;
   }
 
   auto await_suspend(Handle<void> waiting_coroutine) noexcept -> bool {
-    future_.waiting_ = waiting_coroutine;
+    future_->waiting_ = waiting_coroutine;
     Handle<PromiseBase>::from_address(waiting_coroutine.address())
         .promise()
-        .set_waited(Handle<PromiseBase>::from_address(future_.self_.address()));
+        .set_waited(
+            Handle<PromiseBase>::from_address(future_->self_.address()));
 
     // async function's return type
-    if (future_.self_) {
-      future_.self_.resume();
-      if (future_.exception_ptr_) {
+    if (future_->self_) {
+      future_->self_.resume();
+      if (future_->exception_ptr_) {
         // Resume the current coroutine to rethrow the uncaught exception
         // immediately.
         return false;
       }
-      auto ret = !future_.return_.has_value();
+      auto ret = !future_->return_.has_value();
       if (ret) {
-        future_.has_suspend_ = true;
+        future_->has_suspend_ = true;
       }
       return ret;
     }
 
     // Future object
-    auto res = future_.poll(waiting_coroutine);
+    auto res = future_->poll(waiting_coroutine);
     auto ret = std::holds_alternative<Pending>(res);
     if (ret) {
-      future_.has_suspend_ = true;
+      future_->has_suspend_ = true;
     }
     if constexpr (!std::is_same_v<Output, void>) {
       if (!ret) {
-        future_.return_ = std::get<Ready<Output>>(std::move(res)).inner_;
+        future_->return_ = std::get<Ready<Output>>(std::move(res)).inner_;
       }
     }
     return ret;
   }
 
   auto await_resume() -> Output {
-    if (future_.waiting_) {
-      Handle<PromiseBase>::from_address(future_.waiting_.address())
+    if (future_->waiting_) {
+      Handle<PromiseBase>::from_address(future_->waiting_.address())
           .promise()
           .set_waited(nullptr);
     }
 
-    if (future_.exception_ptr_) {
-      std::rethrow_exception(future_.exception_ptr_);
+    if (future_->exception_ptr_) {
+      std::rethrow_exception(future_->exception_ptr_);
     }
 
-    if (future_.cancelled_) {
+    if (future_->cancelled_) {
       throw CancelException();
     }
 
     if constexpr (!std::is_same_v<Output, void>) {
-      return std::move(std::move(future_.return_).value());
+      return std::move(std::move(future_->return_).value());
     }
   }
 
  private:
-  explicit Awaitable(Future<Output> &future) noexcept : future_(future) {}
-  Future<Output> &future_;
+  explicit Awaitable(Future<Output> *future) noexcept : future_(future) {}
+  gsl::not_null<Future<Output> *> future_;
 };
 
 // Future<Output> can be used in 2 different mode:
@@ -226,7 +228,7 @@ class Future : public FutureBase {
     Future<Output> *future_;
   };
 
-  auto operator co_await() -> Awaitable<Output> { return Awaitable(*this); }
+  auto operator co_await() -> Awaitable<Output> { return Awaitable(this); }
 
   [[nodiscard]] virtual auto poll(Handle<void> self) -> Poll<Output> {
     return Pending();

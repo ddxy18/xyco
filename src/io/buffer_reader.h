@@ -28,7 +28,7 @@ class BufferReader {
   auto fill_buffer() -> runtime::Future<
       utils::Result<std::pair<typename B::iterator, typename B::iterator>>> {
     if (pos_ == cap_) {
-      ASYNC_TRY((co_await ReadExt::read(inner_reader_, buffer_))
+      ASYNC_TRY((co_await ReadExt::read(*inner_reader_, buffer_))
                     .map([&](auto nbytes) {
                       cap_ = nbytes;
                       pos_ = 0;
@@ -45,14 +45,14 @@ class BufferReader {
     pos_ = std::min(static_cast<decltype(pos_)>(pos_ + amt), cap_);
   }
 
-  BufferReader(Reader& reader)
+  BufferReader(Reader* reader)
       : inner_reader_(reader),
         buffer_(DEFAULT_BUFFER_SIZE, 0),
         pos_(0),
         cap_(0) {}
 
  private:
-  Reader& inner_reader_;
+  gsl::not_null<Reader*> inner_reader_;
   static constexpr int DEFAULT_BUFFER_SIZE = 8 * 1024;  // 8 KB
 
   B buffer_;

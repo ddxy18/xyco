@@ -33,14 +33,15 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
 
   class Future : public runtime::Future<CoOutput> {
    public:
-    explicit Future(SocketAddr addr, Socket &socket)
+    explicit Future(SocketAddr addr, gsl::not_null<Socket *> socket)
         : runtime::Future<CoOutput>(nullptr),
           socket_(socket),
           addr_(addr),
-          event_(std::make_shared<runtime::Event>(runtime::Event{
-              .future_ = this,
-              .extra_ = std::make_unique<io::epoll::IoExtra>(
-                  io::epoll::IoExtra::Interest::Write, socket_.into_c_fd())})) {
+          event_(std::make_shared<runtime::Event>(
+              runtime::Event{.future_ = this,
+                             .extra_ = std::make_unique<io::epoll::IoExtra>(
+                                 io::epoll::IoExtra::Interest::Write,
+                                 socket_->into_c_fd())})) {
       runtime::RuntimeCtx::get_ctx()->driver().Register<io::epoll::IoRegistry>(
           event_);
     }
@@ -51,7 +52,7 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
           extra->state_.get_field<io::epoll::IoExtra::State::Writable>()) {
         int ret = -1;
         socklen_t len = sizeof(decltype(ret));
-        getsockopt(socket_.into_c_fd(), SOL_SOCKET, SO_ERROR, &ret, &len);
+        getsockopt(socket_->into_c_fd(), SOL_SOCKET, SO_ERROR, &ret, &len);
         if (ret != 0) {
           runtime::RuntimeCtx::get_ctx()
               ->driver()
@@ -59,12 +60,12 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
           return runtime::Ready<CoOutput>{CoOutput::err(
               utils::Error{ret, strerror_l(ret, uselocale(nullptr))})};
         }
-        INFO("{} connect to {}", socket_, addr_);
+        INFO("{} connect to {}", *socket_, addr_);
         runtime::RuntimeCtx::get_ctx()
             ->driver()
             .deregister<io::epoll::IoRegistry>(event_);
         return runtime::Ready<CoOutput>{CoOutput::ok(TcpStream(
-            std::move(socket_),
+            std::move(*socket_),
             extra->state_.get_field<io::epoll::IoExtra::State::Writable>(),
             extra->state_.get_field<io::epoll::IoExtra::State::Readable>()))};
       }
@@ -76,7 +77,7 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
     }
 
    private:
-    Socket &socket_;
+    gsl::not_null<Socket *> socket_;
     SocketAddr addr_;
     std::shared_ptr<runtime::Event> event_;
   };
@@ -94,7 +95,7 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
     WARN("{} connect fail{{errno={}}}", socket_, errno);
     co_return CoOutput::err(utils::Error{.errno_ = err});
   }
-  co_return co_await Future(addr, socket_);
+  co_return co_await Future(addr, &socket_);
 }
 
 auto xyco::net::epoll::TcpSocket::listen(int backlog)

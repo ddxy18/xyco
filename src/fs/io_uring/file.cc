@@ -176,10 +176,12 @@ auto xyco::fs::uring::File::seek(off64_t offset, int whence) const
   });
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 xyco::fs::uring::File::File(File&& file) noexcept : fd_(-1) {
   *this = std::move(file);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 auto xyco::fs::uring::File::operator=(File&& file) noexcept -> File& {
   fd_ = file.fd_;
   path_ = file.path_;
