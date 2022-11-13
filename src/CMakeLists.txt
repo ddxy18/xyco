@@ -1,8 +1,8 @@
 add_executable(xyco_epoll_main main.cc)
-target_link_libraries(xyco_epoll_main io_epoll net_epoll runtime logging)
+target_link_libraries(xyco_epoll_main io_epoll net_epoll runtime)
 
 add_executable(xyco_uring_main main.cc)
-target_link_libraries(xyco_uring_main io_uring net_uring runtime logging)
+target_link_libraries(xyco_uring_main io_uring net_uring runtime)
 
 set(fs_epoll_src "fs/utils.cc" "fs/epoll/file.cc")
 set(fs_uring_src "fs/utils.cc" "fs/io_uring/file.cc")
@@ -55,8 +55,14 @@ target_link_libraries(runtime utils GSL)
 add_library(time ${time_src})
 target_link_libraries(time runtime spdlog)
 
+option(ENABLE_LOGGING "OFF")
+
 add_library(utils ${utils_src})
 target_link_libraries(utils spdlog ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
+if(ENABLE_LOGGING)
+    target_link_libraries(utils logging)
+endif(ENABLE_LOGGING)
+
 
 add_library(logging "utils/logger.cc")
 target_link_libraries(logging spdlog)

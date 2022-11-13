@@ -16,6 +16,7 @@
 namespace xyco::fs::epoll {
 class File {
   friend class OpenOptions;
+  friend struct fmt::formatter<File>;
 
  public:
   static auto create(std::filesystem::path &&path)
@@ -123,5 +124,12 @@ class OpenOptions {
   mode_t mode_;
 };
 }  // namespace xyco::fs::epoll
+
+template <>
+struct fmt::formatter<xyco::fs::epoll::File> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const xyco::fs::epoll::File &file, FormatContext &ctx) const
+      -> decltype(ctx.out());
+};
 
 #endif  // XYCO_FS_EPOLL_FILE_H_

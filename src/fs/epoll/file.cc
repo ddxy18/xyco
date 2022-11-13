@@ -311,3 +311,15 @@ auto xyco::fs::epoll::OpenOptions::get_creation_mode() const
   }
   return utils::Result<int>::ok(O_CREAT | O_EXCL);
 }
+
+template <typename FormatContext>
+auto fmt::formatter<xyco::fs::epoll::File>::format(
+    const xyco::fs::epoll::File& file, FormatContext& ctx) const
+    -> decltype(ctx.out()) {
+  return format_to(ctx.out(), "File{{fd_={}}}", file.fd_);
+}
+
+template auto fmt::formatter<xyco::fs::epoll::File>::format(
+    const xyco::fs::epoll::File& addr,
+    fmt::basic_format_context<fmt::appender, char>& ctx) const
+    -> decltype(ctx.out());

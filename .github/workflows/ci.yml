@@ -46,6 +46,8 @@ jobs:
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang++-$llvm_version -S . -B ./build -G "Ninja"
           cmake --build ./build --config Release --target all
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang++-$llvm_version -DENABLE_LOGGING=ON -S . -B ./build -G "Ninja"
+          cmake --build ./build --config Release --target all
           bazel build --config=opt //benchmark:all //examples:all //src:all //tests:all
           bazel build --config=opt --config=enable_logging //benchmark:all //examples:all //src:all //tests:all
           rustup override set nightly
