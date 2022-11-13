@@ -1,7 +1,8 @@
 #ifndef XYCO_IO_UTILS_H_
 #define XYCO_IO_UTILS_H_
 
-#include "spdlog/fmt/fmt.h"
+#include <format>
+
 #include "utils/result.h"
 
 namespace xyco::io {
@@ -22,10 +23,24 @@ enum class Shutdown { Read, Write, All };
 }  // namespace xyco::io
 
 template <>
-struct fmt::formatter<xyco::io::Shutdown> : public fmt::formatter<std::string> {
+struct std::formatter<xyco::io::Shutdown> : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::Shutdown& shutdown, FormatContext& ctx) const
-      -> decltype(ctx.out());
+      -> decltype(ctx.out()) {
+    std::string shutdown_type;
+    switch (shutdown) {
+      case xyco::io::Shutdown::Read:
+        shutdown_type = "Read";
+        break;
+      case xyco::io::Shutdown::Write:
+        shutdown_type = "Write";
+        break;
+      case xyco::io::Shutdown::All:
+        shutdown_type = "All";
+        break;
+    }
+    return std::format_to(ctx.out(), "Shutdown{{{}}}", shutdown_type);
+  }
 };
 
 #endif  // XYCO_IO_UTILS_H_

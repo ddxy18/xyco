@@ -16,7 +16,7 @@ class TcpSocket {
   template <typename T>
   using Future = runtime::Future<T>;
 
-  friend struct fmt::formatter<TcpSocket>;
+  friend struct std::formatter<TcpSocket>;
 
  public:
   auto bind(SocketAddr addr) -> Future<utils::Result<void>>;
@@ -43,7 +43,7 @@ class TcpStream {
   template <typename T>
   using Future = runtime::Future<T>;
 
-  friend struct fmt::formatter<TcpStream>;
+  friend struct std::formatter<TcpStream>;
   friend class TcpSocket;
   friend class TcpListener;
 
@@ -186,7 +186,7 @@ class TcpStream {
 
 class TcpListener {
   friend class TcpSocket;
-  friend struct fmt::formatter<TcpListener>;
+  friend struct std::formatter<TcpListener>;
 
   template <typename T>
   using Future = runtime::Future<T>;
@@ -216,27 +216,36 @@ class TcpListener {
 }  // namespace xyco::net::uring
 
 template <>
-struct fmt::formatter<xyco::net::uring::TcpSocket>
-    : public fmt::formatter<bool> {
+struct std::formatter<xyco::net::uring::TcpSocket>
+    : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::net::uring::TcpSocket &tcp_socket,
-              FormatContext &ctx) const -> decltype(ctx.out());
+              FormatContext &ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "TcpSocket{{socket_={}}}",
+                          tcp_socket.socket_);
+  }
 };
 
 template <>
-struct fmt::formatter<xyco::net::uring::TcpStream>
-    : public fmt::formatter<bool> {
+struct std::formatter<xyco::net::uring::TcpStream>
+    : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::net::uring::TcpStream &tcp_stream,
-              FormatContext &ctx) const -> decltype(ctx.out());
+              FormatContext &ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "TcpStream{{socket_={}}}",
+                          tcp_stream.socket_);
+  }
 };
 
 template <>
-struct fmt::formatter<xyco::net::uring::TcpListener>
-    : public fmt::formatter<bool> {
+struct std::formatter<xyco::net::uring::TcpListener>
+    : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::net::uring::TcpListener &tcp_listener,
-              FormatContext &ctx) const -> decltype(ctx.out());
+              FormatContext &ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "TcpListener{{socket_={}}}",
+                          tcp_listener.socket_);
+  }
 };
 
 #endif  // XYCO_NET_IO_URING_LISTENER_H_

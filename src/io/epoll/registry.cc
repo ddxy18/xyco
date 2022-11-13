@@ -40,11 +40,11 @@ auto to_state(uint32_t events) -> xyco::io::epoll::IoExtra::State {
 }
 
 template <>
-struct fmt::formatter<epoll_event> : public fmt::formatter<bool> {
+struct std::formatter<epoll_event> : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const epoll_event &event, FormatContext &ctx) const
       -> decltype(ctx.out()) {
-    return fmt::format_to(ctx.out(), "epoll_event{{events={:x},data={}}}",
+    return std::format_to(ctx.out(), "epoll_event{{events={:x},data={}}}",
                           event.events,
                           *static_cast<xyco::runtime::Event *>(event.data.ptr));
   }

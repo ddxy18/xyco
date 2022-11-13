@@ -88,10 +88,13 @@ class GlobalRegistry : public Registry {
 }  // namespace xyco::runtime
 
 template <>
-struct fmt::formatter<xyco::runtime::Event> : public fmt::formatter<bool> {
+struct std::formatter<xyco::runtime::Event> : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::runtime::Event &event, FormatContext &ctx) const
-      -> decltype(ctx.out());
+      -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "Event{{extra_={}}}",
+                          event.extra_ ? event.extra_->print() : "nullptr");
+  }
 };
 
 #endif  // XYCO_RUNTIME_REGISTRY_H_

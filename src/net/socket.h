@@ -3,9 +3,8 @@
 
 #include <arpa/inet.h>
 
+#include <format>
 #include <variant>
-
-#include "spdlog/fmt/fmt.h"
 
 namespace xyco::net {
 class SocketAddrV4 {
@@ -49,7 +48,7 @@ class Ipv6Addr {
 };
 
 class SocketAddr {
-  friend struct fmt::formatter<SocketAddr>;
+  friend struct std::formatter<SocketAddr>;
 
  public:
   static auto new_v4(Ipv4Addr ip_addr, uint16_t port) -> SocketAddr;
@@ -65,7 +64,7 @@ class SocketAddr {
 };
 
 class Socket {
-  friend struct fmt::formatter<Socket>;
+  friend struct std::formatter<Socket>;
 
  public:
   [[nodiscard]] auto into_c_fd() const -> int;
@@ -88,17 +87,44 @@ class Socket {
 }  // namespace xyco::net
 
 template <>
-struct fmt::formatter<xyco::net::SocketAddr> : public fmt::formatter<bool> {
+struct std::formatter<xyco::net::SocketAddr> : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::net::SocketAddr& addr, FormatContext& ctx) const
-      -> decltype(ctx.out());
+      -> decltype(ctx.out()) {
+    const auto* sock_addr = addr.into_c_addr();
+    std::string ip_addr(INET6_ADDRSTRLEN, 0);
+    uint16_t port = -1;
+
+    if (addr.addr_.index() == 0) {
+      inet_ntop(
+          sock_addr->sa_family,
+          static_cast<const void*>(&static_cast<const sockaddr_in*>(
+                                        static_cast<const void*>(sock_addr))
+                                        ->sin_addr),
+          ip_addr.data(), ip_addr.size());
+      port = std::get<0>(addr.addr_).get_port();
+    } else {
+      inet_ntop(
+          sock_addr->sa_family,
+          static_cast<const void*>(&static_cast<const sockaddr_in6*>(
+                                        static_cast<const void*>(sock_addr))
+                                        ->sin6_addr),
+          ip_addr.data(), ip_addr.size());
+      port = std::get<1>(addr.addr_).get_port();
+    }
+
+    return std::format_to(ctx.out(), "SocketAddr{{ip={},port={}}}",
+                          ip_addr.c_str(), port);
+  }
 };
 
 template <>
-struct fmt::formatter<xyco::net::Socket> : public fmt::formatter<bool> {
+struct std::formatter<xyco::net::Socket> : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::net::Socket& socket, FormatContext& ctx) const
-      -> decltype(ctx.out());
+      -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "Socket{{fd_={}}}", socket.fd_);
+  }
 };
 
 #endif  // XYCO_IO_NET_SOCKET_H_

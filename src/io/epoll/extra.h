@@ -7,7 +7,7 @@ namespace xyco::io::epoll {
 class IoExtra : public runtime::Extra {
  public:
   class State {
-    friend class IoExtra;
+    friend struct std::formatter<xyco::io::epoll::IoExtra>;
 
    public:
     enum {
@@ -48,11 +48,49 @@ class IoExtra : public runtime::Extra {
 }  // namespace xyco::io::epoll
 
 template <>
-struct fmt::formatter<xyco::io::epoll::IoExtra>
-    : public fmt::formatter<std::string> {
+struct std::formatter<xyco::io::epoll::IoExtra>
+    : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::epoll::IoExtra& extra, FormatContext& ctx) const
-      -> decltype(ctx.out());
+      -> decltype(ctx.out()) {
+    std::string state = "[";
+    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Registered) !=
+        0) {
+      state += "Registered,";
+    }
+    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Pending) != 0) {
+      state += "Pending,";
+    }
+    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Readable) !=
+        0) {
+      state += "Readable,";
+    }
+    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Writable) !=
+        0) {
+      state += "Writable,";
+    }
+    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Error) != 0) {
+      state += "Error,";
+    }
+    state[state.length() - 1] = ']';
+
+    std::string interest;
+    switch (extra.interest_) {
+      case xyco::io::epoll::IoExtra::Interest::Read:
+        interest = "Read";
+        break;
+      case xyco::io::epoll::IoExtra::Interest::Write:
+        interest = "Write";
+        break;
+      case xyco::io::epoll::IoExtra::Interest::All:
+        interest = "All";
+        break;
+    }
+
+    return std::format_to(ctx.out(),
+                          "IoExtra{{state_={}, interest_={}, fd_={}}}", state,
+                          interest, extra.fd_);
+  }
 };
 
 #endif  // XYCO_IO_EPOLL_EXTRA_H_

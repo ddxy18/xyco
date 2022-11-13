@@ -1,9 +1,7 @@
 #include "driver.h"
 
-#include "spdlog/fmt/chrono.h"
-
 auto xyco::time::TimeExtra::print() const -> std::string {
-  return fmt::format("TimeExtra{{expire_time_={}}}", expire_time_);  // NOLINT
+  return std::format("{}", *this);
 }
 
 xyco::time::TimeExtra::TimeExtra(
@@ -35,15 +33,3 @@ auto xyco::time::TimeRegistry::select(runtime::Events &events,
 
   return utils::Result<void>::ok();
 }
-
-template <typename FormatContext>
-auto fmt::formatter<xyco::time::TimeExtra>::format(
-    const xyco::time::TimeExtra &extra, FormatContext &ctx) const
-    -> decltype(ctx.out()) {
-  return fmt::formatter<std::string>::format(extra.print(), ctx);
-}
-
-template auto fmt::formatter<xyco::time::TimeExtra>::format(
-    const xyco::time::TimeExtra &extra,
-    fmt::basic_format_context<fmt::appender, char> &ctx) const
-    -> decltype(ctx.out());
