@@ -16,6 +16,7 @@
 namespace xyco::fs::uring {
 class File {
   friend class OpenOptions;
+  friend struct fmt::formatter<File>;
 
  public:
   static auto create(std::filesystem::path &&path)
@@ -227,5 +228,12 @@ class OpenOptions {
   mode_t mode_;
 };
 }  // namespace xyco::fs::uring
+
+template <>
+struct fmt::formatter<xyco::fs::uring::File> : public fmt::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const xyco::fs::uring::File &file, FormatContext &ctx) const
+      -> decltype(ctx.out());
+};
 
 #endif  // XYCO_FS_IO_URING_FILE_H_

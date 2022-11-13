@@ -12,7 +12,10 @@ cc_library(
     deps = [
         "@spdlog",
         "@stacktrace",
-    ],
+    ] + select({
+        ":enable_logging": ["logging"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
@@ -24,4 +27,11 @@ cc_library(
     defines = ["XYCO_ENABLE_LOG"],
     visibility = ["//visibility:public"],
     deps = ["@spdlog"],
+)
+
+config_setting(
+    name = "enable_logging",
+    values = {
+        "define": "enable_logging=true",
+    },
 )

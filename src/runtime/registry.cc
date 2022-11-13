@@ -4,7 +4,8 @@ template <typename FormatContext>
 auto fmt::formatter<xyco::runtime::Event>::format(
     const xyco::runtime::Event &event, FormatContext &ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "Event{{extra_={}}}", event.extra_->print());
+  return format_to(ctx.out(), "Event{{extra_={}}}",
+                   event.extra_ ? event.extra_->print() : "nullptr");
 }
 
 template auto fmt::formatter<xyco::runtime::Event>::format(
