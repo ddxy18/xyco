@@ -63,7 +63,6 @@ if(ENABLE_LOGGING)
     target_link_libraries(utils logging)
 endif(ENABLE_LOGGING)
 
-
 add_library(logging "utils/logger.cc")
 target_link_libraries(logging spdlog)
 target_compile_definitions(logging PUBLIC XYCO_ENABLE_LOG)
