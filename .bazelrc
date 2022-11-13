@@ -11,3 +11,5 @@ build:opt --copt=-O3
 
 build:coverage --experimental_use_llvm_covmap
 build:coverage --experimental_generate_llvm_lcov
+
+build:enable_logging --define=enable_logging=true
