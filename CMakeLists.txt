@@ -9,7 +9,7 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 
 add_compile_options(-std=c++20 -stdlib=libc++ -fexperimental-library)
-add_link_options(-lc++ -lm -rdynamic)
+add_link_options(-fuse-ld=lld-16 -lc++ -lm -rdynamic)
 
 include(FetchContent)
 FetchContent_Declare(googletest

@@ -1,4 +1,5 @@
 build --crosstool_top=//toolchain:clang_suite
+build --linkopt=-fuse-ld=lld-16
 build --linkopt=-lc++
 build --linkopt=-lm
 build --linkopt=-rdynamic
