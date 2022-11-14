@@ -16,7 +16,7 @@ auto fmt::formatter<xyco::io::Shutdown>::format(
       shutdown_type = "All";
       break;
   }
-  return format_to(ctx.out(), "Shutdown{{{}}}", shutdown_type);
+  return fmt::format_to(ctx.out(), "Shutdown{{{}}}", shutdown_type);
 }
 
 template auto fmt::formatter<xyco::io::Shutdown>::format(

@@ -46,7 +46,9 @@ class Clock {
   }
 
   template <typename C>
-  static auto init() -> void requires(Clockable<C>) {
+  static auto init() -> void
+    requires(Clockable<C>)
+  {
     if constexpr (std::is_same_v<C, std::chrono::steady_clock>) {
       clock_ = std::chrono::steady_clock();
     } else if constexpr (std::is_same_v<C, FrozenClock>) {

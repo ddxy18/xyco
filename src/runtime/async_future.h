@@ -29,8 +29,8 @@ class AsyncFuture : public Future<Return> {
   }
 
   template <typename Fn>
-  explicit AsyncFuture(Fn &&function) requires(
-      std::is_invocable_r_v<Return, Fn>)
+  explicit AsyncFuture(Fn &&function)
+    requires(std::is_invocable_r_v<Return, Fn>)
       : Future<Return>(nullptr),
         f_([&]() {
           dynamic_cast<AsyncFutureExtra *>(event_->extra_.get())->after_extra_ =

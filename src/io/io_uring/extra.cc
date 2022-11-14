@@ -27,23 +27,23 @@ template <typename FormatContext>
 auto fmt::formatter<xyco::io::uring::IoExtra::Read>::format(
     const xyco::io::uring::IoExtra::Read& args, FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "Read{{len_={}, offset_={}}}", args.len_,
-                   args.offset_);
+  return fmt::format_to(ctx.out(), "Read{{len_={}, offset_={}}}", args.len_,
+                        args.offset_);
 }
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::io::uring::IoExtra::Write>::format(
     const xyco::io::uring::IoExtra::Write& args, FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "Write{{len_={}, offset_={}}}", args.len_,
-                   args.offset_);
+  return fmt::format_to(ctx.out(), "Write{{len_={}, offset_={}}}", args.len_,
+                        args.offset_);
 }
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::io::uring::IoExtra::Close>::format(
     const xyco::io::uring::IoExtra::Close& args, FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "Close{{}}");
+  return fmt::format_to(ctx.out(), "Close{{}}");
 }
 
 template <typename FormatContext>
@@ -54,8 +54,8 @@ auto fmt::formatter<xyco::io::uring::IoExtra::Accept>::format(
   std::string ip_addr(INET_ADDRSTRLEN, 0);
   ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
               ip_addr.size());
-  return format_to(ctx.out(), "Accept{{addr_={{{}:{}}}, flags_={}}}",
-                   ip_addr.c_str(), addr->sin_port, args.flags_);
+  return fmt::format_to(ctx.out(), "Accept{{addr_={{{}:{}}}, flags_={}}}",
+                        ip_addr.c_str(), addr->sin_port, args.flags_);
 }
 
 template <typename FormatContext>
@@ -67,15 +67,15 @@ auto fmt::formatter<xyco::io::uring::IoExtra::Connect>::format(
   std::string ip_addr(INET_ADDRSTRLEN, 0);
   ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
               ip_addr.size());
-  return format_to(ctx.out(), "Connect{{addr_={{{}:{}}}}}", ip_addr.c_str(),
-                   addr->sin_port);
+  return fmt::format_to(ctx.out(), "Connect{{addr_={{{}:{}}}}}",
+                        ip_addr.c_str(), addr->sin_port);
 }
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::io::uring::IoExtra::Shutdown>::format(
     const xyco::io::uring::IoExtra::Shutdown& args, FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "Shutdown{{shutdown_={}}}", args.shutdown_);
+  return fmt::format_to(ctx.out(), "Shutdown{{shutdown_={}}}", args.shutdown_);
 }
 
 template auto fmt::formatter<xyco::io::uring::IoExtra>::format(

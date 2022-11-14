@@ -31,7 +31,7 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
 
   class Future : public runtime::Future<CoOutput> {
    public:
-    explicit Future(SocketAddr addr, Socket &socket)
+    explicit Future(SocketAddr addr, gsl::not_null<Socket *> socket)
         : runtime::Future<CoOutput>(nullptr),
           socket_(socket),
           addr_(addr),
@@ -44,7 +44,7 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
         event_->future_ = this;
         extra->args_ = io::uring::IoExtra::Connect{
             .addr_ = addr_.into_c_addr(), .addrlen_ = sizeof(sockaddr)};
-        extra->fd_ = socket_.into_c_fd();
+        extra->fd_ = socket_->into_c_fd();
         runtime::RuntimeCtx::get_ctx()
             ->driver()
             .Register<io::uring::IoRegistry>(event_);
@@ -57,18 +57,18 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
         return runtime::Ready<CoOutput>{
             CoOutput::err(utils::Error{.errno_ = -extra->return_})};
       }
-      INFO("{} connect to {}", socket_, addr_);
+      INFO("{} connect to {}", *socket_, addr_);
       return runtime::Ready<CoOutput>{
-          CoOutput::ok(TcpStream(std::move(socket_)))};
+          CoOutput::ok(TcpStream(std::move(*socket_)))};
     }
 
    private:
-    Socket &socket_;
+    gsl::not_null<Socket *> socket_;
     SocketAddr addr_;
     std::shared_ptr<runtime::Event> event_;
   };
 
-  co_return co_await Future(addr, socket_);
+  co_return co_await Future(addr, &socket_);
 }
 
 auto xyco::net::uring::TcpSocket::listen(int backlog)
@@ -264,22 +264,24 @@ template <typename FormatContext>
 auto fmt::formatter<xyco::net::uring::TcpSocket>::format(
     const xyco::net::uring::TcpSocket &tcp_socket, FormatContext &ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "TcpSocket{{socket_={}}}", tcp_socket.socket_);
+  return fmt::format_to(ctx.out(), "TcpSocket{{socket_={}}}",
+                        tcp_socket.socket_);
 }
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::net::uring::TcpStream>::format(
     const xyco::net::uring::TcpStream &tcp_stream, FormatContext &ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "TcpStream{{socket_={}}}", tcp_stream.socket_);
+  return fmt::format_to(ctx.out(), "TcpStream{{socket_={}}}",
+                        tcp_stream.socket_);
 }
 
 template <typename FormatContext>
 auto fmt::formatter<xyco::net::uring::TcpListener>::format(
     const xyco::net::uring::TcpListener &tcp_listener, FormatContext &ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "TcpListener{{socket_={}}}",
-                   tcp_listener.socket_);
+  return fmt::format_to(ctx.out(), "TcpListener{{socket_={}}}",
+                        tcp_listener.socket_);
 }
 
 template auto fmt::formatter<xyco::net::uring::TcpSocket>::format(

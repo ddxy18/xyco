@@ -25,5 +25,6 @@ cc_binary(
     srcs = ["asio_echo_server.cc"],
     deps = [
         "@asio",
+        "@gsl",
     ],
 )

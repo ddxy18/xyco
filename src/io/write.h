@@ -13,13 +13,13 @@ template <typename Writer, typename Iterator>
 concept Writable = requires(Writer writer, Iterator begin, Iterator end) {
   {
     writer.write(begin, end)
-    } -> std::same_as<runtime::Future<utils::Result<uintptr_t>>>;
+  } -> std::same_as<runtime::Future<utils::Result<uintptr_t>>>;
 
   { writer.flush() } -> std::same_as<runtime::Future<utils::Result<void>>>;
 
   {
     writer.shutdown(io::Shutdown::All)
-    } -> std::same_as<runtime::Future<utils::Result<void>>>;
+  } -> std::same_as<runtime::Future<utils::Result<void>>>;
 };
 
 class WriteExt {
@@ -27,7 +27,8 @@ class WriteExt {
   template <typename Writer, typename B>
   static auto write(Writer &writer, const B &buffer)
       -> runtime::Future<utils::Result<uintptr_t>>
-  requires(Writable<Writer, decltype(std::begin(buffer))> &&Buffer<B>) {
+    requires(Writable<Writer, decltype(std::begin(buffer))> && Buffer<B>)
+  {
     co_return co_await writer.write(std::begin(buffer), std::end(buffer));
   }
 
@@ -35,8 +36,9 @@ class WriteExt {
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
   static auto write(Writer &writer, const V (&buffer)[N])
       -> runtime::Future<utils::Result<uintptr_t>>
-  requires(Writable<Writer, decltype(std::begin(buffer))>
-               &&Buffer<decltype(buffer)>) {
+    requires(Writable<Writer, decltype(std::begin(buffer))> &&
+             Buffer<decltype(buffer)>)
+  {
     auto span = std::span(buffer);
     co_return co_await write(writer, span);
   }
@@ -44,7 +46,8 @@ class WriteExt {
   template <typename Writer, typename B>
   static auto write_all(Writer &writer, const B &buffer)
       -> runtime::Future<utils::Result<void>>
-  requires(Writable<Writer, decltype(std::begin(buffer))> &&Buffer<B>) {
+    requires(Writable<Writer, decltype(std::begin(buffer))> && Buffer<B>)
+  {
     auto buf_size = std::size(buffer);
     auto total_write = 0;
     auto begin = std::begin(buffer);
@@ -71,8 +74,9 @@ class WriteExt {
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
   static auto write_all(Writer &writer, const V (&buffer)[N])
       -> runtime::Future<utils::Result<void>>
-  requires(Writable<Writer, decltype(std::begin(buffer))>
-               &&Buffer<decltype(buffer)>) {
+    requires(Writable<Writer, decltype(std::begin(buffer))> &&
+             Buffer<decltype(buffer)>)
+  {
     auto span = std::span(buffer);
     co_return co_await write_all(writer, span);
   }

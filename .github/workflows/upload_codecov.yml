@@ -7,7 +7,7 @@ on:
       - "build/*"
 
 env:
-  llvm_version: 14
+  llvm_version: 16
 
 jobs:
   test-codecov:
@@ -15,7 +15,8 @@ jobs:
     steps:
       - name: install essential packages
         run: |
-          sudo apt-get install -y lcov libunwind-$llvm_version-dev liburing-dev libboost-all-dev
+          sudo apt-get install -y lcov liburing-dev libboost-all-dev
+          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" '' $llvm_version all
       - uses: actions/checkout@v3
       - name: test
         run: |

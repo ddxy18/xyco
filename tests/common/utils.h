@@ -46,7 +46,9 @@ class TestRuntimeCtx {
   template <typename Fn>
   static auto co_run(Fn &&coroutine,
                      std::vector<std::chrono::milliseconds> &&time_steps = {})
-      -> void requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>) {
+      -> void
+    requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>)
+  {
     // co_outer's lifetime is managed by the caller to avoid being destroyed
     // automatically before resumed.
 
@@ -76,7 +78,8 @@ class TestRuntimeCtx {
 
   template <typename Fn>
   static auto co_run_no_wait(Fn &&coroutine) -> TestRuntimeCtxGuard
-      requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>) {
+    requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>)
+  {
     auto *co_outer = gsl::owner<std::function<xyco::runtime::Future<void>()> *>(
         new std::function<xyco::runtime::Future<void>()>(
             [=]() -> xyco::runtime::Future<void> { co_await coroutine(); }));
@@ -86,7 +89,8 @@ class TestRuntimeCtx {
 
   template <typename Fn>
   static auto co_run_without_runtime(Fn &&coroutine) -> TestRuntimeCtxGuard
-      requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>) {
+    requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>)
+  {
     auto *co_outer = gsl::owner<std::function<xyco::runtime::Future<void>()> *>(
         new std::function<xyco::runtime::Future<void>()>(
             [=]() -> xyco::runtime::Future<void> { co_await coroutine(); }));

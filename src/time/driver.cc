@@ -3,7 +3,7 @@
 #include "spdlog/fmt/chrono.h"
 
 auto xyco::time::TimeExtra::print() const -> std::string {
-  return fmt::format("TimeExtra{{expire_time_={}}}", expire_time_);
+  return fmt::format("TimeExtra{{expire_time_={}}}", expire_time_);  // NOLINT
 }
 
 xyco::time::TimeExtra::TimeExtra(

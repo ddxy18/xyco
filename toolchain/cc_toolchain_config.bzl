@@ -13,11 +13,13 @@ all_link_actions = [
     ACTION_NAMES.cpp_link_nodeps_dynamic_library,
 ]
 
+LLVM_VERSION = 16
+
 def _impl(ctx):
     tool_paths = [
         tool_path(
             name = "gcc",
-            path = "/usr/bin/clang",
+            path = "/usr/bin/clang-{}".format(LLVM_VERSION),
         ),
         tool_path(
             name = "ld",
@@ -33,11 +35,11 @@ def _impl(ctx):
         ),
         tool_path(
             name = "gcov",
-            path = "/usr/bin/llvm-profdata-14",
+            path = "/usr/bin/llvm-profdata-{}".format(LLVM_VERSION),
         ),
         tool_path(
             name = "llvm-cov",
-            path = "/usr/bin/llvm-cov-14",
+            path = "/usr/bin/llvm-cov-{}".format(LLVM_VERSION),
         ),
         tool_path(
             name = "nm",
@@ -75,9 +77,9 @@ def _impl(ctx):
         ctx = ctx,
         features = features,
         cxx_builtin_include_directories = [
-            "/usr/lib/llvm-14/lib/clang/14.0.0/include",
+            "/usr/lib/llvm-{}/lib/clang/{}/include".format(LLVM_VERSION, LLVM_VERSION),
             "/usr/include",
-            "/usr/lib/llvm-14/include",
+            "/usr/lib/llvm-{}/include".format(LLVM_VERSION),
         ],
         toolchain_identifier = "local",
         host_system_name = "local",

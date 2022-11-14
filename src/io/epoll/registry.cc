@@ -44,9 +44,9 @@ struct fmt::formatter<epoll_event> : public fmt::formatter<bool> {
   template <typename FormatContext>
   auto format(const epoll_event &event, FormatContext &ctx) const
       -> decltype(ctx.out()) {
-    return format_to(ctx.out(), "epoll_event{{events={:x},data={}}}",
-                     event.events,
-                     *static_cast<xyco::runtime::Event *>(event.data.ptr));
+    return fmt::format_to(ctx.out(), "epoll_event{{events={:x},data={}}}",
+                          event.events,
+                          *static_cast<xyco::runtime::Event *>(event.data.ptr));
   }
 };
 

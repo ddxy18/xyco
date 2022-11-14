@@ -8,6 +8,7 @@
 #include "net/listener.h"
 #include "runtime/runtime.h"
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 class RequestLine {
  public:
   RequestLine(const std::string &line) {
@@ -69,6 +70,7 @@ class RequestLine {
   std::string version_;
 };
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 class Request {
  public:
   RequestLine request_line_{""};
@@ -76,6 +78,7 @@ class Request {
   std::string body_;
 };
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 class StatusLine {
  public:
   [[nodiscard]] auto to_string() const -> std::string {
@@ -110,7 +113,7 @@ class Server {
   auto receive_request(xyco::net::TcpStream server_stream)
       -> xyco::runtime::Future<void> {
     auto reader = xyco::io::BufferReader<xyco::net::TcpStream, std::string>(
-        server_stream);
+        &server_stream);
     Request request;
     auto line =
         (co_await xyco::io::BufferReadExt::read_line<decltype(reader),
@@ -195,7 +198,7 @@ class Server {
                               "\r\n"))
           .unwrap();
       (co_await xyco::io::WriteExt::write_all(server_stream, "\r\n")).unwrap();
-      auto reader = xyco::io::BufferReader<xyco::fs::File, std::string>(file);
+      auto reader = xyco::io::BufferReader<xyco::fs::File, std::string>(&file);
       std::string line = "a";
       while (!line.empty()) {
         line =

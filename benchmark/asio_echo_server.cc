@@ -1,3 +1,5 @@
+#include <gsl/pointers>
+
 #include "asio/buffer.hpp"
 #include "asio/co_spawn.hpp"
 #include "asio/detached.hpp"
@@ -6,12 +8,10 @@
 #include "asio/read_until.hpp"
 #include "asio/signal_set.hpp"
 #include "asio/write.hpp"
-
 class Server {
  public:
-  Server(asio::io_context& context, uint16_t port) : context_(context) {
+  Server(asio::io_context* context, uint16_t port) : context_(context) {
     auto init_server = [&](uint16_t port) -> asio::awaitable<void> {
-      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       auto executor = co_await asio::this_coro::executor;
       asio::ip::tcp::acceptor acceptor(executor, {asio::ip::tcp::v4(), port});
       while (true) {
@@ -19,8 +19,7 @@ class Server {
         asio::co_spawn(executor, echo(std::move(socket)), asio::detached);
       }
     };
-    // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
-    asio::co_spawn(context_, init_server(port), asio::detached);
+    asio::co_spawn(*context_, init_server(port), asio::detached);
   }
 
  private:
@@ -35,7 +34,7 @@ class Server {
                                asio::use_awaitable);
   }
 
-  asio::io_context& context_;
+  gsl::not_null<asio::io_context*> context_;
 };
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
@@ -47,7 +46,7 @@ auto main() -> int {
   asio::signal_set signals(context, SIGINT, SIGTERM);
   signals.async_wait([&](auto, auto) { context.stop(); });
 
-  auto server = Server(context, port);
+  auto server = Server(&context, port);
 
   context.run();
 

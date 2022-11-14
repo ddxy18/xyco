@@ -66,7 +66,9 @@ class Runtime {
   }
 
   template <typename Fn>
-  auto spawn_blocking(Fn &&function) -> void requires(std::is_invocable_v<Fn>) {
+  auto spawn_blocking(Fn &&function) -> void
+    requires(std::is_invocable_v<Fn>)
+  {
     using Return = decltype(function());
 
     spawn([=]() -> Future<Return> {
@@ -141,8 +143,8 @@ class Runtime {
   std::mutex worker_launch_mutex_;
   std::condition_variable worker_launch_cv_;
 
-  auto(*on_start_f_)() -> void{};
-  auto(*on_stop_f_)() -> void{};
+  auto (*on_start_f_)() -> void{};
+  auto (*on_stop_f_)() -> void{};
 };
 
 class Builder {
@@ -161,9 +163,9 @@ class Builder {
     return *this;
   }
 
-  auto on_worker_start(auto(*function)()->void) -> Builder &;
+  auto on_worker_start(auto (*function)()->void) -> Builder &;
 
-  auto on_worker_stop(auto(*function)()->void) -> Builder &;
+  auto on_worker_stop(auto (*function)()->void) -> Builder &;
 
   [[nodiscard]] auto build() const -> utils::Result<std::unique_ptr<Runtime>>;
 
@@ -172,8 +174,8 @@ class Builder {
 
   uintptr_t worker_num_;
 
-  auto(*on_start_f_)() -> void;
-  auto(*on_stop_f_)() -> void;
+  auto (*on_start_f_)() -> void;
+  auto (*on_stop_f_)() -> void;
 
   std::vector<std::function<void(Runtime *)>> registries_;
 };

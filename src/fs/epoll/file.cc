@@ -176,10 +176,12 @@ auto xyco::fs::epoll::File::seek(off64_t offset, int whence) const
   });
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 xyco::fs::epoll::File::File(File&& file) noexcept : fd_(-1) {
   *this = std::move(file);
 }
 
+// NOLINTNEXTLINE(bugprone-exception-escape)
 auto xyco::fs::epoll::File::operator=(File&& file) noexcept -> File& {
   fd_ = file.fd_;
   path_ = file.path_;
@@ -316,7 +318,7 @@ template <typename FormatContext>
 auto fmt::formatter<xyco::fs::epoll::File>::format(
     const xyco::fs::epoll::File& file, FormatContext& ctx) const
     -> decltype(ctx.out()) {
-  return format_to(ctx.out(), "File{{path_={}}}", file.path_.c_str());
+  return fmt::format_to(ctx.out(), "File{{path_={}}}", file.path_.c_str());
 }
 
 template auto fmt::formatter<xyco::fs::epoll::File>::format(

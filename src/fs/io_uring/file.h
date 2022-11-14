@@ -215,7 +215,7 @@ class OpenOptions {
 
   [[nodiscard]] auto get_creation_mode() const -> utils::Result<int>;
 
-  const int default_mode_ = 0666;
+  static constexpr int default_mode_ = 0666;
 
   // generic
   bool read_;
