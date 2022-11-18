@@ -34,7 +34,7 @@ jobs:
       - name: install essential packages
         run: |
           sudo apt-get install -y ninja-build liburing-dev libboost-all-dev
-          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" '' $llvm_version all
+          sudo bash scripts/install_llvm.sh $llvm_version
       - uses: actions/cache@v3
         with:
           path: |
@@ -58,11 +58,11 @@ jobs:
   cpp-test:
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v3
       - name: install essential packages
         run: |
           sudo apt-get install -y lcov liburing-dev libboost-all-dev
-          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" '' $llvm_version all
-      - uses: actions/checkout@v3
+          sudo bash scripts/install_llvm.sh $llvm_version
       - name: test
         run: |
           bazel coverage --config=opt --config=coverage --config=enable_logging --test_output=all //tests:xyco_test_epoll --test_arg=--gtest_repeat=100 --test_arg=--gtest_break_on_failure --test_arg=--gtest_shuffle --test_arg=--gtest_death_test_style=threadsafe

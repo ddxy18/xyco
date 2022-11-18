@@ -16,7 +16,7 @@ jobs:
       - name: install essential packages
         run: |
           sudo apt-get install -y lcov liburing-dev libboost-all-dev
-          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)" '' $llvm_version all
+          sudo bash scripts/install_llvm.sh $llvm_version
       - uses: actions/checkout@v3
       - name: test
         run: |
