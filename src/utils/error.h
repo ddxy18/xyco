@@ -1,7 +1,8 @@
 #ifndef XYCO_UTILS_ERROR_H_
 #define XYCO_UTILS_ERROR_H_
 
-#include "spdlog/fmt/fmt.h"
+#include <format>
+
 #include "utils/result.h"
 
 namespace xyco::utils {
@@ -24,10 +25,25 @@ auto into_sys_result(int return_value) -> Result<int>;
 }  // namespace xyco::utils
 
 template <>
-struct fmt::formatter<xyco::utils::Error> : public fmt::formatter<bool> {
+struct std::formatter<xyco::utils::Error> : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::utils::Error& err, FormatContext& ctx) const
-      -> decltype(ctx.out());
+      -> decltype(ctx.out()) {
+    if (err.errno_ > 0) {
+      return std::format_to(ctx.out(), "IoError{{errno={}, info={}}}",
+                            err.errno_, err.info_);
+    }
+    std::string error_kind;
+    switch (err.errno_) {
+      case std::__to_underlying(xyco::utils::ErrorKind::Uncategorized):
+        error_kind = std::string("Uncategorized");
+        break;
+      case std::__to_underlying(xyco::utils::ErrorKind::Unsupported):
+        error_kind = std::string("Unsupported");
+    }
+    return std::format_to(ctx.out(), "IoError{{error_kind={}, info={}}}",
+                          error_kind, err.info_);
+  }
 };
 
 #endif  // XYCO_UTILS_ERROR_H_

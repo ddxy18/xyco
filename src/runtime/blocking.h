@@ -91,11 +91,13 @@ class BlockingRegistry : public runtime::Registry {
 }  // namespace xyco::runtime
 
 template <>
-struct fmt::formatter<xyco::runtime::AsyncFutureExtra>
-    : public fmt::formatter<std::string> {
+struct std::formatter<xyco::runtime::AsyncFutureExtra>
+    : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::runtime::AsyncFutureExtra& extra,
-              FormatContext& ctx) const -> decltype(ctx.out());
+              FormatContext& ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "AsyncFutureExtra{{}}");
+  }
 };
 
 #endif  // XYCO_RUNTIME_BLOCKING_H_

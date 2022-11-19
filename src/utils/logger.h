@@ -3,6 +3,8 @@
 
 #ifdef XYCO_ENABLE_LOG
 
+#include <format>
+
 #include "spdlog/spdlog.h"
 
 #undef SPDLOG_ACTIVE_LEVEL
@@ -16,20 +18,25 @@
 #undef ERROR
 
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define TRACE(...) \
-  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::trace, __VA_ARGS__)
+#define TRACE(...)                                                        \
+  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::trace, "{}", \
+                     std::format(__VA_ARGS__))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define DEBUG(...) \
-  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::debug, __VA_ARGS__)
+#define DEBUG(...)                                                        \
+  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::debug, "{}", \
+                     std::format(__VA_ARGS__))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define INFO(...) \
-  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::info, __VA_ARGS__)
+#define INFO(...)                                                        \
+  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::info, "{}", \
+                     std::format(__VA_ARGS__))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define WARN(...) \
-  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::warn, __VA_ARGS__)
+#define WARN(...)                                                        \
+  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::warn, "{}", \
+                     std::format(__VA_ARGS__))
 // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
-#define ERROR(...) \
-  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::err, __VA_ARGS__)
+#define ERROR(...)                                                      \
+  SPDLOG_LOGGER_CALL(LoggerCtx::get_logger(), spdlog::level::err, "{}", \
+                     std::format(__VA_ARGS__))
 
 class LoggerCtx {
  public:

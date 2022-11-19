@@ -1,10 +1,13 @@
 #ifndef XYCO_IO_IO_URING_EXTRA_H_
 #define XYCO_IO_IO_URING_EXTRA_H_
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/socket.h>
 
 #include "io/write.h"
 #include "runtime/registry.h"
+#include "utils/overload.h"
 
 namespace xyco::io::uring {
 class IoExtra : public runtime::Extra {
@@ -72,59 +75,91 @@ class IoExtra : public runtime::Extra {
 }  // namespace xyco::io::uring
 
 template <>
-struct fmt::formatter<xyco::io::uring::IoExtra>
-    : public fmt::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra>
+    : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra &extra, FormatContext &ctx) const
-      -> decltype(ctx.out());
+      -> decltype(ctx.out()) {
+    return std::format_to(
+        ctx.out(), "IoExtra{{args_={}, fd_={}, return_={}}}",
+        std::visit(overloaded{[](auto arg) { return std::format("{}", arg); }},
+                   extra.args_),
+        extra.fd_, extra.return_);
+  }
 };
 
 template <>
-struct fmt::formatter<xyco::io::uring::IoExtra::Read>
-    : public fmt::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Read>
+    : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Read &args,
-              FormatContext &ctx) const -> decltype(ctx.out());
+              FormatContext &ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "Read{{len_={}, offset_={}}}", args.len_,
+                          args.offset_);
+  }
 };
 
 template <>
-struct fmt::formatter<xyco::io::uring::IoExtra::Write>
-    : public fmt::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Write>
+    : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Write &args,
-              FormatContext &ctx) const -> decltype(ctx.out());
+              FormatContext &ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "Write{{len_={}, offset_={}}}", args.len_,
+                          args.offset_);
+  }
 };
 
 template <>
-struct fmt::formatter<xyco::io::uring::IoExtra::Close>
-    : public fmt::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Close>
+    : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Close &args,
-              FormatContext &ctx) const -> decltype(ctx.out());
+              FormatContext &ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "Close{{}}");
+  }
 };
 
 template <>
-struct fmt::formatter<xyco::io::uring::IoExtra::Accept>
-    : public fmt::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Accept>
+    : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Accept &args,
-              FormatContext &ctx) const -> decltype(ctx.out());
+              FormatContext &ctx) const -> decltype(ctx.out()) {
+    auto *addr = static_cast<sockaddr_in *>(static_cast<void *>(args.addr_));
+    std::string ip_addr(INET_ADDRSTRLEN, 0);
+    ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
+                ip_addr.size());
+    return std::format_to(ctx.out(), "Accept{{addr_={{{}:{}}}, flags_={}}}",
+                          ip_addr.c_str(), addr->sin_port, args.flags_);
+  }
 };
 
 template <>
-struct fmt::formatter<xyco::io::uring::IoExtra::Connect>
-    : public fmt::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Connect>
+    : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Connect &args,
-              FormatContext &ctx) const -> decltype(ctx.out());
+              FormatContext &ctx) const -> decltype(ctx.out()) {
+    const auto *addr =
+        static_cast<const sockaddr_in *>(static_cast<const void *>(args.addr_));
+    std::string ip_addr(INET_ADDRSTRLEN, 0);
+    ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
+                ip_addr.size());
+    return std::format_to(ctx.out(), "Connect{{addr_={{{}:{}}}}}",
+                          ip_addr.c_str(), addr->sin_port);
+  }
 };
 
 template <>
-struct fmt::formatter<xyco::io::uring::IoExtra::Shutdown>
-    : public fmt::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Shutdown>
+    : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Shutdown &args,
-              FormatContext &ctx) const -> decltype(ctx.out());
+              FormatContext &ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "Shutdown{{shutdown_={}}}",
+                          args.shutdown_);
+  }
 };
 
 #endif  // XYCO_IO_IO_URING_EXTRA_H_

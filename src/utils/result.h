@@ -1,10 +1,10 @@
 #ifndef XYCO_UTILS_RESULT_H_
 #define XYCO_UTILS_RESULT_H_
 
+#include <format>
 #include <variant>
 
 #include "panic.h"
-#include "spdlog/fmt/fmt.h"
 #include "utils/logger.h"
 
 template <typename T, typename E>
@@ -39,7 +39,7 @@ template <>
 class Err<void> {};
 
 template <typename T>
-concept Printable = requires(T val) { fmt::print(fmt::runtime("{}"), val); };
+concept Printable = requires(T val) { std::format("{}", val); };
 
 template <typename T, typename E>
 class Result {
@@ -69,7 +69,7 @@ class Result {
   {
     if (inner_.index() == 2) {
       if constexpr (std::is_same_v<E, void>) {
-        ERROR("unwrap err:{E=void}");
+        ERROR("{}", "unwrap err:{E=void}");
       } else {
         ERROR("unwrap err:{}", std::get<Err<E>>(inner_).inner_);
       }
@@ -85,7 +85,7 @@ class Result {
   {
     if (inner_.index() == 1) {
       if constexpr (std::is_same_v<T, void>) {
-        ERROR("unwrap_err err:{T=void}");
+        ERROR("{}", "unwrap_err err:{T=void}");
       } else {
         ERROR("unwrap_err err:{}", std::get<Ok<T>>(inner_).inner_);
       }

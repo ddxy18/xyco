@@ -9,17 +9,17 @@ TEST(FmtTypeTest, IoExtra_Event) {
   auto *extra = dynamic_cast<xyco::io::IoExtra *>(event.extra_.get());
 
   extra->state_.set_field<xyco::io::IoExtra::State::Registered>();
-  auto fmt_str = fmt::format("{}", *extra);
+  auto fmt_str = std::format("{}", *extra);
   ASSERT_EQ(fmt_str, "IoExtra{state_=[Registered], interest_=All, fd_=4}");
 
-  fmt_str = fmt::format("{}", event);
+  fmt_str = std::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered], interest_=All, "
             "fd_=4}}");
 
   extra->state_.set_field<xyco::io::IoExtra::State::Readable>();
   extra->state_.set_field<xyco::io::IoExtra::State::Writable>();
-  fmt_str = fmt::format("{}", event);
+  fmt_str = std::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Readable,Writable], "
             "interest_=All, "
@@ -28,7 +28,7 @@ TEST(FmtTypeTest, IoExtra_Event) {
   extra->state_.set_field<xyco::io::IoExtra::State::Readable, false>();
   extra->state_.set_field<xyco::io::IoExtra::State::Writable, false>();
   extra->state_.set_field<xyco::io::IoExtra::State::Pending>();
-  fmt_str = fmt::format("{}", event);
+  fmt_str = std::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Pending], interest_=All, "
             "fd_=4}}");
@@ -36,7 +36,7 @@ TEST(FmtTypeTest, IoExtra_Event) {
   extra->state_.set_field<xyco::io::IoExtra::State::Pending, false>();
   extra->state_.set_field<xyco::io::IoExtra::State::Readable>();
   extra->interest_ = xyco::io::IoExtra::Interest::Read;
-  fmt_str = fmt::format("{}", event);
+  fmt_str = std::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Readable], "
             "interest_=Read, fd_=4}}");
@@ -44,14 +44,14 @@ TEST(FmtTypeTest, IoExtra_Event) {
   extra->state_.set_field<xyco::io::IoExtra::State::Readable, false>();
   extra->state_.set_field<xyco::io::IoExtra::State::Writable>();
   extra->interest_ = xyco::io::IoExtra::Interest::Write;
-  fmt_str = fmt::format("{}", event);
+  fmt_str = std::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Writable], "
             "interest_=Write, fd_=4}}");
 
   extra->state_.set_field<xyco::io::IoExtra::State::Writable, false>();
   extra->state_.set_field<xyco::io::IoExtra::State::Error>();
-  fmt_str = fmt::format("{}", event);
+  fmt_str = std::format("{}", event);
   ASSERT_EQ(fmt_str,
             "Event{extra_=IoExtra{state_=[Registered,Error], interest_=Write, "
             "fd_=4}}");

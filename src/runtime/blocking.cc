@@ -3,7 +3,7 @@
 #include <thread>
 
 auto xyco::runtime::AsyncFutureExtra::print() const -> std::string {
-  return fmt::format("AsyncFutureExtra{{}}");
+  return std::format("{}", *this);
 }
 
 xyco::runtime::AsyncFutureExtra::AsyncFutureExtra(
@@ -114,15 +114,3 @@ auto xyco::runtime::BlockingRegistry::select(runtime::Events& events,
 
   return utils::Result<void>::ok();
 }
-
-template <typename FormatContext>
-auto fmt::formatter<xyco::runtime::AsyncFutureExtra>::format(
-    const xyco::runtime::AsyncFutureExtra& extra, FormatContext& ctx) const
-    -> decltype(ctx.out()) {
-  return fmt::formatter<std::string>::format(extra.print(), ctx);
-}
-
-template auto fmt::formatter<xyco::runtime::AsyncFutureExtra>::format(
-    const xyco::runtime::AsyncFutureExtra& extra,
-    fmt::basic_format_context<fmt::appender, char>& ctx) const
-    -> decltype(ctx.out());
