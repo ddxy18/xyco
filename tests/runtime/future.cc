@@ -72,7 +72,9 @@ TEST_F(InRuntimeTest, NoSuspend_loop) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     auto co_innner = []() -> xyco::runtime::Future<int> { co_return 1; };
 
-    for (int i = 0; i < ITERATION_TIMES; i++) {
+    // NOTE: Iteration times should be restricted carefully in this no suspend
+    // loop case to avoid stack overflow.
+    for (int i = 0; i < ITERATION_TIMES / 8; i++) {
       int co_result = -1;
       co_result = co_await co_innner();
 
