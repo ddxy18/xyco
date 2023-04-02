@@ -42,14 +42,14 @@ class Sender {
       -> std::pair<Sender<Value, Size>, Receiver<Value, Size>>;
 
  public:
-  auto send(Value &&value) -> runtime::Future<Result<void, Value>> {
+  auto send(Value value) -> runtime::Future<Result<void, Value>> {
     using FutureReturn = Result<void, Value>;
     class Future : public runtime::Future<FutureReturn> {
      public:
-      explicit Future(Sender<Value, Size> *self, Value &&value)
+      explicit Future(Sender<Value, Size> *self, Value value)
           : runtime::Future<FutureReturn>(nullptr),
             self_(self),
-            value_(std::forward<Value>(value)) {}
+            value_(std::move(value)) {}
 
       auto poll(runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {
@@ -89,7 +89,7 @@ class Sender {
       Value value_;
     };
 
-    co_return co_await Future(this, std::forward<Value>(value));
+    co_return co_await Future(this, std::move(value));
   }
 
   Sender(const Sender<Value, Size> &sender) = default;

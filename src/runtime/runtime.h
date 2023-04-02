@@ -66,7 +66,7 @@ class Runtime {
   }
 
   template <typename Fn>
-  auto spawn_blocking(Fn &&function) -> void
+  auto spawn_blocking(Fn function) -> void
     requires(std::is_invocable_v<Fn>)
   {
     using Return = decltype(function());

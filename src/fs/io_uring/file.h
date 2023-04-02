@@ -19,10 +19,10 @@ class File {
   friend struct std::formatter<File>;
 
  public:
-  static auto create(std::filesystem::path &&path)
+  static auto create(std::filesystem::path path)
       -> runtime::Future<utils::Result<File>>;
 
-  static auto open(std::filesystem::path &&path)
+  static auto open(std::filesystem::path path)
       -> runtime::Future<utils::Result<File>>;
 
   auto resize(uintmax_t size) -> runtime::Future<utils::Result<void>>;
@@ -86,12 +86,16 @@ class File {
         extra->fd_ = self_->fd_;
       }
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(Future &&future) = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       auto operator=(Future &&future) -> Future & = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       auto operator=(const Future &future) -> Future & = delete;
 
       ~Future() override = default;
@@ -147,12 +151,16 @@ class File {
         extra->fd_ = self_->fd_;
       }
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(Future &&future) = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       auto operator=(Future &&future) -> Future & = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       auto operator=(const Future &future) -> Future & = delete;
 
       ~Future() override = default;
@@ -191,8 +199,7 @@ class File {
 
 class OpenOptions {
  public:
-  auto open(std::filesystem::path &&path)
-      -> runtime::Future<utils::Result<File>>;
+  auto open(std::filesystem::path path) -> runtime::Future<utils::Result<File>>;
 
   auto read(bool read) -> OpenOptions &;
 

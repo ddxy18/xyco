@@ -32,13 +32,13 @@ class Sender {
   friend auto channel<Value>() -> std::pair<Sender<Value>, Receiver<Value>>;
 
  public:
-  auto send(Value &&value) -> runtime::Future<Result<void, Value>> {
+  auto send(Value value) -> runtime::Future<Result<void, Value>> {
     if (shared_ == nullptr ||
         shared_->state_ == Shared<Value>::receiver_closed) {
-      co_return Result<void, Value>::err(std::forward<Value>(value));
+      co_return Result<void, Value>::err(std::move(value));
     }
 
-    shared_->value_ = std::forward<Value>(value);
+    shared_->value_ = std::move(value);
     if (shared_->receiver_ != nullptr) {
       runtime::RuntimeCtx::get_ctx()->register_future(shared_->receiver_);
     }

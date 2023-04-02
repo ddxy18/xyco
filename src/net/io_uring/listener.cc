@@ -29,6 +29,7 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
     -> Future<utils::Result<TcpStream>> {
   using CoOutput = utils::Result<TcpStream>;
 
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   class Future : public runtime::Future<CoOutput> {
    public:
     explicit Future(SocketAddr addr, gsl::not_null<Socket *> socket)
@@ -126,6 +127,7 @@ auto xyco::net::uring::TcpStream::shutdown(io::Shutdown shutdown)
     -> Future<utils::Result<void>> {
   using CoOutput = utils::Result<void>;
 
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   class Future : public runtime::Future<CoOutput> {
    public:
     explicit Future(io::Shutdown shutdown, TcpStream *tcp_stream)
@@ -236,12 +238,16 @@ auto xyco::net::uring::TcpListener::accept()
     explicit Future(TcpListener *self)
         : runtime::Future<CoOutput>(nullptr), self_(self) {}
 
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
     Future(const Future &future) = delete;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
     Future(Future &&future) = delete;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
     auto operator=(Future &&future) -> Future & = delete;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
     auto operator=(const Future &future) -> Future & = delete;
 
     ~Future() override { self_->event_->future_ = nullptr; }
