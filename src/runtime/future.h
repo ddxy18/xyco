@@ -126,24 +126,12 @@ class Awaitable {
     // async function's return type
     if (future_->self_) {
       future_->self_.resume();
-      if (future_->exception_ptr_) {
-        // Resume the current coroutine to rethrow the uncaught exception
-        // immediately.
-        return false;
-      }
-      auto ret = !future_->return_.has_value();
-      if (ret) {
-        future_->has_suspend_ = true;
-      }
-      return ret;
+      return true;
     }
 
     // Future object
     auto res = future_->poll(waiting_coroutine);
     auto ret = std::holds_alternative<Pending>(res);
-    if (ret) {
-      future_->has_suspend_ = true;
-    }
     if constexpr (!std::is_same_v<Output, void>) {
       if (!ret) {
         future_->return_ = std::get<Ready<Output>>(std::move(res)).inner_;
@@ -206,7 +194,7 @@ class Future : public FutureBase {
     }
 
     auto final_suspend() noexcept -> FinalAwaitable {
-      return {future_->has_suspend_ ? future_->waiting_ : nullptr};
+      return {future_->waiting_};
     }
 
     auto unhandled_exception() -> void {
@@ -273,7 +261,6 @@ class Future : public FutureBase {
     return_ = std::move(future.return_);
     self_ = future.self_;
     future.self_ = nullptr;
-    has_suspend_ = future.has_suspend_;
     waiting_ = future.waiting_;
     future.waiting_ = nullptr;
     waited_ = future.waited_;
@@ -286,7 +273,7 @@ class Future : public FutureBase {
   }
 
   ~Future() override {
-    if (self_ && has_suspend_) {
+    if (self_) {
       self_.destroy();
     }
   }
@@ -296,7 +283,6 @@ class Future : public FutureBase {
   std::exception_ptr exception_ptr_;
 
   Handle<promise_type> self_;
-  bool has_suspend_{};
   Handle<void> waiting_;
   Handle<PromiseBase> waited_;
 
@@ -362,7 +348,6 @@ class Future<void> : public FutureBase {
   std::exception_ptr exception_ptr_;
 
   Handle<promise_type> self_;
-  bool has_suspend_{};
   Handle<void> waiting_;
   Handle<PromiseBase> waited_;
 

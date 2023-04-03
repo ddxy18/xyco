@@ -28,6 +28,7 @@ concept BufferReadable = requires(Reader reader, Buffer buffer) {
 class ReadExt {
  public:
   template <typename Reader, typename B>
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   static auto read(Reader &reader, B &buffer)
       -> runtime::Future<utils::Result<uintptr_t>>
     requires(Readable<Reader, decltype(std::begin(buffer))> && Buffer<B>)
@@ -36,7 +37,7 @@ class ReadExt {
   }
 
   template <typename Reader, typename V, std::size_t N>
-  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays,cppcoreguidelines-avoid-reference-coroutine-parameters)
   static auto read(Reader &reader, V (&buffer)[N])
       -> runtime::Future<utils::Result<uintptr_t>>
     requires(Readable<Reader, decltype(std::begin(buffer))> &&
@@ -50,6 +51,7 @@ class ReadExt {
 class BufferReadExt {
  public:
   template <typename Reader, typename B>
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   static auto read_to_end(Reader &reader) -> runtime::Future<utils::Result<B>>
     requires(BufferReadable<Reader, B> && DynamicBuffer<B>)
   {
@@ -68,6 +70,7 @@ class BufferReadExt {
   }
 
   template <typename Reader, typename B>
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   static auto read_until(Reader &reader, char character)
       -> runtime::Future<utils::Result<B>>
     requires(BufferReadable<Reader, B> && DynamicBuffer<B>)
@@ -91,6 +94,7 @@ class BufferReadExt {
   }
 
   template <typename Reader, typename B>
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   static auto read_line(Reader &reader) -> runtime::Future<utils::Result<B>>
     requires(BufferReadable<Reader, B> && DynamicBuffer<B>)
   {

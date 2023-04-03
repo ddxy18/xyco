@@ -25,6 +25,7 @@ concept Writable = requires(Writer writer, Iterator begin, Iterator end) {
 class WriteExt {
  public:
   template <typename Writer, typename B>
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   static auto write(Writer &writer, const B &buffer)
       -> runtime::Future<utils::Result<uintptr_t>>
     requires(Writable<Writer, decltype(std::begin(buffer))> && Buffer<B>)
@@ -33,7 +34,7 @@ class WriteExt {
   }
 
   template <typename Writer, typename V, std::size_t N>
-  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays,cppcoreguidelines-avoid-reference-coroutine-parameters)
   static auto write(Writer &writer, const V (&buffer)[N])
       -> runtime::Future<utils::Result<uintptr_t>>
     requires(Writable<Writer, decltype(std::begin(buffer))> &&
@@ -44,6 +45,7 @@ class WriteExt {
   }
 
   template <typename Writer, typename B>
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   static auto write_all(Writer &writer, const B &buffer)
       -> runtime::Future<utils::Result<void>>
     requires(Writable<Writer, decltype(std::begin(buffer))> && Buffer<B>)
@@ -71,7 +73,7 @@ class WriteExt {
   }
 
   template <typename Writer, typename V, std::size_t N>
-  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,,modernize-avoid-c-arrays)
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays,cppcoreguidelines-avoid-reference-coroutine-parameters)
   static auto write_all(Writer &writer, const V (&buffer)[N])
       -> runtime::Future<utils::Result<void>>
     requires(Writable<Writer, decltype(std::begin(buffer))> &&

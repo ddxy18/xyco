@@ -10,9 +10,7 @@ auto xyco::runtime::Future<void>::PromiseType::final_suspend() noexcept
   // 'future_ == nullptr' means:
   // future dropped but coroutine frame still exists(now only happen in
   // Runtime::spawn)
-  return {future_ != nullptr
-              ? (future_->has_suspend_ ? future_->waiting_ : nullptr)
-              : nullptr};
+  return {future_ != nullptr ? future_->waiting_ : nullptr};
 }
 
 auto xyco::runtime::Future<void>::PromiseType::unhandled_exception() -> void {
@@ -70,7 +68,6 @@ auto xyco::runtime::Future<void>::operator=(Future<void> &&future) noexcept
     -> Future<void> & {
   self_ = future.self_;
   future.self_ = nullptr;
-  has_suspend_ = future.has_suspend_;
   waiting_ = future.waiting_;
   future.waiting_ = nullptr;
   waited_ = future.waited_;
@@ -89,7 +86,7 @@ xyco::runtime::Future<void>::~Future() {
     if (!waiting_) {
       self_.promise().future_ = nullptr;
     }
-    if (waiting_ && has_suspend_) {
+    if (waiting_) {
       self_.destroy();
     }
   }

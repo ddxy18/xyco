@@ -87,12 +87,16 @@ class TcpStream {
             end_(end),
             self_(self) {}
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(Future &&future) = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       auto operator=(Future &&future) -> Future & = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       auto operator=(const Future &future) -> Future & = delete;
 
       ~Future() override { self_->event_->future_ = nullptr; }
@@ -142,12 +146,16 @@ class TcpStream {
             end_(end),
             self_(self) {}
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(Future &&future) = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       auto operator=(Future &&future) -> Future & = delete;
 
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       auto operator=(const Future &future) -> Future & = delete;
 
       ~Future() override { self_->event_->future_ = nullptr; }

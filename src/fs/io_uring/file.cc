@@ -92,13 +92,13 @@ auto xyco::fs::uring::File::created() const
       .info_ = "creation time is not available on this platform currently"});
 }
 
-auto xyco::fs::uring::File::create(std::filesystem::path&& path)
+auto xyco::fs::uring::File::create(std::filesystem::path path)
     -> runtime::Future<utils::Result<File>> {
   co_return co_await OpenOptions().write(true).create(true).truncate(true).open(
       std::move(path));
 }
 
-auto xyco::fs::uring::File::open(std::filesystem::path&& path)
+auto xyco::fs::uring::File::open(std::filesystem::path path)
     -> runtime::Future<utils::Result<File>> {
   co_return co_await OpenOptions().read(true).open(std::move(path));
 }
@@ -199,7 +199,7 @@ xyco::fs::uring::File::~File() {
 xyco::fs::uring::File::File(int file_descriptor, std::filesystem::path&& path)
     : fd_(file_descriptor), path_(std::move(path)) {}
 
-auto xyco::fs::uring::OpenOptions::open(std::filesystem::path&& path)
+auto xyco::fs::uring::OpenOptions::open(std::filesystem::path path)
     -> runtime::Future<utils::Result<File>> {
   co_return co_await runtime::AsyncFuture<utils::Result<File>>([&]() {
     auto access_mode = get_access_mode();
