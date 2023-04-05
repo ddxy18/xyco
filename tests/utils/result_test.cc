@@ -25,16 +25,22 @@ class ResultTest : public ::testing::Test {
     void_t_void_e_ok_ = Result<void, void>::ok();
     void_t_void_e_err_ = Result<void, void>::err();
 
+#ifdef XYCO_ENABLE_LOG
     original_level_ = LoggerCtx::get_logger()->level();
     LoggerCtx::get_logger()->set_level(spdlog::level::off);
+#endif
   }
 
   void TearDown() override {
+#ifdef XYCO_ENABLE_LOG
     LoggerCtx::get_logger()->set_level(original_level_);
+#endif
   }
 
  private:
+#ifdef XYCO_ENABLE_LOG
   spdlog::level::level_enum original_level_{};
+#endif
 
  public:
   Result<int, int> no_void_ok_;
