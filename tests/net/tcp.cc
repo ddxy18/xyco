@@ -201,6 +201,8 @@ TEST_F(WithServerTest, TcpListener_accept) {
 TEST_F(WithServerTest, TcpStream_rw_loop) {
   constexpr int ITERATION_TIMES = 100000;
 
+  auto original_level = LoggerCtx::get_logger()->level();
+  LoggerCtx::get_logger()->set_level(spdlog::level::off);
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     auto client = (co_await xyco::net::TcpStream::connect(
                        xyco::net::SocketAddr::new_v4(ip_, port_)))
@@ -219,6 +221,7 @@ TEST_F(WithServerTest, TcpStream_rw_loop) {
       CO_ASSERT_EQ(r_nbytes, r_buf.size());
     }
   });
+  LoggerCtx::get_logger()->set_level(original_level);
 }
 
 TEST_F(WithServerTest, TcpStream_rw_twice) {

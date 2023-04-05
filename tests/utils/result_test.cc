@@ -24,7 +24,17 @@ class ResultTest : public ::testing::Test {
     void_e_err_ = Result<int, void>::err();
     void_t_void_e_ok_ = Result<void, void>::ok();
     void_t_void_e_err_ = Result<void, void>::err();
+
+    original_level_ = LoggerCtx::get_logger()->level();
+    LoggerCtx::get_logger()->set_level(spdlog::level::off);
   }
+
+  void TearDown() override {
+    LoggerCtx::get_logger()->set_level(original_level_);
+  }
+
+ private:
+  spdlog::level::level_enum original_level_{};
 
  public:
   Result<int, int> no_void_ok_;
