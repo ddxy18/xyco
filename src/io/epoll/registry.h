@@ -1,6 +1,7 @@
 #ifndef XYCO_NET_EPOLL_REGISTRY_H_
 #define XYCO_NET_EPOLL_REGISTRY_H_
 
+#include <mutex>
 #include <vector>
 
 #include "runtime/registry.h"
@@ -39,6 +40,7 @@ class IoRegistry : public runtime::Registry {
   constexpr static int MAX_EVENTS = 10000;
 
   int epfd_;
+  std::mutex events_mutex_;
   std::vector<std::shared_ptr<runtime::Event>> registered_events_;
 };
 }  // namespace xyco::io::epoll

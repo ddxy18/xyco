@@ -24,7 +24,7 @@ class Level {
 
 class Wheel {
  public:
-  auto insert_event(std::weak_ptr<runtime::Event> event) -> void;
+  auto insert_event(std::shared_ptr<runtime::Event> event) -> void;
 
   auto expire(runtime::Events &events) -> void;
 

@@ -2,14 +2,6 @@
 
 #include "runtime.h"
 
-thread_local std::unordered_map<decltype(typeid(int).hash_code()),
-                                std::shared_ptr<xyco::runtime::Event>>
-    xyco::runtime::Driver::register_events_;
-
-thread_local std::unordered_map<decltype(typeid(int).hash_code()),
-                                std::shared_ptr<xyco::runtime::Event>>
-    xyco::runtime::Driver::reregister_events_;
-
 auto xyco::runtime::Driver::poll() -> void {
   runtime::Events events;
 
@@ -24,25 +16,6 @@ auto xyco::runtime::Driver::poll() -> void {
     std::scoped_lock<std::mutex> lock_guard(mutexes_[key]);
     registry->select(events, MAX_TIMEOUT).unwrap();
     RuntimeCtx::get_ctx()->wake(events);
-  }
-}
-
-auto xyco::runtime::Driver::dispatch() -> void {
-  {
-    std::scoped_lock<std::mutex> lock_guard(register_mutex_);
-    for (auto&& pair : register_events_) {
-      std::scoped_lock<std::mutex> lock_guard(mutexes_[pair.first]);
-      registries_.find(pair.first)->second->Register(pair.second).unwrap();
-    }
-    register_events_.clear();
-  }
-  {
-    std::scoped_lock<std::mutex> lock_guard(reregister_mutex_);
-    for (auto&& pair : reregister_events_) {
-      std::scoped_lock<std::mutex> lock_guard(mutexes_[pair.first]);
-      registries_.find(pair.first)->second->reregister(pair.second).unwrap();
-    }
-    reregister_events_.clear();
   }
 }
 

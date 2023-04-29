@@ -8,7 +8,7 @@
 #include "runtime/registry.h"
 
 namespace xyco::io::uring {
-class IoRegistry : public runtime::Registry {
+class IoRegistry : public runtime::GlobalRegistry {
  public:
   constexpr static std::chrono::milliseconds MAX_TIMEOUT =
       std::chrono::milliseconds(1);
@@ -27,6 +27,17 @@ class IoRegistry : public runtime::Registry {
                             std::chrono::milliseconds timeout)
       -> utils::Result<void> override;
 
+  auto register_local(std::shared_ptr<xyco::runtime::Event> event)
+      -> xyco::utils::Result<void> override;
+
+  auto reregister_local(std::shared_ptr<xyco::runtime::Event> event)
+      -> xyco::utils::Result<void> override;
+
+  auto deregister_local(std::shared_ptr<xyco::runtime::Event> event)
+      -> xyco::utils::Result<void> override;
+
+  auto local_registry_init() -> void override;
+
   IoRegistry(uint32_t entries);
 
   IoRegistry(const IoRegistry& registry) = delete;
@@ -37,11 +48,10 @@ class IoRegistry : public runtime::Registry {
 
   auto operator=(IoRegistry&& registry) -> IoRegistry& = delete;
 
-  ~IoRegistry() override;
+  ~IoRegistry() override = default;
 
  private:
-  struct io_uring io_uring_;
-  std::vector<std::shared_ptr<runtime::Event>> registered_events_;
+  uint32_t uring_capacity_;
 };
 }  // namespace xyco::io::uring
 

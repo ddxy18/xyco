@@ -2,8 +2,104 @@
 
 #include "extra.h"
 #include "runtime/registry.h"
+#include "runtime/runtime.h"
+
+namespace xyco::io::uring {
+class IoLocalRegistry : public runtime::Registry {
+ public:
+  constexpr static std::chrono::milliseconds MAX_TIMEOUT =
+      std::chrono::milliseconds(1);
+  static const int MAX_EVENTS = 10000;
+
+  [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
+      -> utils::Result<void> override;
+
+  [[nodiscard]] auto reregister(std::shared_ptr<runtime::Event> event)
+      -> utils::Result<void> override;
+
+  [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
+      -> utils::Result<void> override;
+
+  [[nodiscard]] auto select(runtime::Events& events,
+                            std::chrono::milliseconds timeout)
+      -> utils::Result<void> override;
+
+  IoLocalRegistry(uint32_t entries);
+
+  IoLocalRegistry(const IoLocalRegistry& registry) = delete;
+
+  IoLocalRegistry(IoLocalRegistry&& registry) = delete;
+
+  auto operator=(const IoLocalRegistry& registry) -> IoLocalRegistry& = delete;
+
+  auto operator=(IoLocalRegistry&& registry) -> IoLocalRegistry& = delete;
+
+  ~IoLocalRegistry() override;
+
+ private:
+  struct io_uring io_uring_;
+  std::vector<std::shared_ptr<runtime::Event>> registered_events_;
+};
+}  // namespace xyco::io::uring
 
 auto xyco::io::uring::IoRegistry::Register(
+    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
+  return register_local(event);
+}
+
+auto xyco::io::uring::IoRegistry::reregister(
+    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
+  return reregister(event);
+}
+
+auto xyco::io::uring::IoRegistry::deregister(
+    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
+  return deregister_local(event);
+}
+
+auto xyco::io::uring::IoRegistry::select(xyco::runtime::Events& events,
+                                         std::chrono::milliseconds timeout)
+    -> xyco::utils::Result<void> {
+  // FIXME(xiaoyu): All entries will be selected from `IoLocalRegistry` which
+  // implies they are bound to the same thread, so now only one thread actually
+  // takes place in multithread environment.
+  return xyco::utils::Result<void>::ok();
+}
+
+auto xyco::io::uring::IoRegistry::register_local(
+    std::shared_ptr<xyco::runtime::Event> event) -> xyco::utils::Result<void> {
+  return xyco::runtime::RuntimeCtx::get_ctx()
+      ->driver()
+      .local_handle<IoLocalRegistry>()
+      ->Register(event);
+}
+
+auto xyco::io::uring::IoRegistry::reregister_local(
+    std::shared_ptr<xyco::runtime::Event> event) -> xyco::utils::Result<void> {
+  return xyco::runtime::RuntimeCtx::get_ctx()
+      ->driver()
+      .local_handle<IoLocalRegistry>()
+      ->reregister(event);
+}
+
+auto xyco::io::uring::IoRegistry::deregister_local(
+    std::shared_ptr<xyco::runtime::Event> event) -> xyco::utils::Result<void> {
+  return xyco::runtime::RuntimeCtx::get_ctx()
+      ->driver()
+      .local_handle<IoLocalRegistry>()
+      ->deregister(event);
+}
+
+auto xyco::io::uring::IoRegistry::local_registry_init() -> void {
+  xyco::runtime::RuntimeCtx::get_ctx()
+      ->driver()
+      .add_local_registry<IoLocalRegistry>(uring_capacity_);
+}
+
+xyco::io::uring::IoRegistry::IoRegistry(uint32_t entries)
+    : uring_capacity_(entries) {}
+
+auto xyco::io::uring::IoLocalRegistry::Register(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   auto* sqe = io_uring_get_sqe(&io_uring_);
   if (sqe == nullptr) {  // sq full
@@ -81,12 +177,12 @@ auto xyco::io::uring::IoRegistry::Register(
   return utils::Result<void>::err(utils::Error{.errno_ = 1, .info_ = ""});
 }
 
-auto xyco::io::uring::IoRegistry::reregister(
+auto xyco::io::uring::IoLocalRegistry::reregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   return utils::Result<void>::ok();
 }
 
-auto xyco::io::uring::IoRegistry::deregister(
+auto xyco::io::uring::IoLocalRegistry::deregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   auto* sqe = io_uring_get_sqe(&io_uring_);
   if (sqe == nullptr) {  // sq full
@@ -113,8 +209,8 @@ auto xyco::io::uring::IoRegistry::deregister(
   return utils::Result<void>::err(utils::Error{.errno_ = 1, .info_ = ""});
 }
 
-auto xyco::io::uring::IoRegistry::select(runtime::Events& events,
-                                         std::chrono::milliseconds timeout)
+auto xyco::io::uring::IoLocalRegistry::select(runtime::Events& events,
+                                              std::chrono::milliseconds timeout)
     -> utils::Result<void> {
   io_uring_cqe* cqe_ptr = nullptr;
   int return_value = 0;
@@ -162,11 +258,14 @@ auto xyco::io::uring::IoRegistry::select(runtime::Events& events,
   return utils::Result<void>::ok();
 }
 
-xyco::io::uring::IoRegistry::IoRegistry(uint32_t entries) : io_uring_() {
+xyco::io::uring::IoLocalRegistry::IoLocalRegistry(uint32_t entries)
+    : io_uring_() {
   auto result = io_uring_queue_init(entries, &io_uring_, 0);
   if (result != 0) {
     utils::panic();
   }
 }
 
-xyco::io::uring::IoRegistry::~IoRegistry() { io_uring_queue_exit(&io_uring_); }
+xyco::io::uring::IoLocalRegistry::~IoLocalRegistry() {
+  io_uring_queue_exit(&io_uring_);
+}
