@@ -20,25 +20,24 @@ class Driver {
 
   template <typename R>
   auto Register(std::shared_ptr<Event> event) -> void {
-    std::scoped_lock<std::mutex> lock_guard(register_mutex_);
-    register_events_.emplace(typeid(R).hash_code(), event);
+    registries_.find(typeid(R).hash_code())
+        ->second->Register(std::move(event))
+        .unwrap();
   }
 
   template <typename R>
   auto reregister(std::shared_ptr<Event> event) -> void {
-    std::scoped_lock<std::mutex> lock_guard(reregister_mutex_);
-    reregister_events_.emplace(typeid(R).hash_code(), event);
+    registries_.find(typeid(R).hash_code())
+        ->second->reregister(std::move(event))
+        .unwrap();
   }
 
   template <typename R>
   auto deregister(std::shared_ptr<Event> event) -> void {
-    std::scoped_lock<std::mutex> lock_guard(mutexes_[typeid(R).hash_code()]);
     registries_.find(typeid(R).hash_code())
         ->second->deregister(std::move(event))
         .unwrap();
   }
-
-  auto dispatch() -> void;
 
   template <typename R>
   auto local_handle() -> Registry* {
@@ -73,15 +72,6 @@ class Driver {
                      std::unordered_map<decltype(typeid(int).hash_code()),
                                         std::unique_ptr<Registry>>>
       local_registries_;
-
-  thread_local static std::unordered_map<decltype(typeid(int).hash_code()),
-                                         std::shared_ptr<Event>>
-      register_events_;
-  std::mutex register_mutex_;
-  thread_local static std::unordered_map<decltype(typeid(int).hash_code()),
-                                         std::shared_ptr<Event>>
-      reregister_events_;
-  std::mutex reregister_mutex_;
 };
 }  // namespace xyco::runtime
 

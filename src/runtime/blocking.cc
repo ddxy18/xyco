@@ -1,5 +1,6 @@
 #include "blocking.h"
 
+#include <algorithm>
 #include <thread>
 
 auto xyco::runtime::AsyncFutureExtra::print() const -> std::string {
@@ -98,18 +99,16 @@ auto xyco::runtime::BlockingRegistry::select(runtime::Events& events,
   decltype(events_) new_events;
 
   std::scoped_lock<std::mutex> lock_guard(mutex_);
-  std::copy_if(
-      std::begin(events_), std::end(events_), std::back_inserter(new_events),
-      [](auto event) {
-        return dynamic_cast<AsyncFutureExtra*>(event.lock()->extra_.get())
-                   ->after_extra_ == nullptr;
-      });
-  std::copy_if(
-      std::begin(events_), std::end(events_), std::back_inserter(events),
-      [](auto event) {
-        return dynamic_cast<AsyncFutureExtra*>(event.lock()->extra_.get())
-                   ->after_extra_ != nullptr;
-      });
+  std::copy_if(std::begin(events_), std::end(events_),
+               std::back_inserter(new_events), [](auto event) {
+                 return dynamic_cast<AsyncFutureExtra*>(event->extra_.get())
+                            ->after_extra_ == nullptr;
+               });
+  std::copy_if(std::begin(events_), std::end(events_),
+               std::back_inserter(events), [](auto event) {
+                 return dynamic_cast<AsyncFutureExtra*>(event->extra_.get())
+                            ->after_extra_ != nullptr;
+               });
   events_ = new_events;
 
   return utils::Result<void>::ok();

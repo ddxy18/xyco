@@ -7,7 +7,7 @@ namespace xyco::runtime {
 class FutureBase;
 class Registry;
 class Event;
-using Events = std::vector<std::weak_ptr<Event>>;
+using Events = std::vector<std::shared_ptr<Event>>;
 
 class Extra {
  public:

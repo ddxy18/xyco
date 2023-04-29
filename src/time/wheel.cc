@@ -5,12 +5,11 @@
 
 xyco::time::Level::Level() : current_it_(events_.begin()) {}
 
-auto xyco::time::Wheel::insert_event(std::weak_ptr<runtime::Event> event)
+auto xyco::time::Wheel::insert_event(std::shared_ptr<runtime::Event> event)
     -> void {
   auto total_steps =
       std::chrono::duration_cast<std::chrono::milliseconds>(
-          dynamic_cast<TimeExtra *>(event.lock()->extra_.get())->expire_time_ -
-          now_)
+          dynamic_cast<TimeExtra *>(event->extra_.get())->expire_time_ - now_)
           .count();
 
   auto level = 0;

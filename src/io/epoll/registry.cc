@@ -57,12 +57,19 @@ auto xyco::io::epoll::IoRegistry::Register(
       .events = static_cast<uint32_t>(to_sys((extra->interest_))),
       .data = {.ptr = event.get()}};
 
+  {
+    std::scoped_lock<std::mutex> lock_guard(events_mutex_);
+    registered_events_.push_back(event);
+    extra->state_.set_field<io::epoll::IoExtra::State::Registered>();
+  }
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_ADD, extra->fd_, &epoll_event));
   if (result.is_ok()) {
     TRACE("epoll_ctl add:{}", epoll_event);
-    extra->state_.set_field<io::epoll::IoExtra::State::Registered>();
-    registered_events_.push_back(event);
+  } else {
+    std::scoped_lock<std::mutex> lock_guard(events_mutex_);
+    registered_events_.erase(
+        std::find(registered_events_.begin(), registered_events_.end(), event));
   }
 
   return result;
@@ -74,10 +81,18 @@ auto xyco::io::epoll::IoRegistry::reregister(
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
   epoll_event.data.ptr = event.get();
 
+  {
+    std::scoped_lock<std::mutex> lock_guard(events_mutex_);
+    registered_events_.push_back(event);
+  }
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_MOD, extra->fd_, &epoll_event));
   if (result.is_ok()) {
     TRACE("epoll_ctl mod:{}", epoll_event);
+  } else {
+    std::scoped_lock<std::mutex> lock_guard(events_mutex_);
+    registered_events_.erase(
+        std::find(registered_events_.begin(), registered_events_.end(), event));
   }
 
   return result;
@@ -92,10 +107,16 @@ auto xyco::io::epoll::IoRegistry::deregister(
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_DEL, extra->fd_, &epoll_event));
   if (result.is_ok()) {
-    registered_events_.erase(
-        std::find(registered_events_.begin(), registered_events_.end(), event));
-    extra->state_.set_field<io::epoll::IoExtra::State::Registered, false>();
     TRACE("epoll_ctl del:{}", epoll_event);
+  }
+
+  {
+    auto event_it =
+        std::find(registered_events_.begin(), registered_events_.end(), event);
+    if (event_it != registered_events_.end()) {
+      registered_events_.erase(event_it);
+    }
+    extra->state_.set_field<io::epoll::IoExtra::State::Registered, false>();
   }
 
   return result;
@@ -118,6 +139,7 @@ auto xyco::io::epoll::IoRegistry::select(runtime::Events &events,
   }
   auto ready_len = select_result.unwrap();
   for (auto i = 0; i < ready_len; i++) {
+    std::scoped_lock<std::mutex> lock_guard(events_mutex_);
     auto ready_event = std::find_if(
         registered_events_.begin(), registered_events_.end(),
         [&](auto &registered_event) {
@@ -127,6 +149,7 @@ auto xyco::io::epoll::IoRegistry::select(runtime::Events &events,
         ->state_ = to_state(epoll_events.at(i).events);
     TRACE("select {}", *ready_event->get());
     events.push_back(*ready_event);
+    registered_events_.erase(ready_event);
   }
   return utils::Result<void>::ok();
 }

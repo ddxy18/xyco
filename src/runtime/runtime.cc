@@ -51,7 +51,6 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
       lock_guard.unlock();
       if (future == nullptr || future->poll_wrapper()) {
         handle.resume();
-        runtime->driver().dispatch();
       }
       lock_guard.lock();
     }
@@ -110,8 +109,7 @@ xyco::runtime::Runtime::~Runtime() {
 }
 
 auto xyco::runtime::Runtime::wake(Events &events) -> void {
-  for (auto &event : events) {
-    auto event_ptr = event.lock();
+  for (auto &event_ptr : events) {
     if (event_ptr && event_ptr->future_ != nullptr) {
       TRACE("wake {}", *event_ptr);
       register_future(event_ptr->future_);
@@ -123,8 +121,7 @@ auto xyco::runtime::Runtime::wake(Events &events) -> void {
 
 auto xyco::runtime::Runtime::wake_local(Events &events) -> void {
   auto &worker = workers_.find(std::this_thread::get_id())->second;
-  for (auto &event : events) {
-    auto event_ptr = event.lock();
+  for (auto &event_ptr : events) {
     if (event_ptr && event_ptr->future_ != nullptr) {
       TRACE("wake local {}", *event_ptr);
       std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
