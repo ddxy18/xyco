@@ -49,8 +49,8 @@ auto main() -> int {
   constexpr uint16_t port = 8080;
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
   auto server = Server(xyco::runtime::Builder::new_multi_thread()
-                           .worker_threads(1)
-                           .max_blocking_threads(1)
+                           .worker_threads(2)
+                           .max_blocking_threads(2)
                            .registry<xyco::io::IoRegistry>(4)
                            .build()
                            .unwrap(),

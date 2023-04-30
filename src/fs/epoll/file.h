@@ -48,7 +48,7 @@ class File {
   template <typename Iterator>
   auto read(Iterator begin, Iterator end)
       -> runtime::Future<utils::Result<uintptr_t>> {
-    co_return co_await runtime::AsyncFuture<utils::Result<uintptr_t>>([&]() {
+    co_return co_await runtime::AsyncFuture([&]() {
       return utils::into_sys_result(
           ::read(fd_, &*begin, std::distance(begin, end)));
     });
@@ -57,7 +57,7 @@ class File {
   template <typename Iterator>
   auto write(Iterator begin, Iterator end)
       -> runtime::Future<utils::Result<uintptr_t>> {
-    co_return co_await runtime::AsyncFuture<utils::Result<uintptr_t>>([&]() {
+    co_return co_await runtime::AsyncFuture([&]() {
       return utils::into_sys_result(
           ::write(fd_, &*begin, std::distance(begin, end)));
     });

@@ -5,7 +5,7 @@
 auto xyco::fs::rename(std::filesystem::path old_path,
                       std::filesystem::path new_path)
     -> runtime::Future<utils::Result<void>> {
-  co_return co_await runtime::AsyncFuture<utils::Result<void>>([&]() {
+  co_return co_await runtime::AsyncFuture([&]() {
     std::error_code error_code;
     std::filesystem::rename(old_path, new_path, error_code);
 
@@ -18,7 +18,7 @@ auto xyco::fs::rename(std::filesystem::path old_path,
 
 auto xyco::fs::remove(std::filesystem::path path)
     -> runtime::Future<utils::Result<bool>> {
-  co_return co_await runtime::AsyncFuture<utils::Result<bool>>([&]() {
+  co_return co_await runtime::AsyncFuture([&]() {
     std::error_code error_code;
     auto exist = std::filesystem::remove(path, error_code);
 
@@ -33,7 +33,7 @@ auto xyco::fs::copy_file(std::filesystem::path from_path,
                          std::filesystem::path to_path,
                          std::filesystem::copy_options options)
     -> runtime::Future<utils::Result<bool>> {
-  co_return co_await runtime::AsyncFuture<utils::Result<bool>>([&]() {
+  co_return co_await runtime::AsyncFuture([&]() {
     std::error_code error_code;
     auto ret =
         std::filesystem::copy_file(from_path, to_path, options, error_code);
