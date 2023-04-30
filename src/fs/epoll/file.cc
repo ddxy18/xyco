@@ -23,8 +23,7 @@ auto epoll_file_attr(int file_descriptor) -> xyco::runtime::Future<
   struct statx stx {};
   struct stat64 stat {};
 
-  ASYNC_TRY((co_await xyco::runtime::AsyncFuture<
-                 xyco::utils::Result<int>>([&]() {
+  ASYNC_TRY((co_await xyco::runtime::AsyncFuture([&]() {
               return xyco::utils::into_sys_result(statx(
                   file_descriptor, "\0", AT_EMPTY_PATH | AT_STATX_SYNC_AS_STAT,
                   STATX_ALL, &stx));
@@ -105,7 +104,7 @@ auto xyco::fs::epoll::File::open(std::filesystem::path path)
 
 auto xyco::fs::epoll::File::resize(uintmax_t size)
     -> runtime::Future<utils::Result<void>> {
-  co_return co_await runtime::AsyncFuture<utils::Result<void>>([&]() {
+  co_return co_await runtime::AsyncFuture([&]() {
     std::error_code error_code;
     std::filesystem::resize_file(path_, size, error_code);
     return !error_code ? utils::Result<void>::ok()
@@ -117,7 +116,7 @@ auto xyco::fs::epoll::File::resize(uintmax_t size)
 
 auto xyco::fs::epoll::File::size() const
     -> runtime::Future<utils::Result<uintmax_t>> {
-  co_return co_await runtime::AsyncFuture<utils::Result<uintmax_t>>([&]() {
+  co_return co_await runtime::AsyncFuture([&]() {
     std::error_code error_code;
     auto len = std::filesystem::file_size(path_, error_code);
     return !error_code ? utils::Result<uintmax_t>::ok(len)
@@ -129,8 +128,7 @@ auto xyco::fs::epoll::File::size() const
 
 auto xyco::fs::epoll::File::status()
     -> runtime::Future<utils::Result<std::filesystem::file_status>> {
-  co_return co_await runtime::AsyncFuture<
-      utils::Result<std::filesystem::file_status>>([&]() {
+  co_return co_await runtime::AsyncFuture([&]() {
     std::error_code error_code;
     std::filesystem::file_status status;
     if (std::filesystem::is_symlink(path_)) {
@@ -148,7 +146,7 @@ auto xyco::fs::epoll::File::status()
 auto xyco::fs::epoll::File::set_permissions(
     std::filesystem::perms prms, std::filesystem::perm_options opts) const
     -> runtime::Future<utils::Result<void>> {
-  co_return co_await runtime::AsyncFuture<utils::Result<void>>([&]() {
+  co_return co_await runtime::AsyncFuture([&]() {
     std::error_code error_code;
     std::filesystem::permissions(path_, prms, opts, error_code);
     return !error_code ? utils::Result<void>::ok()
@@ -160,13 +158,13 @@ auto xyco::fs::epoll::File::set_permissions(
 
 auto xyco::fs::epoll::File::flush() const
     -> runtime::Future<utils::Result<void>> {
-  co_return co_await runtime::AsyncFuture<utils::Result<void>>(
+  co_return co_await runtime::AsyncFuture(
       [=]() { return utils::into_sys_result(::fsync(fd_)); });
 }
 
 auto xyco::fs::epoll::File::seek(off64_t offset, int whence) const
     -> runtime::Future<utils::Result<off64_t>> {
-  co_return co_await runtime::AsyncFuture<utils::Result<off64_t>>([=]() {
+  co_return co_await runtime::AsyncFuture([=]() {
     auto return_offset = ::lseek64(fd_, offset, whence);
     if (return_offset == -1) {
       return utils::into_sys_result(-1).map(
@@ -201,7 +199,7 @@ xyco::fs::epoll::File::File(int file_descriptor, std::filesystem::path&& path)
 
 auto xyco::fs::epoll::OpenOptions::open(std::filesystem::path path)
     -> runtime::Future<utils::Result<File>> {
-  co_return co_await runtime::AsyncFuture<utils::Result<File>>([&]() {
+  co_return co_await runtime::AsyncFuture([&]() {
     auto access_mode = get_access_mode();
     if (access_mode.is_err()) {
       return access_mode.map(

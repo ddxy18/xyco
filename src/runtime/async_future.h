@@ -2,6 +2,7 @@
 #define XYCO_RUNTIME_ASYNC_H_
 
 #include <gsl/pointers>
+#include <type_traits>
 
 #include "future.h"
 #include "poll.h"
@@ -9,44 +10,44 @@
 #include "runtime/blocking.h"
 
 namespace xyco::runtime {
-template <typename Return>
-class AsyncFuture : public Future<Return> {
+template <typename Fn>
+class AsyncFuture : public Future<std::invoke_result_t<Fn>> {
+  using ReturnType = std::invoke_result_t<Fn>;
+
  public:
-  [[nodiscard]] auto poll(Handle<void> self) -> Poll<Return> override {
+  [[nodiscard]] auto poll(Handle<void> self) -> Poll<ReturnType> override {
     if (!ready_) {
       ready_ = true;
       RuntimeCtx::get_ctx()->driver().Register<BlockingRegistry>(event_);
       return Pending();
     }
 
-    gsl::owner<Return *> ret = gsl::owner<Return *>(
+    gsl::owner<ReturnType *> ret = gsl::owner<ReturnType *>(
         dynamic_cast<AsyncFutureExtra *>(event_->extra_.get())->after_extra_);
     auto result = std::move(*ret);
     RuntimeCtx::get_ctx()->driver().deregister<BlockingRegistry>(event_);
     delete ret;
 
-    return Ready<Return>{std::move(result)};
+    return Ready<ReturnType>{std::move(result)};
   }
 
-  template <typename Fn>
   explicit AsyncFuture(Fn &&function)
-    requires(std::is_invocable_r_v<Return, Fn>)
-      : Future<Return>(nullptr),
+      : Future<ReturnType>(nullptr),
         f_([&]() {
           dynamic_cast<AsyncFutureExtra *>(event_->extra_.get())->after_extra_ =
-              gsl::owner<Return *>(new Return(function()));
+              gsl::owner<ReturnType *>(new ReturnType(function()));
         }),
         event_(std::make_shared<Event>(xyco::runtime::Event{
             .future_ = this,
             .extra_ = std::make_unique<AsyncFutureExtra>(f_)})) {}
 
-  AsyncFuture(const AsyncFuture<Return> &) = delete;
+  AsyncFuture(const AsyncFuture<Fn> &) = delete;
 
-  AsyncFuture(AsyncFuture<Return> &&) = delete;
+  AsyncFuture(AsyncFuture<Fn> &&) = delete;
 
-  auto operator=(const AsyncFuture<Return> &) -> AsyncFuture<Return> & = delete;
+  auto operator=(const AsyncFuture<Fn> &) -> AsyncFuture<Fn> & = delete;
 
-  auto operator=(AsyncFuture<Return> &&) -> AsyncFuture<Return> & = delete;
+  auto operator=(AsyncFuture<Fn> &&) -> AsyncFuture<Fn> & = delete;
 
   virtual ~AsyncFuture() = default;
 
