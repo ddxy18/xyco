@@ -2,8 +2,9 @@
 #define XYCO_IO_BUFFER_READER_H_
 
 #include "xyco/io/read.h"
-#include "xyco/utils/error.h"
 #include "xyco/utils/result.h"
+
+import xyco.error;
 
 namespace xyco::io {
 template <typename Reader, typename B>

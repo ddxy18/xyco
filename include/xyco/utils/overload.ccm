@@ -1,0 +1,6 @@
+export module xyco.overload;
+
+export template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};

@@ -16,8 +16,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: install essential packages
         run: |
-          sudo apt-get install -y ninja-build lcov liburing-dev libboost-all-dev
-          sudo bash scripts/install_llvm.sh $llvm_version
+          sudo apt-get install -y lcov liburing-dev libboost-all-dev
+          sudo bash scripts/install_build_toolchain.sh $llvm_version
       - name: test
         run: |
           BINARY_DIR=build/enable_logging/tests

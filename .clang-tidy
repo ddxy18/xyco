@@ -1,4 +1,5 @@
 ---
+# FIXME: readability-redundant-declaration is excluded due to a clang-tidy issue(https://github.com/llvm/llvm-project/issues/63939) of the c++20 module.
 Checks: '-*,
 bugprone-*,
 clang-analyzer-*,
@@ -9,7 +10,8 @@ modernize-*,
 performance-*,
 portability-*,
 readability-*,
--cppcoreguidelines-avoid-non-const-global-variables'
+-cppcoreguidelines-avoid-non-const-global-variables,
+-readability-redundant-declaration'
 
 WarningsAsErrors: '*'
 HeaderFilterRegex: '^.*xyco(/include/xyco/|/src/|/tests/).*$'

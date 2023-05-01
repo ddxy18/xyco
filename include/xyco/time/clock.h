@@ -4,7 +4,7 @@
 #include <chrono>
 #include <variant>
 
-#include "xyco/utils/overload.h"
+import xyco.overload;
 
 namespace xyco::time {
 template <typename C>

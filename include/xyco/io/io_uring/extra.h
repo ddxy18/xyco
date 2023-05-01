@@ -7,7 +7,8 @@
 
 #include "xyco/io/write.h"
 #include "xyco/runtime/registry.h"
-#include "xyco/utils/overload.h"
+
+import xyco.overload;
 
 namespace xyco::io::uring {
 class IoExtra : public runtime::Extra {

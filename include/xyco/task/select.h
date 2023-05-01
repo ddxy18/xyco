@@ -1,6 +1,7 @@
 #ifndef XYCO_TASK_SELECT_H_
 #define XYCO_TASK_SELECT_H_
 
+#include <expected>
 #include <shared_mutex>
 
 #include "xyco/runtime/runtime.h"

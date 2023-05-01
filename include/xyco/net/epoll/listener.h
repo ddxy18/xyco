@@ -9,8 +9,9 @@
 #include "xyco/net/socket.h"
 #include "xyco/runtime/future.h"
 #include "xyco/runtime/runtime_ctx.h"
-#include "xyco/utils/error.h"
 #include "xyco/utils/logger.h"
+
+import xyco.error;
 
 namespace xyco::net::epoll {
 class TcpStream;

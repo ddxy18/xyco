@@ -4,11 +4,13 @@
 #include <unistd.h>
 
 #include <array>
+#include <expected>
 #include <vector>
 
 #include "xyco/io/epoll/extra.h"
 #include "xyco/utils/logger.h"
-#include "xyco/utils/panic.h"
+
+import xyco.panic;
 
 auto to_sys(xyco::io::epoll::IoExtra::Interest interest) -> int {
   switch (interest) {

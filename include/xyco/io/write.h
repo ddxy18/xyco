@@ -1,11 +1,13 @@
 #ifndef XYCO_IO_WRITE_H_
 #define XYCO_IO_WRITE_H_
 
+#include <expected>
 #include <span>
 
 #include "xyco/io/utils.h"
 #include "xyco/runtime/future.h"
-#include "xyco/utils/error.h"
+
+import xyco.error;
 
 namespace xyco::io {
 template <typename Writer, typename Iterator>

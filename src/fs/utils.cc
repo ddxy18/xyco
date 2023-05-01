@@ -1,5 +1,7 @@
 #include "xyco/fs/utils.h"
 
+#include <expected>
+
 #include "xyco/task/blocking_task.h"
 
 auto xyco::fs::rename(std::filesystem::path old_path,

@@ -1,6 +1,11 @@
-#include "xyco/utils/error.h"
+module;
 
 #include <__utility/to_underlying.h>
+
+#include <cerrno>
+#include <expected>
+
+module xyco.error;
 
 auto xyco::utils::Error::from_sys_error() -> Error {
   auto err = Error{};

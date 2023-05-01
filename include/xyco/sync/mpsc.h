@@ -2,6 +2,7 @@
 #define XYCO_SYNC_MPSC_H
 
 #include <atomic>
+#include <expected>
 #include <queue>
 
 #include "xyco/runtime/future.h"

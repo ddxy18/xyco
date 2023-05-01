@@ -1,10 +1,11 @@
-#ifndef XYCO_UTILS_ERROR_H_
-#define XYCO_UTILS_ERROR_H_
+module;
 
 #include <expected>
 #include <format>
 
-namespace xyco::utils {
+export module xyco.error;
+
+export namespace xyco::utils {
 class Error;
 
 template <typename T>
@@ -48,5 +49,3 @@ struct std::formatter<xyco::utils::Error> : public std::formatter<bool> {
                           error_kind, err.info_);
   }
 };
-
-#endif  // XYCO_UTILS_ERROR_H_

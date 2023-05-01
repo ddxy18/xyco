@@ -11,7 +11,8 @@
 #include "xyco/io/epoll/registry.h"
 #include "xyco/runtime/runtime_ctx.h"
 #include "xyco/task/blocking_task.h"
-#include "xyco/utils/error.h"
+
+import xyco.error;
 
 namespace xyco::fs::epoll {
 class File {
