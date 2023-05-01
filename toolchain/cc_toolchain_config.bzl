@@ -13,7 +13,7 @@ all_link_actions = [
     ACTION_NAMES.cpp_link_nodeps_dynamic_library,
 ]
 
-LLVM_VERSION = 16
+LLVM_VERSION = 17
 
 def _impl(ctx):
     tool_paths = [
