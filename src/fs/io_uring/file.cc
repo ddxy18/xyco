@@ -158,12 +158,12 @@ auto xyco::fs::uring::File::set_permissions(
 auto xyco::fs::uring::File::flush() const
     -> runtime::Future<utils::Result<void>> {
   co_return co_await runtime::AsyncFuture(
-      [=]() { return utils::into_sys_result(::fsync(fd_)); });
+      [this]() { return utils::into_sys_result(::fsync(fd_)); });
 }
 
 auto xyco::fs::uring::File::seek(off64_t offset, int whence) const
     -> runtime::Future<utils::Result<off64_t>> {
-  co_return co_await runtime::AsyncFuture([=]() {
+  co_return co_await runtime::AsyncFuture([this, offset, whence]() {
     auto return_offset = ::lseek64(fd_, offset, whence);
     if (return_offset == -1) {
       return utils::into_sys_result(-1).map(

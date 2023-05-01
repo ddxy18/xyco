@@ -8,7 +8,7 @@ thread_local xyco::runtime::Runtime *xyco::runtime::RuntimeCtx::runtime_ =
     nullptr;
 
 auto xyco::runtime::Worker::lanuch(Runtime *runtime) -> void {
-  ctx_ = std::thread([=]() {
+  ctx_ = std::thread([this, runtime]() {
     runtime->on_start_f_();
     RuntimeCtx::set_ctx(runtime);
 

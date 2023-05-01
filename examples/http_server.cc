@@ -94,22 +94,23 @@ class Server {
  public:
   Server(std::unique_ptr<xyco::runtime::Runtime> runtime, uint16_t port)
       : runtime_(std::move(runtime)) {
-    auto init_server = [=](uint16_t port) -> xyco::runtime::Future<void> {
-      auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
-      tcp_socket.set_reuseaddr(true).unwrap();
-      (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port)))
-          .unwrap();
-      auto listener = (co_await tcp_socket.listen(LISTEN_BACKLOG)).unwrap();
-
-      while (true) {
-        auto server_stream = (co_await listener.accept()).unwrap().first;
-        runtime_->spawn(receive_request(std::move(server_stream)));
-      }
-    };
     runtime_->spawn(init_server(port));
   }
 
  private:
+  auto init_server(uint16_t port) -> xyco::runtime::Future<void> {
+    auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
+    tcp_socket.set_reuseaddr(true).unwrap();
+    (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port)))
+        .unwrap();
+    auto listener = (co_await tcp_socket.listen(LISTEN_BACKLOG)).unwrap();
+
+    while (true) {
+      auto server_stream = (co_await listener.accept()).unwrap().first;
+      runtime_->spawn(receive_request(std::move(server_stream)));
+    }
+  }
+
   auto receive_request(xyco::net::TcpStream server_stream)
       -> xyco::runtime::Future<void> {
     auto reader = xyco::io::BufferReader<xyco::net::TcpStream, std::string>(

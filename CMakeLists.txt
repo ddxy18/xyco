@@ -9,7 +9,7 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 
 add_compile_options(-std=c++20 -stdlib=libc++ -fexperimental-library)
-add_link_options(-fuse-ld=lld-16 -lc++ -lm -rdynamic)
+add_link_options(-fuse-ld=lld-17 -lc++ -lm -rdynamic)
 
 include(FetchContent)
 FetchContent_Declare(googletest
@@ -25,8 +25,8 @@ FetchContent_Declare(spdlog
                      URL_HASH SHA256=697f91700237dbae2326b90469be32b876b2b44888302afbc7aceb68bcfe8224)
 FetchContent_MakeAvailable(spdlog)
 FetchContent_Declare(asio
-                     URL "https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-24-0.tar.gz"
-                     URL_HASH SHA256=cbcaaba0f66722787b1a7c33afe1befb3a012b5af3ad7da7ff0f6b8c9b7a8a5b)
+                     URL "https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-28-0.tar.gz"
+                     URL_HASH SHA256=226438b0798099ad2a202563a83571ce06dd13b570d8fded4840dbc1f97fa328)
 FetchContent_MakeAvailable(asio)
 
 include_directories(src)
