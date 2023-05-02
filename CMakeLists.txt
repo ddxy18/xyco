@@ -9,7 +9,9 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 
 add_compile_options(-std=c++20 -stdlib=libc++ -fexperimental-library)
-add_link_options(-fuse-ld=lld-17 -lc++ -lm -rdynamic)
+# FIXME(xiaoyu): llvm path added cuz latest toolchain fails to find 
+# c++experimental lib, removes it after toolchain fixed
+add_link_options(-fuse-ld=lld-17 -lc++ -lm -rdynamic -L/usr/lib/llvm-17/lib)
 
 include(FetchContent)
 FetchContent_Declare(googletest

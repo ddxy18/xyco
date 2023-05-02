@@ -44,7 +44,11 @@ auto xyco::runtime::Worker::get_native_id() const -> std::thread::id {
 
 auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
   auto resume = [runtime, &end = end_](auto &handles, auto &handle_mutex) {
-    std::unique_lock<std::mutex> lock_guard(handle_mutex);
+    std::unique_lock<std::mutex> lock_guard(handle_mutex, std::try_to_lock);
+    if (!lock_guard) {
+      return;
+    }
+
     while (!end && !handles.empty()) {
       auto [handle, future] = handles.back();
       handles.pop_back();
@@ -75,19 +79,21 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
     // try to lock strategy to avoid deadlock in situation:
     // ~Runtime owns the lock before current thread
     std::unique_lock<std::mutex> worker_lock_guard(runtime->worker_mutex_,
-                                                   std::try_to_lock_t{});
-    if (worker_lock_guard) {
-      std::scoped_lock<std::mutex> idle_worker_lock_guard(
-          runtime->idle_workers_mutex_);
-      for (auto &tid : runtime->idle_workers_) {
-        auto pos = runtime->workers_.find(tid);
-        if (pos != std::end(runtime->workers_)) {
-          pos->second->ctx_.join();
-          runtime->workers_.erase(pos);
-        }
-      }
-      runtime->idle_workers_.clear();
+                                                   std::try_to_lock);
+    if (!worker_lock_guard) {
+      return;
     }
+
+    std::scoped_lock<std::mutex> idle_worker_lock_guard(
+        runtime->idle_workers_mutex_);
+    for (auto &tid : runtime->idle_workers_) {
+      auto pos = runtime->workers_.find(tid);
+      if (pos != std::end(runtime->workers_)) {
+        pos->second->ctx_.join();
+        runtime->workers_.erase(pos);
+      }
+    }
+    runtime->idle_workers_.clear();
   }
 }
 
@@ -110,11 +116,12 @@ xyco::runtime::Runtime::~Runtime() {
 
 auto xyco::runtime::Runtime::wake(Events &events) -> void {
   for (auto &event_ptr : events) {
-    if (event_ptr && event_ptr->future_ != nullptr) {
-      TRACE("wake {}", *event_ptr);
-      register_future(event_ptr->future_);
-      event_ptr->future_ = nullptr;
-    }
+    TRACE("wake {}", *event_ptr);
+    auto *future = event_ptr->future_;
+    // Unbinds `future_` first to avoid contaminating the event's next coroutine
+    event_ptr->future_ = nullptr;
+    std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
+    handles_.emplace(handles_.begin(), future->get_handle(), future);
   }
   events.clear();
 }
@@ -122,14 +129,12 @@ auto xyco::runtime::Runtime::wake(Events &events) -> void {
 auto xyco::runtime::Runtime::wake_local(Events &events) -> void {
   auto &worker = workers_.find(std::this_thread::get_id())->second;
   for (auto &event_ptr : events) {
-    if (event_ptr && event_ptr->future_ != nullptr) {
-      TRACE("wake local {}", *event_ptr);
-      std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
-      worker->handles_.emplace(worker->handles_.begin(),
-                               event_ptr->future_->get_handle(),
-                               event_ptr->future_);
-      event_ptr->future_ = nullptr;
-    }
+    TRACE("wake local {}", *event_ptr);
+    auto *future = event_ptr->future_;
+    event_ptr->future_ = nullptr;
+    std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
+    worker->handles_.emplace(worker->handles_.begin(), future->get_handle(),
+                             future);
   }
   events.clear();
 }

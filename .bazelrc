@@ -4,6 +4,7 @@ build --linkopt=-lc++
 build --linkopt=-lm
 build --linkopt=-rdynamic
 build --linkopt=-lc++experimental
+build --linkopt=-L/usr/lib/llvm-17/lib
 build --cxxopt=-std=c++20
 build --cxxopt=-stdlib=libc++
 build --cxxopt=-fexperimental-library
