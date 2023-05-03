@@ -1,3 +1,4 @@
+#include "runtime/thread_local_registry.h"
 #include "utils.h"
 
 class TestLocalRegistry : public xyco::runtime::Registry {
@@ -31,58 +32,8 @@ class TestLocalRegistry : public xyco::runtime::Registry {
   std::shared_ptr<xyco::runtime::Event> event_;
 };
 
-class TestGlobalRegistry : public xyco::runtime::GlobalRegistry {
- public:
-  auto Register(std::shared_ptr<xyco::runtime::Event> event)
-      -> xyco::utils::Result<void> override {
-    return register_local(event);
-  }
-
-  auto reregister(std::shared_ptr<xyco::runtime::Event> event)
-      -> xyco::utils::Result<void> override {
-    return reregister_local(event);
-  }
-
-  auto deregister(std::shared_ptr<xyco::runtime::Event> event)
-      -> xyco::utils::Result<void> override {
-    return deregister_local(event);
-  }
-
-  auto register_local(std::shared_ptr<xyco::runtime::Event> event)
-      -> xyco::utils::Result<void> override {
-    return xyco::runtime::RuntimeCtx::get_ctx()
-        ->driver()
-        .local_handle<TestLocalRegistry>()
-        ->Register(event);
-  }
-
-  auto reregister_local(std::shared_ptr<xyco::runtime::Event> event)
-      -> xyco::utils::Result<void> override {
-    return xyco::runtime::RuntimeCtx::get_ctx()
-        ->driver()
-        .local_handle<TestLocalRegistry>()
-        ->reregister(event);
-  }
-
-  auto deregister_local(std::shared_ptr<xyco::runtime::Event> event)
-      -> xyco::utils::Result<void> override {
-    return xyco::runtime::RuntimeCtx::get_ctx()
-        ->driver()
-        .local_handle<TestLocalRegistry>()
-        ->deregister(event);
-  }
-
-  auto select(xyco::runtime::Events &events, std::chrono::milliseconds timeout)
-      -> xyco::utils::Result<void> override {
-    return xyco::utils::Result<void>::ok();
-  }
-
-  auto local_registry_init() -> void override {
-    xyco::runtime::RuntimeCtx::get_ctx()
-        ->driver()
-        .add_local_registry<TestLocalRegistry>();
-  }
-};
+using TestGlobalRegistry =
+    xyco::runtime::ThreadLocalRegistry<TestLocalRegistry>;
 
 class TestFuture : public xyco::runtime::Future<int> {
  public:

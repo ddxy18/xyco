@@ -80,7 +80,8 @@ class Runtime {
 
   auto driver() -> Driver &;
 
-  Runtime(Privater priv);
+  Runtime(Privater priv,
+          std::vector<std::function<void()>> &&registry_initializers);
 
   Runtime(const Runtime &runtime) = delete;
 
@@ -157,8 +158,8 @@ class Builder {
 
   template <typename Registry, typename... Args>
   auto registry(Args... args) -> Builder & {
-    registries_.push_back([=](Runtime *runtime) {
-      runtime->driver_.add_registry<Registry>(args...);
+    registry_initializers_.push_back([=]() {
+      RuntimeCtx::get_ctx()->driver_.add_registry<Registry>(args...);
     });
     return *this;
   }
@@ -167,7 +168,7 @@ class Builder {
 
   auto on_worker_stop(auto (*function)()->void) -> Builder &;
 
-  [[nodiscard]] auto build() const -> utils::Result<std::unique_ptr<Runtime>>;
+  [[nodiscard]] auto build() -> utils::Result<std::unique_ptr<Runtime>>;
 
  private:
   static auto default_f() -> void;
@@ -177,7 +178,7 @@ class Builder {
   auto (*on_start_f_)() -> void;
   auto (*on_stop_f_)() -> void;
 
-  std::vector<std::function<void(Runtime *)>> registries_;
+  std::vector<std::function<void()>> registry_initializers_;
 };
 }  // namespace xyco::runtime
 

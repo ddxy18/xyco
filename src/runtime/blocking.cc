@@ -16,7 +16,7 @@ auto xyco::runtime::Task::operator()() -> void { inner_(); }
 xyco::runtime::Task::Task(std::function<void()> task)
     : inner_(std::move(task)) {}
 
-auto xyco::runtime::BlockingWorker::run(BlockingRegistry& blocking_registry)
+auto xyco::runtime::BlockingWorker::run(BlockingRegistryImpl& blocking_registry)
     -> void {
   while (!end_) {
     std::unique_lock<std::mutex> lock_guard(mutex_);
@@ -35,7 +35,7 @@ auto xyco::runtime::BlockingWorker::run(BlockingRegistry& blocking_registry)
   }
 }
 
-auto xyco::runtime::BlockingPool::run(BlockingRegistry& blocking_registry)
+auto xyco::runtime::BlockingPool::run(BlockingRegistryImpl& blocking_registry)
     -> void {
   for (auto& worker : workers_) {
     worker_ctx_.emplace_back([&]() { worker.run(blocking_registry); });
@@ -67,12 +67,12 @@ xyco::runtime::BlockingPool::~BlockingPool() {
   }
 }
 
-xyco::runtime::BlockingRegistry::BlockingRegistry(uintptr_t woker_num)
+xyco::runtime::BlockingRegistryImpl::BlockingRegistryImpl(uintptr_t woker_num)
     : pool_(woker_num) {
   pool_.run(*this);
 }
 
-auto xyco::runtime::BlockingRegistry::Register(std::shared_ptr<Event> event)
+auto xyco::runtime::BlockingRegistryImpl::Register(std::shared_ptr<Event> event)
     -> utils::Result<void> {
   {
     std::scoped_lock<std::mutex> lock_guard(mutex_);
@@ -83,18 +83,18 @@ auto xyco::runtime::BlockingRegistry::Register(std::shared_ptr<Event> event)
   return utils::Result<void>::ok();
 }
 
-auto xyco::runtime::BlockingRegistry::reregister(std::shared_ptr<Event> event)
-    -> utils::Result<void> {
+auto xyco::runtime::BlockingRegistryImpl::reregister(
+    std::shared_ptr<Event> event) -> utils::Result<void> {
   return utils::Result<void>::ok();
 }
 
-auto xyco::runtime::BlockingRegistry::deregister(std::shared_ptr<Event> event)
-    -> utils::Result<void> {
+auto xyco::runtime::BlockingRegistryImpl::deregister(
+    std::shared_ptr<Event> event) -> utils::Result<void> {
   return utils::Result<void>::ok();
 }
 
-auto xyco::runtime::BlockingRegistry::select(runtime::Events& events,
-                                             std::chrono::milliseconds timeout)
+auto xyco::runtime::BlockingRegistryImpl::select(
+    runtime::Events& events, std::chrono::milliseconds timeout)
     -> utils::Result<void> {
   decltype(events_) new_events;
 

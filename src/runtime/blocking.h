@@ -4,10 +4,10 @@
 #include <mutex>
 #include <queue>
 
-#include "registry.h"
+#include "runtime/global_registry.h"
 
 namespace xyco::runtime {
-class BlockingRegistry;
+class BlockingRegistryImpl;
 
 class AsyncFutureExtra : public Extra {
  public:
@@ -33,7 +33,7 @@ class BlockingWorker {
   friend class BlockingPool;
 
  private:
-  auto run(BlockingRegistry& blocking_registry) -> void;
+  auto run(BlockingRegistryImpl& blocking_registry) -> void;
 
   std::queue<Task> tasks_;
   std::mutex mutex_;
@@ -43,7 +43,7 @@ class BlockingWorker {
 
 class BlockingPool {
  public:
-  auto run(BlockingRegistry& blocking_registry) -> void;
+  auto run(BlockingRegistryImpl& blocking_registry) -> void;
 
   auto spawn(Task task) -> void;
 
@@ -64,11 +64,11 @@ class BlockingPool {
   std::vector<std::thread> worker_ctx_;
 };
 
-class BlockingRegistry : public runtime::Registry {
+class BlockingRegistryImpl : public runtime::Registry {
   friend class BlockingWorker;
 
  public:
-  explicit BlockingRegistry(uintptr_t woker_num);
+  explicit BlockingRegistryImpl(uintptr_t woker_num);
 
   [[nodiscard]] auto Register(std::shared_ptr<Event> event)
       -> utils::Result<void> override;
@@ -88,6 +88,8 @@ class BlockingRegistry : public runtime::Registry {
   std::mutex mutex_;
   BlockingPool pool_;
 };
+
+using BlockingRegistry = GlobalRegistry<BlockingRegistryImpl>;
 }  // namespace xyco::runtime
 
 template <>

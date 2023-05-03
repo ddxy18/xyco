@@ -1,13 +1,10 @@
 #ifndef XYCO_NET_EPOLL_REGISTRY_H_
 #define XYCO_NET_EPOLL_REGISTRY_H_
 
-#include <mutex>
-#include <vector>
-
-#include "runtime/registry.h"
+#include "runtime/global_registry.h"
 
 namespace xyco::io::epoll {
-class IoRegistry : public runtime::Registry {
+class IoRegistryImpl : public runtime::Registry {
  public:
   [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
@@ -22,17 +19,17 @@ class IoRegistry : public runtime::Registry {
                             std::chrono::milliseconds timeout)
       -> utils::Result<void> override;
 
-  IoRegistry(int entries);
+  IoRegistryImpl(int entries);
 
-  IoRegistry(const IoRegistry &epoll) = delete;
+  IoRegistryImpl(const IoRegistryImpl &epoll) = delete;
 
-  IoRegistry(IoRegistry &&epoll) = delete;
+  IoRegistryImpl(IoRegistryImpl &&epoll) = delete;
 
-  auto operator=(const IoRegistry &epoll) -> IoRegistry & = delete;
+  auto operator=(const IoRegistryImpl &epoll) -> IoRegistryImpl & = delete;
 
-  auto operator=(IoRegistry &&epoll) -> IoRegistry & = delete;
+  auto operator=(IoRegistryImpl &&epoll) -> IoRegistryImpl & = delete;
 
-  ~IoRegistry() override;
+  ~IoRegistryImpl() override;
 
  private:
   constexpr static std::chrono::milliseconds MAX_TIMEOUT =
@@ -42,7 +39,11 @@ class IoRegistry : public runtime::Registry {
   int epfd_;
   std::mutex events_mutex_;
   std::vector<std::shared_ptr<runtime::Event>> registered_events_;
+
+  std::mutex select_mutex_;
 };
+
+using IoRegistry = runtime::GlobalRegistry<IoRegistryImpl>;
 }  // namespace xyco::io::epoll
 
 #endif  // XYCO_NET_EPOLL_REGISTRY_H_

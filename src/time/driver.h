@@ -3,7 +3,7 @@
 
 #include <iomanip>
 
-#include "runtime/registry.h"
+#include "runtime/global_registry.h"
 #include "wheel.h"
 
 namespace xyco::time {
@@ -17,7 +17,7 @@ class TimeExtra : public runtime::Extra {
   std::chrono::time_point<std::chrono::system_clock> expire_time_;
 };
 
-class TimeRegistry : public runtime::Registry {
+class TimeRegistryImpl : public runtime::Registry {
  public:
   [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
@@ -34,7 +34,11 @@ class TimeRegistry : public runtime::Registry {
 
  private:
   Wheel wheel_;
+
+  std::mutex select_mutex_;
 };
+
+using TimeRegistry = runtime::GlobalRegistry<TimeRegistryImpl>;
 }  // namespace xyco::time
 
 template <>

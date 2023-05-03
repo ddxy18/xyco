@@ -5,10 +5,10 @@
 
 #include <vector>
 
-#include "runtime/registry.h"
+#include "runtime/thread_local_registry.h"
 
 namespace xyco::io::uring {
-class IoRegistry : public runtime::GlobalRegistry {
+class IoRegistryImpl : public runtime::Registry {
  public:
   constexpr static std::chrono::milliseconds MAX_TIMEOUT =
       std::chrono::milliseconds(1);
@@ -27,32 +27,24 @@ class IoRegistry : public runtime::GlobalRegistry {
                             std::chrono::milliseconds timeout)
       -> utils::Result<void> override;
 
-  auto register_local(std::shared_ptr<xyco::runtime::Event> event)
-      -> xyco::utils::Result<void> override;
+  IoRegistryImpl(uint32_t entries);
 
-  auto reregister_local(std::shared_ptr<xyco::runtime::Event> event)
-      -> xyco::utils::Result<void> override;
+  IoRegistryImpl(const IoRegistryImpl& registry) = delete;
 
-  auto deregister_local(std::shared_ptr<xyco::runtime::Event> event)
-      -> xyco::utils::Result<void> override;
+  IoRegistryImpl(IoRegistryImpl&& registry) = delete;
 
-  auto local_registry_init() -> void override;
+  auto operator=(const IoRegistryImpl& registry) -> IoRegistryImpl& = delete;
 
-  IoRegistry(uint32_t entries);
+  auto operator=(IoRegistryImpl&& registry) -> IoRegistryImpl& = delete;
 
-  IoRegistry(const IoRegistry& registry) = delete;
-
-  IoRegistry(IoRegistry&& registry) = delete;
-
-  auto operator=(const IoRegistry& registry) -> IoRegistry& = delete;
-
-  auto operator=(IoRegistry&& registry) -> IoRegistry& = delete;
-
-  ~IoRegistry() override = default;
+  ~IoRegistryImpl() override;
 
  private:
-  uint32_t uring_capacity_;
+  struct io_uring io_uring_;
+  std::vector<std::shared_ptr<runtime::Event>> registered_events_;
 };
+
+using IoRegistry = runtime::ThreadLocalRegistry<IoRegistryImpl>;
 }  // namespace xyco::io::uring
 
 #endif  // XYCO_IO_IO_URING_REGISTRY_H_
