@@ -59,7 +59,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: install essential packages
         run: |
-          sudo apt-get install -y lcov liburing-dev libboost-all-dev
+          sudo apt-get install -y ninja-build lcov liburing-dev libboost-all-dev
           sudo bash scripts/install_llvm.sh $llvm_version
       - name: test
         run: |
