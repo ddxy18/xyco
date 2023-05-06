@@ -198,6 +198,7 @@ TEST_F(FileTest, file_status) {
     CO_ASSERT_EQ(status.type(), std::filesystem::file_type::regular);
     CO_ASSERT_EQ(status.permissions(), std::filesystem::perms::others_read |
                                            std::filesystem::perms::group_read |
+                                           std::filesystem::perms::group_write |
                                            std::filesystem::perms::owner_read |
                                            std::filesystem::perms::owner_write);
   });
