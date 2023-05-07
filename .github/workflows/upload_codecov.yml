@@ -24,7 +24,7 @@ jobs:
           cmake --build build --config Release --target xyco_test_epoll xyco_test_uring
           LLVM_PROFILE_FILE="build/tests/xyco_test_epoll.profraw" build/tests/xyco_test_epoll --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
           llvm-profdata-$llvm_version merge -sparse build/tests/xyco_test_epoll.profraw -o build/tests/xyco_test_epoll.profdata
-          llvm-cov-$llvm_version show build/tests/xyco_test_epoll -ignore-filename-regex=build -instr-profile=build/tests/xyco_test_epoll.profdata > coverage_eopll.txt
+          llvm-cov-$llvm_version show build/tests/xyco_test_epoll -ignore-filename-regex=build -instr-profile=build/tests/xyco_test_epoll.profdata > coverage_epoll.txt
           LLVM_PROFILE_FILE="build/tests/xyco_test_uring.profraw" build/tests/xyco_test_uring --gtest_repeat=100 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
           llvm-profdata-$llvm_version merge -sparse build/tests/xyco_test_uring.profraw -o build/tests/xyco_test_uring.profdata
           llvm-cov-$llvm_version show build/tests/xyco_test_uring -ignore-filename-regex=build -instr-profile=build/tests/xyco_test_uring.profdata > coverage_uring.txt
