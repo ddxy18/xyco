@@ -104,7 +104,9 @@ auto xyco::runtime::Runtime::register_future(FutureBase *future) -> void {
 
 auto xyco::runtime::Runtime::driver() -> Driver & { return driver_; }
 
-xyco::runtime::Runtime::Runtime(Privater priv) {}
+xyco::runtime::Runtime::Runtime(
+    Privater priv, std::vector<std::function<void()>> &&registry_initializers)
+    : driver_(std::move(registry_initializers)) {}
 
 xyco::runtime::Runtime::~Runtime() {
   std::unique_lock<std::mutex> lock_guard_(worker_mutex_);
@@ -168,14 +170,12 @@ auto xyco::runtime::Builder::on_worker_stop(auto (*function)()->void)
   return *this;
 }
 
-auto xyco::runtime::Builder::build() const
+auto xyco::runtime::Builder::build()
     -> utils::Result<std::unique_ptr<Runtime>> {
-  auto runtime = std::make_unique<Runtime>(Runtime::Privater());
+  auto runtime = std::make_unique<Runtime>(Runtime::Privater(),
+                                           std::move(registry_initializers_));
   runtime->on_start_f_ = on_start_f_;
   runtime->on_stop_f_ = on_stop_f_;
-  for (const auto &registry_constructor : registries_) {
-    registry_constructor(runtime.get());
-  }
 
   runtime->worker_num_ = worker_num_;
   for (auto i = 0; i < worker_num_; i++) {

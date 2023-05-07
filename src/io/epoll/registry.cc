@@ -50,7 +50,7 @@ struct std::formatter<epoll_event> : public std::formatter<bool> {
   }
 };
 
-auto xyco::io::epoll::IoRegistry::Register(
+auto xyco::io::epoll::IoRegistryImpl::Register(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   auto *extra = dynamic_cast<io::epoll::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{
@@ -75,7 +75,7 @@ auto xyco::io::epoll::IoRegistry::Register(
   return result;
 }
 
-auto xyco::io::epoll::IoRegistry::reregister(
+auto xyco::io::epoll::IoRegistryImpl::reregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   auto *extra = dynamic_cast<io::epoll::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
@@ -98,7 +98,7 @@ auto xyco::io::epoll::IoRegistry::reregister(
   return result;
 }
 
-auto xyco::io::epoll::IoRegistry::deregister(
+auto xyco::io::epoll::IoRegistryImpl::deregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   auto *extra = dynamic_cast<io::epoll::IoExtra *>(event->extra_.get());
   epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
@@ -122,10 +122,12 @@ auto xyco::io::epoll::IoRegistry::deregister(
   return result;
 }
 
-auto xyco::io::epoll::IoRegistry::select(runtime::Events &events,
-                                         std::chrono::milliseconds timeout)
+auto xyco::io::epoll::IoRegistryImpl::select(runtime::Events &events,
+                                             std::chrono::milliseconds timeout)
     -> utils::Result<void> {
   static auto epoll_events = std::array<epoll_event, MAX_EVENTS>();
+
+  std::scoped_lock<std::mutex> select_lock_guard(select_mutex_);
 
   auto select_result = utils::into_sys_result(
       ::epoll_wait(epfd_, epoll_events.data(), MAX_EVENTS,
@@ -154,11 +156,11 @@ auto xyco::io::epoll::IoRegistry::select(runtime::Events &events,
   return utils::Result<void>::ok();
 }
 
-xyco::io::epoll::IoRegistry::IoRegistry(int entries)
+xyco::io::epoll::IoRegistryImpl::IoRegistryImpl(int entries)
     : epfd_(::epoll_create(entries)) {
   if (epfd_ == -1) {
     utils::panic();
   }
 }
 
-xyco::io::epoll::IoRegistry::~IoRegistry() { ::close(epfd_); }
+xyco::io::epoll::IoRegistryImpl::~IoRegistryImpl() { ::close(epfd_); }

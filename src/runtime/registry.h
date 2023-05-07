@@ -59,32 +59,6 @@ class Registry {
 
   virtual ~Registry() = default;
 };
-
-class GlobalRegistry : public Registry {
- public:
-  [[nodiscard]] auto Register(std::shared_ptr<Event> event)
-      -> utils::Result<void> override = 0;
-
-  [[nodiscard]] auto reregister(std::shared_ptr<Event> event)
-      -> utils::Result<void> override = 0;
-
-  [[nodiscard]] auto deregister(std::shared_ptr<Event> event)
-      -> utils::Result<void> override = 0;
-
-  [[nodiscard]] virtual auto register_local(std::shared_ptr<Event> event)
-      -> utils::Result<void> = 0;
-
-  [[nodiscard]] virtual auto reregister_local(std::shared_ptr<Event> event)
-      -> utils::Result<void> = 0;
-
-  [[nodiscard]] virtual auto deregister_local(std::shared_ptr<Event> event)
-      -> utils::Result<void> = 0;
-
-  [[nodiscard]] auto select(Events &events, std::chrono::milliseconds timeout)
-      -> utils::Result<void> override = 0;
-
-  virtual auto local_registry_init() -> void = 0;
-};
 }  // namespace xyco::runtime
 
 template <>
