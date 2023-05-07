@@ -191,15 +191,17 @@ TEST_F(FileTest, file_status) {
     const char *path = "test_file_status";
 
     auto file_path = (std::string(fs_root_).append(path));
-    auto file = (co_await xyco::fs::File::create(file_path)).unwrap();
+    auto file = (co_await xyco::fs::OpenOptions()
+                     .create(true)
+                     .write(true)
+                     .mode(0400)
+                     .open(file_path))
+                    .unwrap();
 
     auto status = (co_await file.status()).unwrap();
 
     CO_ASSERT_EQ(status.type(), std::filesystem::file_type::regular);
-    CO_ASSERT_EQ(status.permissions(), std::filesystem::perms::others_read |
-                                           std::filesystem::perms::group_read |
-                                           std::filesystem::perms::owner_read |
-                                           std::filesystem::perms::owner_write);
+    CO_ASSERT_EQ(status.permissions(), std::filesystem::perms::owner_read);
   });
 }
 
