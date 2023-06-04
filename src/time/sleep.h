@@ -2,7 +2,8 @@
 #define XYCO_TIME_SLEEP_H
 
 #include "clock.h"
-#include "runtime/runtime.h"
+#include "runtime/future.h"
+#include "runtime/runtime_ctx.h"
 #include "time/driver.h"
 
 namespace xyco::time {

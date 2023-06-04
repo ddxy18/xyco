@@ -4,9 +4,6 @@
 
 #include "runtime/blocking.h"
 
-thread_local xyco::runtime::Runtime *xyco::runtime::RuntimeCtx::runtime_ =
-    nullptr;
-
 auto xyco::runtime::Worker::lanuch(Runtime *runtime) -> void {
   ctx_ = std::thread([this, runtime]() {
     runtime->on_start_f_();
@@ -97,15 +94,9 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
   }
 }
 
-auto xyco::runtime::Runtime::register_future(FutureBase *future) -> void {
-  std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
-  handles_.emplace(handles_.begin(), future->get_handle(), future);
-}
-
-auto xyco::runtime::Runtime::driver() -> Driver & { return driver_; }
-
 xyco::runtime::Runtime::Runtime(
-    Privater priv, std::vector<std::function<void()>> &&registry_initializers)
+    Privater priv,
+    std::vector<std::function<void(Runtime *)>> &&registry_initializers)
     : driver_(std::move(registry_initializers)) {}
 
 xyco::runtime::Runtime::~Runtime() {
@@ -114,31 +105,6 @@ xyco::runtime::Runtime::~Runtime() {
     worker->stop();
     worker->ctx_.join();
   }
-}
-
-auto xyco::runtime::Runtime::wake(Events &events) -> void {
-  for (auto &event_ptr : events) {
-    TRACE("wake {}", *event_ptr);
-    auto *future = event_ptr->future_;
-    // Unbinds `future_` first to avoid contaminating the event's next coroutine
-    event_ptr->future_ = nullptr;
-    std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
-    handles_.emplace(handles_.begin(), future->get_handle(), future);
-  }
-  events.clear();
-}
-
-auto xyco::runtime::Runtime::wake_local(Events &events) -> void {
-  auto &worker = workers_.find(std::this_thread::get_id())->second;
-  for (auto &event_ptr : events) {
-    TRACE("wake local {}", *event_ptr);
-    auto *future = event_ptr->future_;
-    event_ptr->future_ = nullptr;
-    std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
-    worker->handles_.emplace(worker->handles_.begin(), future->get_handle(),
-                             future);
-  }
-  events.clear();
 }
 
 auto xyco::runtime::Builder::new_multi_thread() -> Builder {

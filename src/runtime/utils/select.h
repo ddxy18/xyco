@@ -2,6 +2,7 @@
 #define XYCO_RUNTIME_UTILS_SELECT_H
 
 #include "runtime/runtime.h"
+#include "runtime/runtime_ctx.h"
 #include "type_wrapper.h"
 
 namespace xyco::runtime {
@@ -18,8 +19,8 @@ class SelectFuture
           future_wrapper<T1, 1>(std::move(futures_.first)),
           future_wrapper<T2, 2>(std::move(futures_.second)));
       wrappers_ = {wrapper1.get_handle(), wrapper2.get_handle()};
-      RuntimeCtx::get_ctx()->spawn(std::move(wrapper1));
-      RuntimeCtx::get_ctx()->spawn(std::move(wrapper2));
+      RuntimeCtx::get_ctx()->get_runtime()->spawn(std::move(wrapper1));
+      RuntimeCtx::get_ctx()->get_runtime()->spawn(std::move(wrapper2));
       return Pending();
     }
 

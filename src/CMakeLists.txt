@@ -16,7 +16,7 @@ set(net_epoll_src "net/socket.cc" "net/epoll/listener.cc")
 set(net_uring_src "net/socket.cc" "net/io_uring/listener.cc")
 set(net_all_src "net/socket.cc" "net/epoll/listener.cc" "net/io_uring/listener.cc")
 
-set(runtime_src "runtime/blocking.cc" "runtime/driver.cc" "runtime/future.cc" "runtime/runtime.cc")
+set(runtime_src "runtime/blocking.cc" "runtime/driver.cc" "runtime/future.cc" "runtime/runtime.cc" "runtime/runtime_ctx.cc")
 
 set(time_src "time/driver.cc" "time/wheel.cc" "time/clock.cc")
 
