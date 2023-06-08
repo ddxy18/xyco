@@ -1,7 +1,8 @@
 #ifndef XYCO_SYNC_ONESHOT_H
 #define XYCO_SYNC_ONESHOT_H
 
-#include "runtime/runtime.h"
+#include "runtime/future.h"
+#include "runtime/runtime_ctx.h"
 
 namespace xyco::sync::oneshot {
 template <typename Value>

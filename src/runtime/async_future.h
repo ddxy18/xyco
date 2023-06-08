@@ -5,9 +5,8 @@
 #include <type_traits>
 
 #include "future.h"
-#include "poll.h"
-#include "runtime.h"
 #include "runtime/blocking.h"
+#include "runtime_ctx.h"
 
 namespace xyco::runtime {
 template <typename Fn>

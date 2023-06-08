@@ -7,7 +7,8 @@
 #include "io/epoll/registry.h"
 #include "io/utils.h"
 #include "net/socket.h"
-#include "runtime/runtime.h"
+#include "runtime/future.h"
+#include "runtime/runtime_ctx.h"
 #include "utils/error.h"
 
 namespace xyco::net::epoll {

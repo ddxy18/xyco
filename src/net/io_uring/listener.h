@@ -6,7 +6,7 @@
 #include "io/io_uring/extra.h"
 #include "io/io_uring/registry.h"
 #include "net/socket.h"
-#include "runtime/runtime.h"
+#include "runtime/runtime_ctx.h"
 
 namespace xyco::net::uring {
 class TcpStream;

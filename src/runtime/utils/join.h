@@ -4,6 +4,7 @@
 #include <mutex>
 
 #include "runtime/runtime.h"
+#include "runtime/runtime_ctx.h"
 #include "type_wrapper.h"
 
 namespace xyco::runtime {
@@ -15,8 +16,10 @@ class JoinFuture : public Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
   auto poll(Handle<void> self) -> Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
-      RuntimeCtx::get_ctx()->spawn(future_wrapper<T1, 0>(std::move(future1_)));
-      RuntimeCtx::get_ctx()->spawn(future_wrapper<T2, 1>(std::move(future2_)));
+      RuntimeCtx::get_ctx()->get_runtime()->spawn(
+          future_wrapper<T1, 0>(std::move(future1_)));
+      RuntimeCtx::get_ctx()->get_runtime()->spawn(
+          future_wrapper<T2, 1>(std::move(future2_)));
       return Pending();
     }
 

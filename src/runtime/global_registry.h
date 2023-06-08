@@ -4,7 +4,7 @@
 #include <gsl/pointers>
 #include <shared_mutex>
 
-#include "runtime/runtime.h"
+#include "runtime_ctx.h"
 
 namespace xyco::runtime {
 template <typename R>
@@ -30,7 +30,7 @@ class GlobalRegistry {
   }
 
  private:
-  static std::unordered_map<runtime::Runtime *, std::shared_ptr<R>>
+  static std::unordered_map<runtime::RuntimeBridge *, std::shared_ptr<R>>
       per_runtime_registry_;
   // Prevents runtime level data race, worker level multithread is serialized in
   // the runtime implementation.
@@ -39,7 +39,7 @@ class GlobalRegistry {
 
 template <typename R>
   requires(std::derived_from<R, Registry>)
-std::unordered_map<runtime::Runtime *, std::shared_ptr<R>>
+std::unordered_map<runtime::RuntimeBridge *, std::shared_ptr<R>>
     GlobalRegistry<R>::per_runtime_registry_;
 template <typename R>
   requires(std::derived_from<R, Registry>)

@@ -16,20 +16,9 @@
 namespace xyco::runtime {
 class Runtime;
 
-class RuntimeCtx {
- public:
-  static auto is_in_ctx() -> bool { return runtime_ != nullptr; }
-
-  static auto set_ctx(Runtime *runtime) -> void { runtime_ = runtime; }
-
-  static auto get_ctx() -> Runtime * { return runtime_; }
-
- private:
-  thread_local static Runtime *runtime_;
-};
-
 class Worker {
   friend class Runtime;
+  friend class RuntimeBridge;
 
  public:
   auto lanuch(Runtime *runtime) -> void;
@@ -51,7 +40,7 @@ class Worker {
 class Runtime {
   friend class Worker;
   friend class Builder;
-  friend class Driver;
+  friend class RuntimeBridge;
 
   class Privater {};
 
@@ -76,12 +65,8 @@ class Runtime {
     }());
   }
 
-  auto register_future(FutureBase *future) -> void;
-
-  auto driver() -> Driver &;
-
   Runtime(Privater priv,
-          std::vector<std::function<void()>> &&registry_initializers);
+          std::vector<std::function<void(Runtime *)>> &&registry_initializers);
 
   Runtime(const Runtime &runtime) = delete;
 
@@ -123,10 +108,6 @@ class Runtime {
     }
   }
 
-  auto wake(Events &events) -> void;
-
-  auto wake_local(Events &events) -> void;
-
   std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
   std::mutex worker_mutex_;
 
@@ -158,8 +139,8 @@ class Builder {
 
   template <typename Registry, typename... Args>
   auto registry(Args... args) -> Builder & {
-    registry_initializers_.push_back([=]() {
-      RuntimeCtx::get_ctx()->driver_.add_registry<Registry>(args...);
+    registry_initializers_.push_back([=](Runtime *runtime) {
+      runtime->driver_.add_registry<Registry>(args...);
     });
     return *this;
   }
@@ -178,7 +159,7 @@ class Builder {
   auto (*on_start_f_)() -> void;
   auto (*on_stop_f_)() -> void;
 
-  std::vector<std::function<void()>> registry_initializers_;
+  std::vector<std::function<void(Runtime *)>> registry_initializers_;
 };
 }  // namespace xyco::runtime
 
