@@ -13,7 +13,8 @@ class GlobalRegistry {
  public:
   template <typename... Args>
   static auto get_instance(Args... args) -> std::shared_ptr<R> {
-    auto current_runtime = gsl::make_not_null(runtime::RuntimeCtx::get_ctx());
+    auto current_runtime =
+        gsl::make_not_null(runtime::RuntimeCtx::get_ctx()->get_runtime());
     {
       std::shared_lock<std::shared_mutex> lock_guard(runtime_mutex_);
       if (per_runtime_registry_.contains(current_runtime)) {
@@ -30,7 +31,7 @@ class GlobalRegistry {
   }
 
  private:
-  static std::unordered_map<runtime::RuntimeBridge *, std::shared_ptr<R>>
+  static std::unordered_map<runtime::Runtime *, std::shared_ptr<R>>
       per_runtime_registry_;
   // Prevents runtime level data race, worker level multithread is serialized in
   // the runtime implementation.
@@ -39,7 +40,7 @@ class GlobalRegistry {
 
 template <typename R>
   requires(std::derived_from<R, Registry>)
-std::unordered_map<runtime::RuntimeBridge *, std::shared_ptr<R>>
+std::unordered_map<runtime::Runtime *, std::shared_ptr<R>>
     GlobalRegistry<R>::per_runtime_registry_;
 template <typename R>
   requires(std::derived_from<R, Registry>)

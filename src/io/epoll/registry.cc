@@ -111,6 +111,7 @@ auto xyco::io::epoll::IoRegistryImpl::deregister(
   }
 
   {
+    std::scoped_lock<std::mutex> lock_guard(events_mutex_);
     auto event_it =
         std::find(registered_events_.begin(), registered_events_.end(), event);
     if (event_it != registered_events_.end()) {
