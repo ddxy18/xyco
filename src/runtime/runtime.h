@@ -55,17 +55,6 @@ class Runtime {
     }
   }
 
-  template <typename Fn>
-  auto spawn_blocking(Fn function) -> void
-    requires(std::is_invocable_v<Fn>)
-  {
-    using Return = decltype(function());
-
-    spawn([=]() -> Future<Return> {
-      co_return co_await AsyncFuture<Return>([=]() { return function(); });
-    }());
-  }
-
   Runtime(Privater priv,
           std::vector<std::function<void(Runtime *)>> &&registry_initializers);
 
@@ -136,8 +125,6 @@ class Builder {
   static auto new_multi_thread() -> Builder;
 
   auto worker_threads(uintptr_t val) -> Builder &;
-
-  auto max_blocking_threads(uintptr_t val) -> Builder &;
 
   template <typename Registry, typename... Args>
   auto registry(Args... args) -> Builder & {

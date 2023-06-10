@@ -11,7 +11,6 @@
 #include "boost/stacktrace.hpp"
 
 namespace xyco::runtime {
-class Runtime;
 class FutureBase;
 template <typename Output>
 class Future;

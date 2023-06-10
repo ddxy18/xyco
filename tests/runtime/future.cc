@@ -2,6 +2,7 @@
 
 #include <gsl/pointers>
 
+#include "runtime/blocking.h"
 #include "utils.h"
 
 class InRuntimeTest : public ::testing::Test {
@@ -104,7 +105,7 @@ TEST(RuntimeDeathTest, terminate) {
 
         auto runtime = xyco::runtime::Builder::new_multi_thread()
                            .worker_threads(1)
-                           .max_blocking_threads(1)
+                           .registry<xyco::runtime::BlockingRegistry>(1)
                            .build()
                            .unwrap();
 
@@ -128,7 +129,7 @@ TEST(RuntimeDeathTest, coroutine_exception) {
         {
           auto runtime = xyco::runtime::Builder::new_multi_thread()
                              .worker_threads(2)
-                             .max_blocking_threads(1)
+                             .registry<xyco::runtime::BlockingRegistry>(1)
                              .build()
                              .unwrap();
 
@@ -198,7 +199,7 @@ TEST(RuntimeDeathTest, drop_parameter) {
         {
           auto runtime = xyco::runtime::Builder::new_multi_thread()
                              .worker_threads(1)
-                             .max_blocking_threads(1)
+                             .registry<xyco::runtime::BlockingRegistry>(1)
                              .build()
                              .unwrap();
 
