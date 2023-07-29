@@ -51,6 +51,7 @@ pub trait FileCheck {
 
     fn sub_dir_self(me: Arc<Self>, path: Vec<PathBuf>) -> Self;
 
+    #[allow(clippy::manual_try_fold)]
     fn check(me: Arc<Self>) -> Result<()>
     where
         Self: Sized,
