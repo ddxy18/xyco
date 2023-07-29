@@ -7,19 +7,20 @@
 namespace xyco::time {
 template <typename T, typename Rep, typename Ratio>
 auto timeout(std::chrono::duration<Rep, Ratio> duration,
-             runtime::Future<T> future) -> runtime::Future<Result<T, void>> {
-  using CoOutput = Result<T, void>;
+             runtime::Future<T> future)
+    -> runtime::Future<std::expected<T, std::nullopt_t>> {
+  using CoOutput = std::expected<T, std::nullopt_t>;
 
   auto result = co_await task::select(std::move(future), sleep(duration));
 
   if (result.index() == 1) {
-    co_return CoOutput::err();
+    co_return std::unexpected(std::nullopt);
   }
 
   if constexpr (std::is_same_v<T, void>) {
-    co_return CoOutput::ok();
+    co_return {};
   } else {
-    co_return CoOutput::ok(std::get<0>(result).inner_);
+    co_return std::get<0>(result).inner_;
   }
 }
 }  // namespace xyco::time

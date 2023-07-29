@@ -3,6 +3,7 @@
 #include "xyco/io/io_uring/extra.h"
 #include "xyco/runtime/registry.h"
 #include "xyco/utils/logger.h"
+#include "xyco/utils/panic.h"
 
 auto xyco::io::uring::IoRegistryImpl::Register(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
@@ -76,15 +77,15 @@ auto xyco::io::uring::IoRegistryImpl::Register(
 
     io_uring_submit(&io_uring_);
 
-    return utils::Result<void>::ok();
+    return {};
   }
 
-  return utils::Result<void>::err(utils::Error{.errno_ = 1, .info_ = ""});
+  return std::unexpected(utils::Error{.errno_ = 1, .info_ = ""});
 }
 
 auto xyco::io::uring::IoRegistryImpl::reregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
-  return utils::Result<void>::ok();
+  return {};
 }
 
 auto xyco::io::uring::IoRegistryImpl::deregister(
@@ -108,10 +109,10 @@ auto xyco::io::uring::IoRegistryImpl::deregister(
     auto* extra = dynamic_cast<uring::IoExtra*>(event->extra_.get());
     extra->state_.set_field<io::uring::IoExtra::State::Registered, false>();
 
-    return utils::Result<void>::ok();
+    return {};
   }
 
-  return utils::Result<void>::err(utils::Error{.errno_ = 1, .info_ = ""});
+  return std::unexpected(utils::Error{.errno_ = 1, .info_ = ""});
 }
 
 auto xyco::io::uring::IoRegistryImpl::select(runtime::Events& events,
@@ -127,7 +128,7 @@ auto xyco::io::uring::IoRegistryImpl::select(runtime::Events& events,
                          .count();
   return_value = io_uring_wait_cqe_timeout(&io_uring_, &cqe_ptr, &timespec);
   if (return_value < 0 && (-return_value == ETIME || -return_value == EBUSY)) {
-    return utils::Result<void>::ok();
+    return {};
   }
   if (return_value < 0) {
     utils::panic();
@@ -160,7 +161,7 @@ auto xyco::io::uring::IoRegistryImpl::select(runtime::Events& events,
     io_uring_cq_advance(&io_uring_, count);
   }
 
-  return utils::Result<void>::ok();
+  return {};
 }
 
 xyco::io::uring::IoRegistryImpl::IoRegistryImpl(uint32_t entries)

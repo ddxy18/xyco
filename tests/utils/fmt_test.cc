@@ -80,7 +80,7 @@ TEST(FmtTypeTest, Socket) {
 
 TEST(FmtTypeTest, File) {
   TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-    auto file = (co_await xyco::fs::File ::create("README.md")).unwrap();
+    auto file = *co_await xyco::fs::File ::create("README.md");
 
     auto fmt_str = std::format("{}", file);
 

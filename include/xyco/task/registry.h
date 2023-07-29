@@ -1,6 +1,8 @@
 #ifndef XYCO_TASK_REGISTRY_H_
 #define XYCO_TASK_REGISTRY_H_
 
+#include <atomic>
+#include <functional>
 #include <mutex>
 #include <queue>
 

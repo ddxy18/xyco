@@ -22,13 +22,14 @@ auto uring_file_attr(int file_descriptor) -> xyco::runtime::Future<
   struct statx stx {};
   struct stat64 stat {};
 
-  ASYNC_TRY((co_await xyco::task::BlockingTask([&]() {
-              return xyco::utils::into_sys_result(statx(
-                  file_descriptor, "\0", AT_EMPTY_PATH | AT_STATX_SYNC_AS_STAT,
+  ASYNC_TRY(
+      (co_await xyco::task::BlockingTask([&]() {
+        return xyco::utils::into_sys_result(
+            statx(file_descriptor, "\0", AT_EMPTY_PATH | AT_STATX_SYNC_AS_STAT,
                   STATX_ALL, &stx));
-            })).map([](auto n) {
-    return std::pair<struct stat64, StatxExtraFields>{{}, StatxExtraFields()};
-  }));
+      })).transform([](auto n) -> std::pair<struct stat64, StatxExtraFields> {
+        return {{}, StatxExtraFields()};
+      }));
 
   stat.st_dev = makedev(stx.stx_dev_major, stx.stx_dev_minor);
   stat.st_ino = stx.stx_ino;
@@ -47,16 +48,15 @@ auto uring_file_attr(int file_descriptor) -> xyco::runtime::Future<
   stat.st_ctim.tv_sec = stx.stx_ctime.tv_sec;
   stat.st_ctim.tv_nsec = stx.stx_ctime.tv_nsec;
 
-  co_return xyco::utils::Result<std::pair<struct stat64, StatxExtraFields>>::ok(
-      stat, StatxExtraFields{
-                .stx_mask_ = stx.stx_mask,
-                .stx_btime_ = stx.stx_btime,
-            });
+  co_return std::pair{stat, StatxExtraFields{
+                                .stx_mask_ = stx.stx_mask,
+                                .stx_btime_ = stx.stx_btime,
+                            }};
 }
 
 auto xyco::fs::uring::File::modified() const
     -> runtime::Future<utils::Result<timespec>> {
-  co_return (co_await uring_file_attr(fd_)).map([](auto pair) {
+  co_return (co_await uring_file_attr(fd_)).transform([](auto pair) {
     auto stat = pair.first;
     return timespec{.tv_sec = stat.st_mtim.tv_sec,
                     .tv_nsec = stat.st_mtim.tv_nsec};
@@ -65,7 +65,7 @@ auto xyco::fs::uring::File::modified() const
 
 auto xyco::fs::uring::File::accessed() const
     -> runtime::Future<utils::Result<timespec>> {
-  co_return (co_await uring_file_attr(fd_)).map([](auto pair) {
+  co_return (co_await uring_file_attr(fd_)).transform([](auto pair) {
     auto stat = pair.first;
     return timespec{.tv_sec = stat.st_atim.tv_sec,
                     .tv_nsec = stat.st_atim.tv_nsec};
@@ -75,17 +75,17 @@ auto xyco::fs::uring::File::accessed() const
 auto xyco::fs::uring::File::created() const
     -> runtime::Future<utils::Result<timespec>> {
   auto result = co_await uring_file_attr(fd_);
-  if (result.is_ok()) {
-    auto ext = result.unwrap().second;
+  if (result) {
+    auto ext = result->second;
     if ((ext.stx_mask_ & STATX_BTIME) != 0) {
-      co_return utils::Result<timespec>::ok(timespec{
-          .tv_sec = ext.stx_btime_.tv_sec, .tv_nsec = ext.stx_btime_.tv_nsec});
+      co_return timespec{.tv_sec = ext.stx_btime_.tv_sec,
+                         .tv_nsec = ext.stx_btime_.tv_nsec};
     }
-    co_return utils::Result<timespec>::err(utils::Error{
+    co_return std::unexpected(utils::Error{
         .errno_ = std::__to_underlying(utils::ErrorKind::Uncategorized),
         .info_ = "creation time is not available for the filesystem"});
   }
-  co_return utils::Result<timespec>::err(utils::Error{
+  co_return std::unexpected(utils::Error{
       .errno_ = std::__to_underlying(utils::ErrorKind::Unsupported),
       .info_ = "creation time is not available on this platform currently"});
 }
@@ -106,10 +106,10 @@ auto xyco::fs::uring::File::resize(uintmax_t size)
   co_return co_await task::BlockingTask([&]() {
     std::error_code error_code;
     std::filesystem::resize_file(path_, size, error_code);
-    return !error_code ? utils::Result<void>::ok()
-                       : utils::Result<void>::err(
-                             utils::Error{.errno_ = error_code.value(),
-                                          .info_ = error_code.message()});
+    return !error_code
+               ? utils::Result<void>()
+               : std::unexpected(utils::Error{.errno_ = error_code.value(),
+                                              .info_ = error_code.message()});
   });
 }
 
@@ -118,10 +118,10 @@ auto xyco::fs::uring::File::size() const
   co_return co_await task::BlockingTask([&]() {
     std::error_code error_code;
     auto len = std::filesystem::file_size(path_, error_code);
-    return !error_code ? utils::Result<uintmax_t>::ok(len)
-                       : utils::Result<uintmax_t>::err(
-                             utils::Error{.errno_ = error_code.value(),
-                                          .info_ = error_code.message()});
+    return !error_code
+               ? utils::Result<uintmax_t>(len)
+               : std::unexpected(utils::Error{.errno_ = error_code.value(),
+                                              .info_ = error_code.message()});
   });
 }
 
@@ -135,10 +135,10 @@ auto xyco::fs::uring::File::status()
     } else {
       status = std::filesystem::status(path_, error_code);
     }
-    return !error_code ? utils::Result<std::filesystem::file_status>::ok(status)
-                       : utils::Result<std::filesystem::file_status>::err(
-                             utils::Error{.errno_ = error_code.value(),
-                                          .info_ = error_code.message()});
+    return !error_code
+               ? utils::Result<std::filesystem::file_status>(status)
+               : std::unexpected(utils::Error{.errno_ = error_code.value(),
+                                              .info_ = error_code.message()});
   });
 }
 
@@ -148,29 +148,31 @@ auto xyco::fs::uring::File::set_permissions(
   co_return co_await task::BlockingTask([&]() {
     std::error_code error_code;
     std::filesystem::permissions(path_, prms, opts, error_code);
-    return !error_code ? utils::Result<void>::ok()
-                       : utils::Result<void>::err(
-                             utils::Error{.errno_ = error_code.value(),
-                                          .info_ = error_code.message()});
+    return !error_code
+               ? utils::Result<void>()
+               : std::unexpected(utils::Error{.errno_ = error_code.value(),
+                                              .info_ = error_code.message()});
   });
 }
 
 auto xyco::fs::uring::File::flush() const
     -> runtime::Future<utils::Result<void>> {
-  co_return co_await task::BlockingTask(
-      [this]() { return utils::into_sys_result(::fsync(fd_)); });
+  co_return co_await task::BlockingTask([this]() {
+    return utils::into_sys_result(::fsync(fd_)).transform([](auto result) {});
+  });
 }
 
 auto xyco::fs::uring::File::seek(off64_t offset, int whence) const
     -> runtime::Future<utils::Result<off64_t>> {
-  co_return co_await task::BlockingTask([this, offset, whence]() {
-    auto return_offset = ::lseek64(fd_, offset, whence);
-    if (return_offset == -1) {
-      return utils::into_sys_result(-1).map(
-          [](auto n) { return static_cast<off64_t>(n); });
-    }
-    return utils::Result<off64_t>::ok(return_offset);
-  });
+  co_return co_await task::BlockingTask(
+      [this, offset, whence]() -> utils::Result<off64_t> {
+        auto return_offset = ::lseek64(fd_, offset, whence);
+        if (return_offset == -1) {
+          return utils::into_sys_result(-1).transform(
+              [](auto n) { return static_cast<off64_t>(n); });
+        }
+        return return_offset;
+      });
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
@@ -200,20 +202,21 @@ auto xyco::fs::uring::OpenOptions::open(std::filesystem::path path)
     -> runtime::Future<utils::Result<File>> {
   co_return co_await task::BlockingTask([&]() {
     auto access_mode = get_access_mode();
-    if (access_mode.is_err()) {
-      return access_mode.map(
+    if (!access_mode) {
+      return access_mode.transform(
           [](auto n) { return File(-1, std::filesystem::path()); });
     }
     auto creation_mode = get_creation_mode();
-    if (creation_mode.is_err()) {
-      return creation_mode.map(
+    if (!creation_mode) {
+      return creation_mode.transform(
           [](auto n) { return File(-1, std::filesystem::path()); });
     }
 
-    int flags = O_CLOEXEC | access_mode.unwrap() | creation_mode.unwrap();
+    // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
+    int flags = O_CLOEXEC | *access_mode | *creation_mode;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
     return utils::into_sys_result(::open(path.c_str(), flags, mode_))
-        .map([&](auto file_descriptor) {
+        .transform([&](auto file_descriptor) {
           return File(file_descriptor, std::move(path));
         });
   });
@@ -266,47 +269,47 @@ xyco::fs::uring::OpenOptions::OpenOptions()
 auto xyco::fs::uring::OpenOptions::get_access_mode() const
     -> utils::Result<int> {
   if (read_ && !write_ && !append_) {
-    return utils::Result<int>::ok(O_RDONLY);
+    return O_RDONLY;
   }
   if (!read_ && write_ && !append_) {
-    return utils::Result<int>::ok(O_WRONLY);
+    return O_WRONLY;
   }
   if (read_ && write_ && !append_) {
-    return utils::Result<int>::ok(O_RDWR);
+    return O_RDWR;
   }
   if (!read_ && append_) {
-    return utils::Result<int>::ok(O_WRONLY | O_APPEND);
+    return O_WRONLY | O_APPEND;
   }
   if (read_ && append_) {
-    return utils::Result<int>::ok(O_RDWR | O_APPEND);
+    return O_RDWR | O_APPEND;
   }
-  return utils::Result<int>::err(utils::Error{.errno_ = EINVAL});
+  return std::unexpected(utils::Error{.errno_ = EINVAL});
 }
 
 auto xyco::fs::uring::OpenOptions::get_creation_mode() const
     -> utils::Result<int> {
   if (!write_ && !append_) {
     if (truncate_ || create_ || create_new_) {
-      return utils::Result<int>::err(utils::Error{.errno_ = EINVAL});
+      return std::unexpected(utils::Error{.errno_ = EINVAL});
     }
   }
   if (append_) {
     if (truncate_ && !create_new_) {
-      return utils::Result<int>::err(utils::Error{.errno_ = EINVAL});
+      return std::unexpected(utils::Error{.errno_ = EINVAL});
     }
   }
 
   if (!create_ && !truncate_ && !create_new_) {
-    return utils::Result<int>::ok(0);
+    return 0;
   }
   if (create_ && !truncate_ && !create_new_) {
-    return utils::Result<int>::ok(O_CREAT);
+    return O_CREAT;
   }
   if (!create_ && truncate_ && !create_new_) {
-    return utils::Result<int>::ok(O_TRUNC);
+    return O_TRUNC;
   }
   if (create_ && truncate_ && !create_new_) {
-    return utils::Result<int>::ok(O_CREAT | O_TRUNC);
+    return O_CREAT | O_TRUNC;
   }
-  return utils::Result<int>::ok(O_CREAT | O_EXCL);
+  return O_CREAT | O_EXCL;
 }

@@ -8,7 +8,7 @@ auto xyco::runtime::Driver::poll() -> void {
   auto& local_registry =
       local_registries_.find(std::this_thread::get_id())->second;
   for (auto& [key, registry] : local_registry) {
-    registry->select(events, MAX_TIMEOUT).unwrap();
+    *registry->select(events, MAX_TIMEOUT);
     RuntimeCtx::get_ctx()->wake(events);
   }
 }

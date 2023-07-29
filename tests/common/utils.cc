@@ -22,13 +22,12 @@ TestRuntimeCtxGuard::~TestRuntimeCtxGuard() {
 }
 
 auto TestRuntimeCtx::init() -> void {
-  runtime_ = xyco::runtime::Builder::new_multi_thread()
-                 .worker_threads(1)
-                 .registry<xyco::task::BlockingRegistry>(1)
-                 .registry<xyco::io::IoRegistry>(4)
-                 .registry<xyco::time::TimeRegistry>()
-                 .on_worker_start([]() {})
-                 .on_worker_stop([]() {})
-                 .build()
-                 .unwrap();
+  runtime_ = *xyco::runtime::Builder::new_multi_thread()
+                  .worker_threads(1)
+                  .registry<xyco::task::BlockingRegistry>(1)
+                  .registry<xyco::io::IoRegistry>(4)
+                  .registry<xyco::time::TimeRegistry>()
+                  .on_worker_start([]() {})
+                  .on_worker_stop([]() {})
+                  .build();
 }

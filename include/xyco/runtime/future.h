@@ -155,7 +155,7 @@ class Awaitable {
     }
 
     if constexpr (!std::is_same_v<Output, void>) {
-      return std::move(std::move(future_->return_).value());
+      return std::move(*std::move(future_->return_));
     }
   }
 
@@ -202,6 +202,7 @@ class Future : public FutureBase {
     }
 
     auto return_value(Output &&value) -> void {
+      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       future_->return_ = std::forward<Output>(value);
     }
 

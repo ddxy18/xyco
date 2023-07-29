@@ -1,7 +1,6 @@
 #ifndef XYCO_IO_WRITE_H_
 #define XYCO_IO_WRITE_H_
 
-#include <concepts>
 #include <span>
 
 #include "xyco/io/utils.h"
@@ -57,19 +56,19 @@ class WriteExt {
 
     while (total_write != buf_size) {
       auto write_result =
-          (co_await writer.write(begin, end)).map([&](auto nbytes) {
+          (co_await writer.write(begin, end)).transform([&](auto nbytes) {
             total_write += nbytes;
             begin += nbytes;
           });
-      if (write_result.is_err()) {
-        auto error = write_result.unwrap_err();
+      if (!write_result) {
+        auto error = write_result.error();
         if (error.errno_ != EAGAIN && error.errno_ != EWOULDBLOCK &&
             error.errno_ != EINTR) {
-          co_return utils::Result<void>::err(error);
+          co_return std::unexpected(error);
         }
       }
     }
-    co_return utils::Result<void>::ok();
+    co_return {};
   }
 
   template <typename Writer, typename V, std::size_t N>

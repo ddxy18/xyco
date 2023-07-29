@@ -9,10 +9,10 @@ auto xyco::fs::rename(std::filesystem::path old_path,
     std::error_code error_code;
     std::filesystem::rename(old_path, new_path, error_code);
 
-    return !error_code ? utils::Result<void>::ok()
-                       : utils::Result<void>::err(
-                             utils::Error{.errno_ = error_code.value(),
-                                          .info_ = error_code.message()});
+    return !error_code
+               ? utils::Result<void>()
+               : std::unexpected(utils::Error{.errno_ = error_code.value(),
+                                              .info_ = error_code.message()});
   });
 }
 
@@ -22,10 +22,10 @@ auto xyco::fs::remove(std::filesystem::path path)
     std::error_code error_code;
     auto exist = std::filesystem::remove(path, error_code);
 
-    return !error_code ? utils::Result<bool>::ok(exist)
-                       : utils::Result<bool>::err(
-                             utils::Error{.errno_ = error_code.value(),
-                                          .info_ = error_code.message()});
+    return !error_code
+               ? utils::Result<bool>(exist)
+               : std::unexpected(utils::Error{.errno_ = error_code.value(),
+                                              .info_ = error_code.message()});
   });
 }
 
@@ -38,9 +38,9 @@ auto xyco::fs::copy_file(std::filesystem::path from_path,
     auto ret =
         std::filesystem::copy_file(from_path, to_path, options, error_code);
 
-    return !error_code ? utils::Result<bool>::ok(ret)
-                       : utils::Result<bool>::err(
-                             utils::Error{.errno_ = error_code.value(),
-                                          .info_ = error_code.message()});
+    return !error_code
+               ? utils::Result<bool>(ret)
+               : std::unexpected(utils::Error{.errno_ = error_code.value(),
+                                              .info_ = error_code.message()});
   });
 }

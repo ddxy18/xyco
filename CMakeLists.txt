@@ -6,9 +6,9 @@ project(
   DESCRIPTION "C++20 based coroutine library"
   LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
-add_compile_options(-std=c++20 -stdlib=libc++ -fexperimental-library)
+add_compile_options(-std=c++2b -stdlib=libc++)
 add_link_options(-fuse-ld=lld-$ENV{LLVM_VERSION} -lc++ -lm -rdynamic)
 cmake_policy(SET CMP0135 NEW)
 
@@ -52,7 +52,6 @@ add_library(result INTERFACE)
 add_library(xyco::result ALIAS result)
 target_sources(result INTERFACE include/xyco/utils/result.h)
 target_include_directories(result INTERFACE include)
-target_link_libraries(result INTERFACE panic)
 
 add_library(overload INTERFACE)
 add_library(xyco::overload ALIAS overload)
@@ -84,7 +83,7 @@ target_sources(
 target_include_directories(runtime_ctx PUBLIC include)
 target_link_libraries(
   runtime_ctx
-  INTERFACE result error overload
+  INTERFACE result error overload panic
   PUBLIC future)
 if(XYCO_ENABLE_LOGGING)
   target_link_libraries(runtime_ctx INTERFACE logging)

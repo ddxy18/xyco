@@ -1,6 +1,7 @@
 #ifndef XYCO_SYNC_MPSC_H
 #define XYCO_SYNC_MPSC_H
 
+#include <atomic>
 #include <queue>
 
 #include "xyco/runtime/future.h"
@@ -43,8 +44,8 @@ class Sender {
       -> std::pair<Sender<Value, Size>, Receiver<Value, Size>>;
 
  public:
-  auto send(Value value) -> runtime::Future<Result<void, Value>> {
-    using FutureReturn = Result<void, Value>;
+  auto send(Value value) -> runtime::Future<std::expected<void, Value>> {
+    using FutureReturn = std::expected<void, Value>;
     class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Sender<Value, Size> *self, Value value)
@@ -56,7 +57,7 @@ class Sender {
           -> runtime::Poll<FutureReturn> override {
         if (self_->shared_->state_ == Shared<Value, Size>::receiver_closed) {
           return runtime::Ready<FutureReturn>{
-              FutureReturn::err(std::forward<Value>(value_))};
+              std::unexpected(std::forward<Value>(value_))};
         }
 
         {
@@ -73,7 +74,7 @@ class Sender {
                     self_->shared_->receiver_);
               }
             }
-            return runtime::Ready<FutureReturn>{FutureReturn::ok()};
+            return runtime::Ready<FutureReturn>{{}};
           }
         }
 

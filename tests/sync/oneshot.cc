@@ -13,9 +13,9 @@ TEST(OneshotTest, success) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
     auto send_result = co_await sender.send(1);
-    auto value = (co_await receiver.receive()).unwrap();
+    auto value = *co_await receiver.receive();
 
-    CO_ASSERT_EQ(send_result.is_ok(), true);
+    CO_ASSERT_EQ(send_result.has_value(), true);
     CO_ASSERT_EQ(value, 1);
   });
 }
@@ -29,7 +29,7 @@ TEST(OneshotTest, sender_close) {
     }
     auto value = (co_await receiver.receive());
 
-    CO_ASSERT_EQ(value.is_err(), true);
+    CO_ASSERT_EQ(value.has_value(), false);
   });
 }
 
@@ -42,7 +42,7 @@ TEST(OneshotTest, receiver_close) {
     }
     auto send_result = co_await sender.send(1);
 
-    CO_ASSERT_EQ(send_result.unwrap_err(), 1);
+    CO_ASSERT_EQ(send_result.error(), 1);
   });
 }
 
@@ -52,7 +52,7 @@ TEST(OneshotTest, send_twice) {
     co_await sender.send(1);
     auto send_twice_result = co_await sender.send(1);
 
-    CO_ASSERT_EQ(send_twice_result.is_err(), true);
+    CO_ASSERT_EQ(send_twice_result.has_value(), false);
   });
 }
 
@@ -63,7 +63,7 @@ TEST(OneshotTest, receive_twice) {
     co_await receiver.receive();
     auto receive_twice_result = co_await receiver.receive();
 
-    CO_ASSERT_EQ(receive_twice_result.is_err(), true);
+    CO_ASSERT_EQ(receive_twice_result.has_value(), false);
   });
 }
 
@@ -71,11 +71,11 @@ TEST(OneshotTest, receive_first) {
   auto channel_pair = xyco::sync::oneshot::channel<int>();
 
   int value = 0;
-  auto send_result = Result<void, int>::ok();
+  auto send_result = std::expected<void, int>();
 
   std::thread receive([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-      value = (co_await channel_pair.second.receive()).unwrap();
+      value = *co_await channel_pair.second.receive();
     });
   });
 
@@ -91,5 +91,5 @@ TEST(OneshotTest, receive_first) {
   send.join();
 
   ASSERT_EQ(value, 1);
-  ASSERT_EQ(send_result.is_ok(), true);
+  ASSERT_EQ(send_result.has_value(), true);
 }

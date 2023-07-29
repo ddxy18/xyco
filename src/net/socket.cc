@@ -78,6 +78,6 @@ auto xyco::net::Socket::operator=(Socket&& socket) noexcept -> Socket& {
 
 xyco::net::Socket::~Socket() {
   if (fd_ != -1) {
-    utils::into_sys_result(::close(fd_)).unwrap();
+    *utils::into_sys_result(::close(fd_));
   }
 }

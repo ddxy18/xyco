@@ -8,6 +8,7 @@
 
 #include "xyco/io/epoll/extra.h"
 #include "xyco/utils/logger.h"
+#include "xyco/utils/panic.h"
 
 auto to_sys(xyco::io::epoll::IoExtra::Interest interest) -> int {
   switch (interest) {
@@ -65,7 +66,7 @@ auto xyco::io::epoll::IoRegistryImpl::Register(
   }
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_ADD, extra->fd_, &epoll_event));
-  if (result.is_ok()) {
+  if (result) {
     TRACE("epoll_ctl add:{}", epoll_event);
   } else {
     std::scoped_lock<std::mutex> lock_guard(events_mutex_);
@@ -73,7 +74,7 @@ auto xyco::io::epoll::IoRegistryImpl::Register(
         std::find(registered_events_.begin(), registered_events_.end(), event));
   }
 
-  return result;
+  return result.transform([](auto result) {});
 }
 
 auto xyco::io::epoll::IoRegistryImpl::reregister(
@@ -88,7 +89,7 @@ auto xyco::io::epoll::IoRegistryImpl::reregister(
   }
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_MOD, extra->fd_, &epoll_event));
-  if (result.is_ok()) {
+  if (result) {
     TRACE("epoll_ctl mod:{}", epoll_event);
   } else {
     std::scoped_lock<std::mutex> lock_guard(events_mutex_);
@@ -96,7 +97,7 @@ auto xyco::io::epoll::IoRegistryImpl::reregister(
         std::find(registered_events_.begin(), registered_events_.end(), event));
   }
 
-  return result;
+  return result.transform([](auto result) {});
 }
 
 auto xyco::io::epoll::IoRegistryImpl::deregister(
@@ -107,7 +108,7 @@ auto xyco::io::epoll::IoRegistryImpl::deregister(
 
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_DEL, extra->fd_, &epoll_event));
-  if (result.is_ok()) {
+  if (result) {
     TRACE("epoll_ctl del:{}", epoll_event);
   }
 
@@ -121,7 +122,7 @@ auto xyco::io::epoll::IoRegistryImpl::deregister(
     extra->state_.set_field<io::epoll::IoExtra::State::Registered, false>();
   }
 
-  return result;
+  return result.transform([](auto result) {});
 }
 
 auto xyco::io::epoll::IoRegistryImpl::select(runtime::Events &events,
@@ -134,14 +135,14 @@ auto xyco::io::epoll::IoRegistryImpl::select(runtime::Events &events,
   auto select_result = utils::into_sys_result(
       ::epoll_wait(epfd_, epoll_events.data(), MAX_EVENTS,
                    static_cast<int>(std::min(timeout, MAX_TIMEOUT).count())));
-  if (select_result.is_err()) {
-    auto err = select_result.unwrap_err();
+  if (!select_result) {
+    auto err = select_result.error();
     if (err.errno_ != EINTR) {
-      return utils::Result<void>::err(err);
+      return std::unexpected(err);
     }
-    return utils::Result<void>::ok();
+    return {};
   }
-  auto ready_len = select_result.unwrap();
+  auto ready_len = *select_result;
   for (auto i = 0; i < ready_len; i++) {
     std::scoped_lock<std::mutex> lock_guard(events_mutex_);
     auto ready_event = std::find_if(
@@ -155,7 +156,7 @@ auto xyco::io::epoll::IoRegistryImpl::select(runtime::Events &events,
     events.push_back(*ready_event);
     registered_events_.erase(ready_event);
   }
-  return utils::Result<void>::ok();
+  return {};
 }
 
 xyco::io::epoll::IoRegistryImpl::IoRegistryImpl(int entries)

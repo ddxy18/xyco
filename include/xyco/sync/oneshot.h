@@ -1,6 +1,8 @@
 #ifndef XYCO_SYNC_ONESHOT_H
 #define XYCO_SYNC_ONESHOT_H
 
+#include <atomic>
+
 #include "xyco/runtime/future.h"
 #include "xyco/runtime/runtime_ctx.h"
 
@@ -33,10 +35,10 @@ class Sender {
   friend auto channel<Value>() -> std::pair<Sender<Value>, Receiver<Value>>;
 
  public:
-  auto send(Value value) -> runtime::Future<Result<void, Value>> {
+  auto send(Value value) -> runtime::Future<std::expected<void, Value>> {
     if (shared_ == nullptr ||
         shared_->state_ == Shared<Value>::receiver_closed) {
-      co_return Result<void, Value>::err(std::move(value));
+      co_return std::unexpected(std::move(value));
     }
 
     shared_->value_ = std::move(value);
@@ -45,7 +47,7 @@ class Sender {
     }
     close();
 
-    co_return Result<void, Value>::ok();
+    co_return {};
   }
 
   Sender(const Sender<Value> &sender) = delete;
@@ -76,25 +78,24 @@ class Receiver {
   friend auto channel<Value>() -> std::pair<Sender<Value>, Receiver<Value>>;
 
  public:
-  auto receive() -> runtime::Future<Result<Value, void>> {
-    class Future : public runtime::Future<Result<Value, void>> {
+  auto receive() -> runtime::Future<std::expected<Value, std::nullopt_t>> {
+    using FutureReturn = std::expected<Value, std::nullopt_t>;
+
+    class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Receiver<Value> *self)
-          : runtime::Future<Result<Value, void>>(nullptr), self_(self) {}
+          : runtime::Future<FutureReturn>(nullptr), self_(self) {}
 
       auto poll(runtime::Handle<void> self)
-          -> runtime::Poll<Result<Value, void>> override {
+          -> runtime::Poll<FutureReturn> override {
         if (self_->shared_ == nullptr) {
-          return runtime::Ready<Result<Value, void>>{
-              Result<Value, void>::err()};
+          return runtime::Ready<FutureReturn>{std::unexpected(std::nullopt)};
         }
-        if (self_->shared_->value_.has_value()) {
-          return runtime::Ready<Result<Value, void>>{
-              Result<Value, void>::ok(self_->shared_->value_.value())};
+        if (self_->shared_->value_) {
+          return runtime::Ready<FutureReturn>{*self_->shared_->value_};
         }
         if (self_->shared_->state_ == Shared<Value>::sender_closed) {
-          return runtime::Ready<Result<Value, void>>{
-              Result<Value, void>::err()};
+          return runtime::Ready<FutureReturn>{std::unexpected(std::nullopt)};
         }
         self_->shared_->receiver_ = this;
         return runtime::Pending();

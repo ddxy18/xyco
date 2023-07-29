@@ -70,10 +70,10 @@ class File {
         extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
         if (extra->return_ >= 0) {
           INFO("read {} bytes from {}", extra->return_, self_->fd_);
-          return runtime::Ready<CoOutput>{CoOutput::ok(extra->return_)};
+          return runtime::Ready<CoOutput>{extra->return_};
         }
         return runtime::Ready<CoOutput>{
-            CoOutput::err(utils::Error{.errno_ = -extra->return_})};
+            std::unexpected(utils::Error{.errno_ = -extra->return_})};
       }
 
       Future(Iterator begin, Iterator end, File *self)
@@ -135,10 +135,10 @@ class File {
         extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
         if (extra->return_ >= 0) {
           INFO("write {} bytes to {}", extra->return_, self_->fd_);
-          return runtime::Ready<CoOutput>{CoOutput::ok(extra->return_)};
+          return runtime::Ready<CoOutput>{extra->return_};
         }
         return runtime::Ready<CoOutput>{
-            CoOutput::err(utils::Error{.errno_ = -extra->return_})};
+            std::unexpected(utils::Error{.errno_ = -extra->return_})};
       }
 
       Future(Iterator begin, Iterator end, File *self)

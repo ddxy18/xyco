@@ -4,6 +4,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <exception>
+#include <functional>
 #include <mutex>
 #include <thread>
 #include <unordered_map>

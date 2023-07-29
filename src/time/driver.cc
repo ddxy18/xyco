@@ -14,18 +14,18 @@ auto xyco::time::TimeRegistryImpl::Register(
   std::scoped_lock<std::mutex> lock_guard(select_mutex_);
   wheel_.insert_event(event);
 
-  return utils::Result<void>::ok();
+  return {};
 }
 
 // TODO(dongxiaoyu): support update expire time and cancel event
 auto xyco::time::TimeRegistryImpl::reregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
-  return utils::Result<void>::ok();
+  return {};
 }
 
 auto xyco::time::TimeRegistryImpl::deregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
-  return utils::Result<void>::ok();
+  return {};
 }
 
 auto xyco::time::TimeRegistryImpl::select(runtime::Events &events,
@@ -34,5 +34,5 @@ auto xyco::time::TimeRegistryImpl::select(runtime::Events &events,
   std::scoped_lock<std::mutex> lock_guard(select_mutex_);
   wheel_.expire(events);
 
-  return utils::Result<void>::ok();
+  return {};
 }

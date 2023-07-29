@@ -1,18 +1,18 @@
 #ifndef XYCO_UTILS_ERROR_H_
 #define XYCO_UTILS_ERROR_H_
 
+#include <expected>
 #include <format>
-
-#include "xyco/utils/result.h"
 
 namespace xyco::utils {
 class Error;
 
 template <typename T>
-using Result = Result<T, Error>;
+using Result = std::expected<T, Error>;
 
 enum class ErrorKind : int { Uncategorized = -2, Unsupported };
 
+// NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
 class Error {
  public:
   static auto from_sys_error() -> Error;
