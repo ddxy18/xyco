@@ -10,6 +10,7 @@
 #include "runtime/future.h"
 #include "runtime/runtime_ctx.h"
 #include "utils/error.h"
+#include "utils/logger.h"
 
 namespace xyco::net::epoll {
 class TcpStream;

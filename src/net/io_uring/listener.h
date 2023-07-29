@@ -7,6 +7,7 @@
 #include "io/io_uring/registry.h"
 #include "net/socket.h"
 #include "runtime/runtime_ctx.h"
+#include "utils/logger.h"
 
 namespace xyco::net::uring {
 class TcpStream;

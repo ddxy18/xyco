@@ -12,6 +12,7 @@
 #include "driver.h"
 #include "future.h"
 #include "utils/error.h"
+#include "utils/logger.h"
 
 namespace xyco::runtime {
 class Runtime;

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "extra.h"
+#include "utils/logger.h"
 
 auto to_sys(xyco::io::epoll::IoExtra::Interest interest) -> int {
   switch (interest) {

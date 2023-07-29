@@ -1,6 +1,6 @@
-#include "utils/result.h"
-
 #include <gtest/gtest.h>
+
+#include "utils.h"
 
 class ResultTest : public ::testing::Test {
  public:
