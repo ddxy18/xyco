@@ -36,10 +36,13 @@ struct std::formatter<xyco::utils::Error> : public std::formatter<bool> {
     std::string error_kind;
     switch (err.errno_) {
       case std::__to_underlying(xyco::utils::ErrorKind::Uncategorized):
-        error_kind = std::string("Uncategorized");
+        error_kind = "Uncategorized";
         break;
       case std::__to_underlying(xyco::utils::ErrorKind::Unsupported):
-        error_kind = std::string("Unsupported");
+        error_kind = "Unsupported";
+        break;
+      default:
+        error_kind = "Unknown";
     }
     return std::format_to(ctx.out(), "IoError{{error_kind={}, info={}}}",
                           error_kind, err.info_);
