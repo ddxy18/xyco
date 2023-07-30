@@ -2,7 +2,7 @@
 
 #include <gsl/pointers>
 
-#include "runtime/blocking.h"
+#include "runtime_ctx.h"
 
 auto xyco::runtime::Worker::lanuch(Runtime *runtime) -> void {
   ctx_ = std::thread([this, runtime]() {
@@ -116,11 +116,6 @@ auto xyco::runtime::Builder::new_multi_thread() -> Builder {
 
 auto xyco::runtime::Builder::worker_threads(uintptr_t val) -> Builder & {
   worker_num_ = val;
-  return *this;
-}
-
-auto xyco::runtime::Builder::max_blocking_threads(uintptr_t val) -> Builder & {
-  registry<BlockingRegistry>(val);
   return *this;
 }
 
