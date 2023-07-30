@@ -5,7 +5,6 @@
 #include <variant>
 
 #include "panic.h"
-#include "utils/logger.h"
 
 template <typename T, typename E>
 class Result;
@@ -69,11 +68,11 @@ class Result {
   {
     if (inner_.index() == 2) {
       if constexpr (std::is_same_v<E, void>) {
-        ERROR("{}", "unwrap err:{E=void}");
+        xyco::utils::panic(std::format("{}", "unwrap err:{E=void}"));
       } else {
-        ERROR("unwrap err:{}", std::get<Err<E>>(inner_).inner_);
+        xyco::utils::panic(
+            std::format("unwrap err:{}", std::get<Err<E>>(inner_).inner_));
       }
-      xyco::utils::panic();
     }
     if constexpr (!std::is_same_v<T, void>) {
       return std::move(std::get<Ok<T>>(inner_).inner_);
@@ -85,11 +84,11 @@ class Result {
   {
     if (inner_.index() == 1) {
       if constexpr (std::is_same_v<T, void>) {
-        ERROR("{}", "unwrap_err err:{T=void}");
+        xyco::utils::panic(std::format("{}", "unwrap_err err:{T=void}"));
       } else {
-        ERROR("unwrap_err err:{}", std::get<Ok<T>>(inner_).inner_);
+        xyco::utils::panic(
+            std::format("unwrap_err err:{}", std::get<Ok<T>>(inner_).inner_));
       }
-      xyco::utils::panic();
     }
     if constexpr (!std::is_same_v<E, void>) {
       return std::get<Err<E>>(inner_).inner_;

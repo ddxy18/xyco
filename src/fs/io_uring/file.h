@@ -12,6 +12,7 @@
 #include "runtime/async_future.h"
 #include "runtime/runtime_ctx.h"
 #include "utils/error.h"
+#include "utils/logger.h"
 
 namespace xyco::fs::uring {
 class File {

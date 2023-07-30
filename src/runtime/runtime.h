@@ -12,6 +12,7 @@
 #include "driver.h"
 #include "future.h"
 #include "utils/error.h"
+#include "utils/logger.h"
 
 namespace xyco::runtime {
 class Runtime;
@@ -86,6 +87,7 @@ class Runtime {
   auto spawn_catch_exception(Future<T> future) -> Future<void> {
     try {
       co_await future;
+      // NOLINTNEXTLINE(bugprone-empty-catch)
     } catch (CancelException e) {
     } catch (std::exception e) {
       auto tid = std::this_thread::get_id();

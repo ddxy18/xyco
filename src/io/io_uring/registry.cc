@@ -2,6 +2,7 @@
 
 #include "extra.h"
 #include "runtime/registry.h"
+#include "utils/logger.h"
 
 auto xyco::io::uring::IoRegistryImpl::Register(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
