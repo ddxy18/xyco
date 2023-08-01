@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <utility>
 
-#include "runtime/async_future.h"
+#include "task/blocking_task.h"
 #include "utils/result.h"
 
 class StatxExtraFields {
@@ -22,7 +22,7 @@ auto uring_file_attr(int file_descriptor) -> xyco::runtime::Future<
   struct statx stx {};
   struct stat64 stat {};
 
-  ASYNC_TRY((co_await xyco::runtime::AsyncFuture([&]() {
+  ASYNC_TRY((co_await xyco::task::BlockingTask([&]() {
               return xyco::utils::into_sys_result(statx(
                   file_descriptor, "\0", AT_EMPTY_PATH | AT_STATX_SYNC_AS_STAT,
                   STATX_ALL, &stx));
@@ -103,7 +103,7 @@ auto xyco::fs::uring::File::open(std::filesystem::path path)
 
 auto xyco::fs::uring::File::resize(uintmax_t size)
     -> runtime::Future<utils::Result<void>> {
-  co_return co_await runtime::AsyncFuture([&]() {
+  co_return co_await task::BlockingTask([&]() {
     std::error_code error_code;
     std::filesystem::resize_file(path_, size, error_code);
     return !error_code ? utils::Result<void>::ok()
@@ -115,7 +115,7 @@ auto xyco::fs::uring::File::resize(uintmax_t size)
 
 auto xyco::fs::uring::File::size() const
     -> runtime::Future<utils::Result<uintmax_t>> {
-  co_return co_await runtime::AsyncFuture([&]() {
+  co_return co_await task::BlockingTask([&]() {
     std::error_code error_code;
     auto len = std::filesystem::file_size(path_, error_code);
     return !error_code ? utils::Result<uintmax_t>::ok(len)
@@ -127,7 +127,7 @@ auto xyco::fs::uring::File::size() const
 
 auto xyco::fs::uring::File::status()
     -> runtime::Future<utils::Result<std::filesystem::file_status>> {
-  co_return co_await runtime::AsyncFuture([&]() {
+  co_return co_await task::BlockingTask([&]() {
     std::error_code error_code;
     std::filesystem::file_status status;
     if (std::filesystem::is_symlink(path_)) {
@@ -145,7 +145,7 @@ auto xyco::fs::uring::File::status()
 auto xyco::fs::uring::File::set_permissions(
     std::filesystem::perms prms, std::filesystem::perm_options opts) const
     -> runtime::Future<utils::Result<void>> {
-  co_return co_await runtime::AsyncFuture([&]() {
+  co_return co_await task::BlockingTask([&]() {
     std::error_code error_code;
     std::filesystem::permissions(path_, prms, opts, error_code);
     return !error_code ? utils::Result<void>::ok()
@@ -157,13 +157,13 @@ auto xyco::fs::uring::File::set_permissions(
 
 auto xyco::fs::uring::File::flush() const
     -> runtime::Future<utils::Result<void>> {
-  co_return co_await runtime::AsyncFuture(
+  co_return co_await task::BlockingTask(
       [this]() { return utils::into_sys_result(::fsync(fd_)); });
 }
 
 auto xyco::fs::uring::File::seek(off64_t offset, int whence) const
     -> runtime::Future<utils::Result<off64_t>> {
-  co_return co_await runtime::AsyncFuture([this, offset, whence]() {
+  co_return co_await task::BlockingTask([this, offset, whence]() {
     auto return_offset = ::lseek64(fd_, offset, whence);
     if (return_offset == -1) {
       return utils::into_sys_result(-1).map(
@@ -198,7 +198,7 @@ xyco::fs::uring::File::File(int file_descriptor, std::filesystem::path&& path)
 
 auto xyco::fs::uring::OpenOptions::open(std::filesystem::path path)
     -> runtime::Future<utils::Result<File>> {
-  co_return co_await runtime::AsyncFuture([&]() {
+  co_return co_await task::BlockingTask([&]() {
     auto access_mode = get_access_mode();
     if (access_mode.is_err()) {
       return access_mode.map(

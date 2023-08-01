@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "net/socket.h"
-#include "runtime/blocking.h"
+#include "task/registry.h"
 #include "time/driver.h"
 #include "utils.h"
 
@@ -41,11 +41,11 @@ TEST(FmtTypeTest, TimeExtra_Event) {
 
 TEST(FmtTypeTest, AsyncFutureExtra_Event) {
   auto event = xyco::runtime::Event{
-      .extra_ = std::make_unique<xyco::runtime::AsyncFutureExtra>([]() {})};
+      .extra_ = std::make_unique<xyco::task::BlockingExtra>([]() {})};
 
   auto fmt_str = std::format("{}", event);
 
-  ASSERT_EQ(fmt_str, "Event{extra_=AsyncFutureExtra{}}");
+  ASSERT_EQ(fmt_str, "Event{extra_=BlockingExtra{}}");
 }
 
 TEST(FmtTypeTest, SocketAddr_ipv4) {

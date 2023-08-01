@@ -1,22 +1,20 @@
-#include "blocking.h"
+#include "task/registry.h"
 
 #include <algorithm>
 #include <thread>
 
-auto xyco::runtime::AsyncFutureExtra::print() const -> std::string {
+auto xyco::task::BlockingExtra::print() const -> std::string {
   return std::format("{}", *this);
 }
 
-xyco::runtime::AsyncFutureExtra::AsyncFutureExtra(
-    std::function<void()> before_extra)
+xyco::task::BlockingExtra::BlockingExtra(std::function<void()> before_extra)
     : before_extra_(std::move(before_extra)) {}
 
-auto xyco::runtime::Task::operator()() -> void { inner_(); }
+auto xyco::task::Task::operator()() -> void { inner_(); }
 
-xyco::runtime::Task::Task(std::function<void()> task)
-    : inner_(std::move(task)) {}
+xyco::task::Task::Task(std::function<void()> task) : inner_(std::move(task)) {}
 
-auto xyco::runtime::BlockingWorker::run(BlockingRegistryImpl& blocking_registry)
+auto xyco::task::BlockingWorker::run(BlockingRegistryImpl& blocking_registry)
     -> void {
   while (!end_) {
     std::unique_lock<std::mutex> lock_guard(mutex_);
@@ -35,14 +33,14 @@ auto xyco::runtime::BlockingWorker::run(BlockingRegistryImpl& blocking_registry)
   }
 }
 
-auto xyco::runtime::BlockingPool::run(BlockingRegistryImpl& blocking_registry)
+auto xyco::task::BlockingPool::run(BlockingRegistryImpl& blocking_registry)
     -> void {
   for (auto& worker : workers_) {
     worker_ctx_.emplace_back([&]() { worker.run(blocking_registry); });
   }
 }
 
-auto xyco::runtime::BlockingPool::spawn(runtime::Task task) -> void {
+auto xyco::task::BlockingPool::spawn(task::Task task) -> void {
   auto worker = std::min_element(
       workers_.begin(), workers_.end(), [](auto& worker1, auto& worker2) {
         return worker1.tasks_.size() < worker2.tasks_.size();
@@ -54,10 +52,10 @@ auto xyco::runtime::BlockingPool::spawn(runtime::Task task) -> void {
   worker->cv_.notify_one();
 }
 
-xyco::runtime::BlockingPool::BlockingPool(uintptr_t worker_num)
+xyco::task::BlockingPool::BlockingPool(uintptr_t worker_num)
     : workers_(worker_num) {}
 
-xyco::runtime::BlockingPool::~BlockingPool() {
+xyco::task::BlockingPool::~BlockingPool() {
   for (auto& worker : workers_) {
     worker.end_ = true;
     worker.cv_.notify_one();
@@ -67,46 +65,46 @@ xyco::runtime::BlockingPool::~BlockingPool() {
   }
 }
 
-xyco::runtime::BlockingRegistryImpl::BlockingRegistryImpl(uintptr_t woker_num)
+xyco::task::BlockingRegistryImpl::BlockingRegistryImpl(uintptr_t woker_num)
     : pool_(woker_num) {
   pool_.run(*this);
 }
 
-auto xyco::runtime::BlockingRegistryImpl::Register(std::shared_ptr<Event> event)
-    -> utils::Result<void> {
+auto xyco::task::BlockingRegistryImpl::Register(
+    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   {
     std::scoped_lock<std::mutex> lock_guard(mutex_);
     events_.push_back(event);
   }
-  pool_.spawn(runtime::Task(
-      dynamic_cast<AsyncFutureExtra*>(event->extra_.get())->before_extra_));
+  pool_.spawn(task::Task(
+      dynamic_cast<BlockingExtra*>(event->extra_.get())->before_extra_));
   return utils::Result<void>::ok();
 }
 
-auto xyco::runtime::BlockingRegistryImpl::reregister(
-    std::shared_ptr<Event> event) -> utils::Result<void> {
+auto xyco::task::BlockingRegistryImpl::reregister(
+    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   return utils::Result<void>::ok();
 }
 
-auto xyco::runtime::BlockingRegistryImpl::deregister(
-    std::shared_ptr<Event> event) -> utils::Result<void> {
+auto xyco::task::BlockingRegistryImpl::deregister(
+    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   return utils::Result<void>::ok();
 }
 
-auto xyco::runtime::BlockingRegistryImpl::select(
-    runtime::Events& events, std::chrono::milliseconds timeout)
+auto xyco::task::BlockingRegistryImpl::select(runtime::Events& events,
+                                              std::chrono::milliseconds timeout)
     -> utils::Result<void> {
   decltype(events_) new_events;
 
   std::scoped_lock<std::mutex> lock_guard(mutex_);
   std::copy_if(std::begin(events_), std::end(events_),
                std::back_inserter(new_events), [](auto event) {
-                 return dynamic_cast<AsyncFutureExtra*>(event->extra_.get())
+                 return dynamic_cast<BlockingExtra*>(event->extra_.get())
                             ->after_extra_ == nullptr;
                });
   std::copy_if(std::begin(events_), std::end(events_),
                std::back_inserter(events), [](auto event) {
-                 return dynamic_cast<AsyncFutureExtra*>(event->extra_.get())
+                 return dynamic_cast<BlockingExtra*>(event->extra_.get())
                             ->after_extra_ != nullptr;
                });
   events_ = new_events;

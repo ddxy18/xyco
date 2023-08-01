@@ -1,19 +1,19 @@
-#ifndef XYCO_RUNTIME_BLOCKING_H_
-#define XYCO_RUNTIME_BLOCKING_H_
+#ifndef XYCO_TASK_REGISTRY_H_
+#define XYCO_TASK_REGISTRY_H_
 
 #include <mutex>
 #include <queue>
 
 #include "runtime/global_registry.h"
 
-namespace xyco::runtime {
+namespace xyco::task {
 class BlockingRegistryImpl;
 
-class AsyncFutureExtra : public Extra {
+class BlockingExtra : public runtime::Extra {
  public:
   [[nodiscard]] auto print() const -> std::string override;
 
-  AsyncFutureExtra(std::function<void()> before_extra);
+  BlockingExtra(std::function<void()> before_extra);
 
   std::function<void()> before_extra_;
   void* after_extra_{};
@@ -70,13 +70,13 @@ class BlockingRegistryImpl : public runtime::Registry {
  public:
   explicit BlockingRegistryImpl(uintptr_t woker_num);
 
-  [[nodiscard]] auto Register(std::shared_ptr<Event> event)
+  [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
 
-  [[nodiscard]] auto reregister(std::shared_ptr<Event> event)
+  [[nodiscard]] auto reregister(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
 
-  [[nodiscard]] auto deregister(std::shared_ptr<Event> event)
+  [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
 
   [[nodiscard]] auto select(runtime::Events& events,
@@ -89,17 +89,17 @@ class BlockingRegistryImpl : public runtime::Registry {
   BlockingPool pool_;
 };
 
-using BlockingRegistry = GlobalRegistry<BlockingRegistryImpl>;
-}  // namespace xyco::runtime
+using BlockingRegistry = runtime::GlobalRegistry<BlockingRegistryImpl>;
+}  // namespace xyco::task
 
 template <>
-struct std::formatter<xyco::runtime::AsyncFutureExtra>
+struct std::formatter<xyco::task::BlockingExtra>
     : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const xyco::runtime::AsyncFutureExtra& extra,
-              FormatContext& ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "AsyncFutureExtra{{}}");
+  auto format(const xyco::task::BlockingExtra& extra, FormatContext& ctx) const
+      -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "BlockingExtra{{}}");
   }
 };
 
-#endif  // XYCO_RUNTIME_BLOCKING_H_
+#endif  // XYCO_TASK_REGISTRY_H_

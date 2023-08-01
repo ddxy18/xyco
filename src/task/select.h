@@ -1,27 +1,28 @@
-#ifndef XYCO_RUNTIME_UTILS_SELECT_H
-#define XYCO_RUNTIME_UTILS_SELECT_H
+#ifndef XYCO_TASK_SELECT_H_
+#define XYCO_TASK_SELECT_H_
 
 #include "runtime/runtime.h"
 #include "runtime/runtime_ctx.h"
-#include "type_wrapper.h"
+#include "task/type_wrapper.h"
 
-namespace xyco::runtime {
+namespace xyco::task {
 template <typename T1, typename T2>
 class SelectFuture
-    : public Future<std::variant<TypeWrapper<T1>, TypeWrapper<T2>>> {
+    : public runtime::Future<std::variant<TypeWrapper<T1>, TypeWrapper<T2>>> {
   using CoOutput = std::variant<TypeWrapper<T1>, TypeWrapper<T2>>;
 
  public:
-  auto poll(Handle<void> self) -> Poll<CoOutput> override {
+  auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
-      auto [wrapper1, wrapper2] = std::pair<Future<void>, Future<void>>(
-          future_wrapper<T1, 1>(std::move(futures_.first)),
-          future_wrapper<T2, 2>(std::move(futures_.second)));
+      auto [wrapper1, wrapper2] =
+          std::pair<runtime::Future<void>, runtime::Future<void>>(
+              future_wrapper<T1, 1>(std::move(futures_.first)),
+              future_wrapper<T2, 2>(std::move(futures_.second)));
       wrappers_ = {wrapper1.get_handle(), wrapper2.get_handle()};
-      RuntimeCtx::get_ctx()->get_runtime()->spawn(std::move(wrapper1));
-      RuntimeCtx::get_ctx()->get_runtime()->spawn(std::move(wrapper2));
-      return Pending();
+      runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(std::move(wrapper1));
+      runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(std::move(wrapper2));
+      return runtime::Pending();
     }
 
     decltype(result_.index()) index;
@@ -36,7 +37,7 @@ class SelectFuture
           wrappers_.second.promise().future()->cancel();
         }
       }
-      return Ready<CoOutput>{
+      return runtime::Ready<CoOutput>{
           CoOutput(std::in_place_index<0>, std::get<1>(result_))};
     }
 
@@ -46,17 +47,17 @@ class SelectFuture
         wrappers_.first.promise().future()->cancel();
       }
     }
-    return Ready<CoOutput>{
+    return runtime::Ready<CoOutput>{
         CoOutput(std::in_place_index<1>, std::get<2>(result_))};
   }
 
-  SelectFuture(Future<T1> &&future1, Future<T2> &&future2)
-      : Future<CoOutput>(nullptr),
+  SelectFuture(runtime::Future<T1> &&future1, runtime::Future<T2> &&future2)
+      : runtime::Future<CoOutput>(nullptr),
         futures_(std::move(future1), std::move(future2)) {}
 
  private:
   template <typename T, int Index>
-  auto future_wrapper(Future<T> future) -> Future<void> {
+  auto future_wrapper(runtime::Future<T> future) -> runtime::Future<void> {
     TypeWrapper<T> result;
     if constexpr (std::is_same_v<T, void>) {
       co_await future;
@@ -69,7 +70,7 @@ class SelectFuture
         result_ =
             std::variant<std::monostate, TypeWrapper<T1>, TypeWrapper<T2>>(
                 std::in_place_index<Index>, result);
-        RuntimeCtx::get_ctx()->register_future(this);
+        runtime::RuntimeCtx::get_ctx()->register_future(this);
       }
     }
     if constexpr (Index == 1) {
@@ -90,19 +91,21 @@ class SelectFuture
   std::mutex result_mutex_;
   std::variant<std::monostate, TypeWrapper<T1>, TypeWrapper<T2>> result_;
 
-  std::pair<Future<T1>, Future<T2>> futures_;
-  std::pair<Handle<PromiseBase>, Handle<PromiseBase>> wrappers_;
+  std::pair<runtime::Future<T1>, runtime::Future<T2>> futures_;
+  std::pair<runtime::Handle<runtime::PromiseBase>,
+            runtime::Handle<runtime::PromiseBase>>
+      wrappers_;
 
   std::pair<std::mutex, std::mutex> ended_mutex_;
   std::pair<bool, bool> ended_;
 };
 
 template <typename T1, typename T2>
-auto select(Future<T1> future1, Future<T2> future2)
-    -> Future<std::variant<TypeWrapper<T1>, TypeWrapper<T2>>> {
+auto select(runtime::Future<T1> future1, runtime::Future<T2> future2)
+    -> runtime::Future<std::variant<TypeWrapper<T1>, TypeWrapper<T2>>> {
   co_return co_await SelectFuture<T1, T2>(std::move(future1),
                                           std::move(future2));
 }
-}  // namespace xyco::runtime
+}  // namespace xyco::task
 
-#endif  // XYCO_RUNTIME_UTILS_SELECT_H
+#endif  // XYCO_TASK_SELECT_H_
