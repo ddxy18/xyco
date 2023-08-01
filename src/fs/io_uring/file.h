@@ -9,8 +9,8 @@
 
 #include "io/io_uring/extra.h"
 #include "io/io_uring/registry.h"
-#include "runtime/async_future.h"
 #include "runtime/runtime_ctx.h"
+#include "task/blocking_task.h"
 #include "utils/error.h"
 #include "utils/logger.h"
 

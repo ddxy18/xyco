@@ -2,8 +2,8 @@
 #include "io/registry.h"
 #include "io/write.h"
 #include "net/listener.h"
-#include "runtime/blocking.h"
 #include "runtime/runtime.h"
+#include "task/registry.h"
 
 using xyco::runtime::Future;
 
@@ -58,7 +58,7 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
 
   auto runtime = xyco::runtime::Builder::new_multi_thread()
                      .worker_threads(2)
-                     .registry<xyco::runtime::BlockingRegistry>(2)
+                     .registry<xyco::task::BlockingRegistry>(2)
                      .registry<xyco::io::IoRegistry>(4)
                      .build()
                      .unwrap();

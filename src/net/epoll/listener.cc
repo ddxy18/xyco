@@ -8,7 +8,7 @@
 #include <variant>
 
 #include "io/epoll/extra.h"
-#include "runtime/async_future.h"
+#include "task/blocking_task.h"
 #include "utils/error.h"
 
 template <typename T>
@@ -16,7 +16,7 @@ using Future = xyco::runtime::Future<T>;
 
 auto xyco::net::epoll::TcpSocket::bind(SocketAddr addr)
     -> Future<utils::Result<void>> {
-  auto bind_result = co_await runtime::AsyncFuture([&]() {
+  auto bind_result = co_await task::BlockingTask([&]() {
     return utils::into_sys_result(
         ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
   });
@@ -83,7 +83,7 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
     std::shared_ptr<runtime::Event> event_;
   };
 
-  auto connect_result = co_await runtime::AsyncFuture([&]() {
+  auto connect_result = co_await task::BlockingTask([&]() {
     return utils::into_sys_result(
         ::connect(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
   });
@@ -100,7 +100,7 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
 
 auto xyco::net::epoll::TcpSocket::listen(int backlog)
     -> Future<utils::Result<TcpListener>> {
-  auto listen_result = co_await runtime::AsyncFuture([&]() {
+  auto listen_result = co_await task::BlockingTask([&]() {
     return utils::into_sys_result(::listen(socket_.into_c_fd(), backlog));
   });
   ASYNC_TRY(listen_result.map([&](auto n) { return TcpListener(Socket(-1)); }));
@@ -154,7 +154,7 @@ auto xyco::net::epoll::TcpStream::flush() -> Future<utils::Result<void>> {
 
 auto xyco::net::epoll::TcpStream::shutdown(io::Shutdown shutdown) const
     -> Future<utils::Result<void>> {
-  ASYNC_TRY(co_await runtime::AsyncFuture([&]() {
+  ASYNC_TRY(co_await task::BlockingTask([&]() {
     return utils::into_sys_result(::shutdown(
         socket_.into_c_fd(),
         static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));

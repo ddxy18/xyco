@@ -6,8 +6,8 @@
 #include "io/registry.h"
 #include "io/write.h"
 #include "net/listener.h"
-#include "runtime/blocking.h"
 #include "runtime/runtime.h"
+#include "task/registry.h"
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 class RequestLine {
@@ -238,7 +238,7 @@ auto main() -> int {
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
   auto server = Server(xyco::runtime::Builder::new_multi_thread()
                            .worker_threads(1)
-                           .registry<xyco::runtime::BlockingRegistry>(1)
+                           .registry<xyco::task::BlockingRegistry>(1)
                            .registry<xyco::io::IoRegistry>(4)
                            .build()
                            .unwrap(),

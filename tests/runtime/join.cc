@@ -1,4 +1,4 @@
-#include "runtime/utils/join.h"
+#include "task/join.h"
 
 #include <gtest/gtest.h>
 
@@ -11,7 +11,7 @@ TEST(JoinTest, join_immediate_ready) {
 
     auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
 
-    auto result = co_await xyco::runtime::join(co1(), co2());
+    auto result = co_await xyco::task::join(co1(), co2());
 
     CO_ASSERT_EQ(result.first.inner_, 1);
     CO_ASSERT_EQ(result.second.inner_, "abc");
@@ -35,7 +35,7 @@ TEST(JoinTest, join_delay) {
           co_return "abc";
         };
 
-        auto result = co_await xyco::runtime::join(co1(), co2());
+        auto result = co_await xyco::task::join(co1(), co2());
 
         CO_ASSERT_EQ(result.first.inner_, 1);
         CO_ASSERT_EQ(result.second.inner_, "abc");
@@ -49,7 +49,7 @@ TEST(JoinTest, join_void) {
 
     auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
 
-    auto result = co_await xyco::runtime::join(co1(), co2());
+    auto result = co_await xyco::task::join(co1(), co2());
 
     CO_ASSERT_EQ(result.second.inner_, "abc");
   });

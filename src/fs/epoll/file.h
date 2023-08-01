@@ -9,8 +9,8 @@
 
 #include "io/epoll/extra.h"
 #include "io/epoll/registry.h"
-#include "runtime/async_future.h"
 #include "runtime/runtime_ctx.h"
+#include "task/blocking_task.h"
 #include "utils/error.h"
 
 namespace xyco::fs::epoll {
@@ -48,7 +48,7 @@ class File {
   template <typename Iterator>
   auto read(Iterator begin, Iterator end)
       -> runtime::Future<utils::Result<uintptr_t>> {
-    co_return co_await runtime::AsyncFuture([&]() {
+    co_return co_await task::BlockingTask([&]() {
       return utils::into_sys_result(
           ::read(fd_, &*begin, std::distance(begin, end)));
     });
@@ -57,7 +57,7 @@ class File {
   template <typename Iterator>
   auto write(Iterator begin, Iterator end)
       -> runtime::Future<utils::Result<uintptr_t>> {
-    co_return co_await runtime::AsyncFuture([&]() {
+    co_return co_await task::BlockingTask([&]() {
       return utils::into_sys_result(
           ::write(fd_, &*begin, std::distance(begin, end)));
     });

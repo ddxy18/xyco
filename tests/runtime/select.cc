@@ -1,4 +1,4 @@
-#include "runtime/utils/select.h"
+#include "task/select.h"
 
 #include <gtest/gtest.h>
 
@@ -11,7 +11,7 @@ TEST(SelectTest, select_immediate_ready) {
 
     auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
 
-    auto result = co_await xyco::runtime::select(co1(), co2());
+    auto result = co_await xyco::task::select(co1(), co2());
 
     CO_ASSERT_EQ(std::get<0>(result).inner_, 1);
   });
@@ -39,7 +39,7 @@ TEST(SelectTest, select_delay) {
           co_return "abc";
         };
 
-        auto result = co_await xyco::runtime::select(co1(), co2());
+        auto result = co_await xyco::task::select(co1(), co2());
 
         co_await xyco::time::sleep(timeout_ms + std::chrono::milliseconds(1));
 
@@ -56,7 +56,7 @@ TEST(SelectTest, select_void) {
 
     auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
 
-    auto result = co_await xyco::runtime::select(co1(), co2());
+    auto result = co_await xyco::task::select(co1(), co2());
 
     CO_ASSERT_EQ(result.index(), 0);
   });

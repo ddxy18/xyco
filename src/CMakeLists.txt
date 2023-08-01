@@ -16,20 +16,22 @@ set(net_epoll_src "net/socket.cc" "net/epoll/listener.cc")
 set(net_uring_src "net/socket.cc" "net/io_uring/listener.cc")
 set(net_all_src "net/socket.cc" "net/epoll/listener.cc" "net/io_uring/listener.cc")
 
-set(runtime_src "runtime/blocking.cc" "runtime/driver.cc" "runtime/future.cc" "runtime/runtime.cc" "runtime/runtime_ctx.cc")
+set(task_src "task/registry.cc")
+
+set(runtime_src "runtime/driver.cc" "runtime/future.cc" "runtime/runtime.cc" "runtime/runtime_ctx.cc")
 
 set(time_src "time/driver.cc" "time/wheel.cc" "time/clock.cc")
 
 set(utils_src "utils/error.cc" "utils/panic.cc")
 
 add_library(fs_epoll ${fs_epoll_src})
-target_link_libraries(fs_epoll io_epoll runtime utils)
+target_link_libraries(fs_epoll io_epoll task runtime utils)
 target_include_directories(fs_epoll INTERFACE fs/standalone/epoll)
 add_library(fs_uring ${fs_uring_src})
-target_link_libraries(fs_uring io_uring runtime utils uring)
+target_link_libraries(fs_uring io_uring task runtime utils uring)
 target_include_directories(fs_uring INTERFACE fs/standalone/io_uring)
 add_library(fs_all ${fs_all_src})
-target_link_libraries(fs_all io_all runtime utils uring)
+target_link_libraries(fs_all io_all task runtime utils uring)
 
 add_library(io_epoll ${io_epoll_src})
 target_link_libraries(io_epoll runtime utils spdlog)
@@ -41,13 +43,16 @@ add_library(io_all ${io_all_src})
 target_link_libraries(io_all runtime utils spdlog uring)
 
 add_library(net_epoll ${net_epoll_src})
-target_link_libraries(net_epoll io_epoll runtime utils spdlog)
+target_link_libraries(net_epoll io_epoll task runtime utils spdlog)
 target_include_directories(net_epoll INTERFACE net/standalone/epoll)
 add_library(net_uring ${net_uring_src})
-target_link_libraries(net_uring io_uring runtime utils spdlog uring)
+target_link_libraries(net_uring io_uring task runtime utils spdlog uring)
 target_include_directories(net_uring INTERFACE net/standalone/io_uring)
 add_library(net_all ${net_all_src})
-target_link_libraries(net_all io_all runtime utils spdlog uring)
+target_link_libraries(net_all io_all task runtime utils spdlog uring)
+
+add_library(task ${task_src})
+target_link_libraries(task GSL runtime)
 
 add_library(runtime ${runtime_src})
 target_link_libraries(runtime utils GSL)

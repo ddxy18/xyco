@@ -1,8 +1,8 @@
-#ifndef XYCO_TIME_TIMEOUT_H
-#define XYCO_TIME_TIMEOUT_H
+#ifndef XYCO_TIME_TIMEOUT_H_
+#define XYCO_TIME_TIMEOUT_H_
 
-#include "runtime/utils/select.h"
 #include "sleep.h"
+#include "task/select.h"
 
 namespace xyco::time {
 template <typename T, typename Rep, typename Ratio>
@@ -10,7 +10,7 @@ auto timeout(std::chrono::duration<Rep, Ratio> duration,
              runtime::Future<T> future) -> runtime::Future<Result<T, void>> {
   using CoOutput = Result<T, void>;
 
-  auto result = co_await runtime::select(std::move(future), sleep(duration));
+  auto result = co_await task::select(std::move(future), sleep(duration));
 
   if (result.index() == 1) {
     co_return CoOutput::err();
@@ -24,4 +24,4 @@ auto timeout(std::chrono::duration<Rep, Ratio> duration,
 }
 }  // namespace xyco::time
 
-#endif  // XYCO_TIME_TIMEOUT_H
+#endif  // XYCO_TIME_TIMEOUT_H_

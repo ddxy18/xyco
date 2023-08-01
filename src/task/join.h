@@ -1,41 +1,42 @@
-#ifndef XYCO_RUNTIME_UTILS_JOIN_H
-#define XYCO_RUNTIME_UTILS_JOIN_H
+#ifndef XYCO_TASK_JOIN_H_
+#define XYCO_TASK_JOIN_H_
 
 #include <mutex>
 
 #include "runtime/runtime.h"
 #include "runtime/runtime_ctx.h"
-#include "type_wrapper.h"
+#include "task/type_wrapper.h"
 
-namespace xyco::runtime {
+namespace xyco::task {
 template <typename T1, typename T2>
-class JoinFuture : public Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
+class JoinFuture
+    : public runtime::Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
   using CoOutput = std::pair<TypeWrapper<T1>, TypeWrapper<T2>>;
 
  public:
-  auto poll(Handle<void> self) -> Poll<CoOutput> override {
+  auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
-      RuntimeCtx::get_ctx()->get_runtime()->spawn(
+      runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(
           future_wrapper<T1, 0>(std::move(future1_)));
-      RuntimeCtx::get_ctx()->get_runtime()->spawn(
+      runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(
           future_wrapper<T2, 1>(std::move(future2_)));
-      return Pending();
+      return runtime::Pending();
     }
 
-    return Ready<CoOutput>{
+    return runtime::Ready<CoOutput>{
         CoOutput(result_.first.value(), result_.second.value())};
   }
 
-  JoinFuture(Future<T1> &&future1, Future<T2> &&future2)
-      : Future<CoOutput>(nullptr),
+  JoinFuture(runtime::Future<T1> &&future1, runtime::Future<T2> &&future2)
+      : runtime::Future<CoOutput>(nullptr),
         future1_(std::move(future1)),
         future2_(std::move(future2)),
         result_({}, {}) {}
 
  private:
   template <typename T, int Index>
-  auto future_wrapper(Future<T> future) -> Future<void> {
+  auto future_wrapper(runtime::Future<T> future) -> runtime::Future<void> {
     if constexpr (!std::is_same_v<T, void>) {
       auto result = co_await future;
       if constexpr (Index == 0) {
@@ -56,7 +57,7 @@ class JoinFuture : public Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
       if (!registered_ && result_.first.has_value() &&
           result_.second.has_value()) {
         registered_ = true;
-        RuntimeCtx::get_ctx()->register_future(this);
+        runtime::RuntimeCtx::get_ctx()->register_future(this);
       }
     }
   }
@@ -66,15 +67,15 @@ class JoinFuture : public Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
       result_;
   std::mutex mutex_;
   bool registered_{};
-  Future<T1> future1_;
-  Future<T2> future2_;
+  runtime::Future<T1> future1_;
+  runtime::Future<T2> future2_;
 };
 
 template <typename T1, typename T2>
-auto join(Future<T1> future1, Future<T2> future2)
-    -> Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
+auto join(runtime::Future<T1> future1, runtime::Future<T2> future2)
+    -> runtime::Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
   co_return co_await JoinFuture<T1, T2>(std::move(future1), std::move(future2));
 }
-}  // namespace xyco::runtime
+}  // namespace xyco::task
 
-#endif  // XYCO_RUNTIME_UTILS_JOIN_H
+#endif  // XYCO_TASK_JOIN_H_

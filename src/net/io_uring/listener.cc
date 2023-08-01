@@ -7,14 +7,14 @@
 #include <cstdint>
 #include <variant>
 
-#include "runtime/async_future.h"
+#include "task/blocking_task.h"
 
 template <typename T>
 using Future = xyco::runtime::Future<T>;
 
 auto xyco::net::uring::TcpSocket::bind(SocketAddr addr)
     -> Future<utils::Result<void>> {
-  auto bind_result = co_await runtime::AsyncFuture([&]() {
+  auto bind_result = co_await task::BlockingTask([&]() {
     return utils::into_sys_result(
         ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
   });
@@ -74,7 +74,7 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
 
 auto xyco::net::uring::TcpSocket::listen(int backlog)
     -> Future<utils::Result<TcpListener>> {
-  auto listen_result = co_await runtime::AsyncFuture([&]() {
+  auto listen_result = co_await task::BlockingTask([&]() {
     return utils::into_sys_result(::listen(socket_.into_c_fd(), backlog));
   });
   ASYNC_TRY(listen_result.map([&](auto n) { return TcpListener(Socket(-1)); }));
