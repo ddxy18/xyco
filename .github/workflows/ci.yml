@@ -51,7 +51,7 @@ jobs:
           cmake --build build --config Release --target all
           rustup override set nightly
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format --source src benchmark tests examples --tool-version $llvm_version
-          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source src benchmark examples --build build --tool-version $llvm_version --extra-arg="-I/usr/lib/llvm-$llvm_version/include/c++/v1/"
+          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source include src benchmark examples --build build --tool-version $llvm_version --extra-arg="-I/usr/lib/llvm-$llvm_version/include/c++/v1/"
 
   cpp-test:
     runs-on: ubuntu-22.04
