@@ -1,7 +1,7 @@
-#include "wheel.h"
+#include "xyco/time/wheel.h"
 
-#include "time/clock.h"
-#include "time/driver.h"
+#include "xyco/time/clock.h"
+#include "xyco/time/driver.h"
 
 xyco::time::Level::Level() : current_it_(events_.begin()) {}
 

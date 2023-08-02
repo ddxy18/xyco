@@ -1,9 +1,9 @@
-#include "socket.h"
+#include "xyco/net/socket.h"
 
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "utils/error.h"
+#include "xyco/utils/error.h"
 
 auto xyco::net::SocketAddrV4::get_port() const -> uint16_t {
   return ntohs(inner_.sin_port);

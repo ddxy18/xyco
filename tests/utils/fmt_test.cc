@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "net/socket.h"
-#include "task/registry.h"
-#include "time/driver.h"
 #include "utils.h"
+#include "xyco/net/socket.h"
+#include "xyco/task/registry.h"
+#include "xyco/time/driver.h"
 
 TEST(FmtTypeTest, IoError) {
   auto io_error = xyco::utils::Error();

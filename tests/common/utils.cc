@@ -1,8 +1,8 @@
 #include "utils.h"
 
-#include "io/registry.h"
-#include "task/registry.h"
-#include "time/driver.h"
+#include "xyco/io/registry.h"
+#include "xyco/task/registry.h"
+#include "xyco/time/driver.h"
 
 std::unique_ptr<xyco::runtime::Runtime> TestRuntimeCtx::runtime_;
 

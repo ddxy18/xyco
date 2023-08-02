@@ -1,9 +1,9 @@
-#include "task/select.h"
+#include "xyco/task/select.h"
 
 #include <gtest/gtest.h>
 
-#include "time/sleep.h"
 #include "utils.h"
+#include "xyco/time/sleep.h"
 
 TEST(SelectTest, select_immediate_ready) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {

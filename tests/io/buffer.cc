@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "io/buffer_reader.h"
-#include "io/write.h"
 #include "utils.h"
+#include "xyco/io/buffer_reader.h"
+#include "xyco/io/write.h"
 
 class BufferTest : public ::testing::Test {
  protected:

@@ -1,4 +1,4 @@
-#include "net/socket.h"
+#include "xyco/net/socket.h"
 
 #include <gtest/gtest.h>
 

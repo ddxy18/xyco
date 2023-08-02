@@ -1,0 +1,105 @@
+#ifndef XYCO_TASK_REGISTRY_H_
+#define XYCO_TASK_REGISTRY_H_
+
+#include <mutex>
+#include <queue>
+
+#include "xyco/runtime/global_registry.h"
+
+namespace xyco::task {
+class BlockingRegistryImpl;
+
+class BlockingExtra : public runtime::Extra {
+ public:
+  [[nodiscard]] auto print() const -> std::string override;
+
+  BlockingExtra(std::function<void()> before_extra);
+
+  std::function<void()> before_extra_;
+  void* after_extra_{};
+};
+
+class Task {
+ public:
+  auto operator()() -> void;
+
+  explicit Task(std::function<void()> task);
+
+ private:
+  std::function<void()> inner_;
+};
+
+class BlockingWorker {
+  friend class BlockingPool;
+
+ private:
+  auto run(BlockingRegistryImpl& blocking_registry) -> void;
+
+  std::queue<Task> tasks_;
+  std::mutex mutex_;
+  std::condition_variable cv_;
+  std::atomic_bool end_;
+};
+
+class BlockingPool {
+ public:
+  auto run(BlockingRegistryImpl& blocking_registry) -> void;
+
+  auto spawn(Task task) -> void;
+
+  explicit BlockingPool(uintptr_t worker_num);
+
+  BlockingPool(const BlockingPool& runtime) = delete;
+
+  BlockingPool(BlockingPool&& runtime) = delete;
+
+  auto operator=(const BlockingPool& runtime) -> BlockingPool& = delete;
+
+  auto operator=(BlockingPool&& runtime) -> BlockingPool& = delete;
+
+  ~BlockingPool();
+
+ private:
+  std::vector<BlockingWorker> workers_;
+  std::vector<std::thread> worker_ctx_;
+};
+
+class BlockingRegistryImpl : public runtime::Registry {
+  friend class BlockingWorker;
+
+ public:
+  explicit BlockingRegistryImpl(uintptr_t woker_num);
+
+  [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
+      -> utils::Result<void> override;
+
+  [[nodiscard]] auto reregister(std::shared_ptr<runtime::Event> event)
+      -> utils::Result<void> override;
+
+  [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
+      -> utils::Result<void> override;
+
+  [[nodiscard]] auto select(runtime::Events& events,
+                            std::chrono::milliseconds timeout)
+      -> utils::Result<void> override;
+
+ private:
+  runtime::Events events_;
+  std::mutex mutex_;
+  BlockingPool pool_;
+};
+
+using BlockingRegistry = runtime::GlobalRegistry<BlockingRegistryImpl>;
+}  // namespace xyco::task
+
+template <>
+struct std::formatter<xyco::task::BlockingExtra>
+    : public std::formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const xyco::task::BlockingExtra& extra, FormatContext& ctx) const
+      -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "BlockingExtra{{}}");
+  }
+};
+
+#endif  // XYCO_TASK_REGISTRY_H_

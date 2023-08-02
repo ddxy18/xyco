@@ -2,8 +2,8 @@
 
 #include <gsl/pointers>
 
-#include "task/registry.h"
 #include "utils.h"
+#include "xyco/task/registry.h"
 
 class InRuntimeTest : public ::testing::Test {
  protected:

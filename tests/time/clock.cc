@@ -1,4 +1,4 @@
-#include "time/clock.h"
+#include "xyco/time/clock.h"
 
 #include <gtest/gtest.h>
 

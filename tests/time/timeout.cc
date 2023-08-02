@@ -1,4 +1,4 @@
-#include "time/timeout.h"
+#include "xyco/time/timeout.h"
 
 #include <gtest/gtest.h>
 

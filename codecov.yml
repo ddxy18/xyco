@@ -8,12 +8,20 @@ flag_management:
   individual_flags:
     - name: epoll
       paths:
+        - "include/"
+        - "!include/xyco/fs/io_uring/"
+        - "!include/xyoc/io/io_uring/"
+        - "!include/xyco/net/io_uring/"
         - "src/"
         - "!src/fs/io_uring/"
         - "!src/io/io_uring/"
         - "!src/net/io_uring/"
     - name: uring
       paths:
+        - "include/"
+        - "!include/xyco/fs/epoll/"
+        - "!include/xyoc/io/epoll/"
+        - "!include/xyco/net/epoll/"
         - "src/"
         - "!src/fs/epoll/"
         - "!src/io/epoll/"

@@ -1,4 +1,4 @@
-#include "registry.h"
+#include "xyco/io/epoll/registry.h"
 
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -6,8 +6,8 @@
 #include <array>
 #include <vector>
 
-#include "extra.h"
-#include "utils/logger.h"
+#include "xyco/io/epoll/extra.h"
+#include "xyco/utils/logger.h"
 
 auto to_sys(xyco::io::epoll::IoExtra::Interest interest) -> int {
   switch (interest) {

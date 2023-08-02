@@ -1,6 +1,6 @@
-#include "runtime_ctx.h"
+#include "xyco/runtime/runtime_ctx.h"
 
-#include "runtime.h"
+#include "xyco/runtime/runtime.h"
 
 thread_local xyco::runtime::RuntimeBridge xyco::runtime::RuntimeCtx::runtime_ =
     RuntimeBridge(nullptr);
