@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "io/read.h"
-#include "io/write.h"
 #include "utils.h"
+#include "xyco/io/read.h"
+#include "xyco/io/write.h"
 
 // TODO(dongxiaoyu): add failure cases
 

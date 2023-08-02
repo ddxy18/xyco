@@ -1,4 +1,4 @@
-#include "panic.h"
+#include "xyco/utils/panic.h"
 
 #include <format>
 #include <iostream>

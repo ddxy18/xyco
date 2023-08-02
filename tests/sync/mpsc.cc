@@ -1,4 +1,4 @@
-#include "sync/mpsc.h"
+#include "xyco/sync/mpsc.h"
 
 #include <gtest/gtest.h>
 

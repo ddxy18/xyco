@@ -1,0 +1,74 @@
+#ifndef XYCO_RUNTIME_REGISTRY_H_
+#define XYCO_RUNTIME_REGISTRY_H_
+
+#include "xyco/utils/error.h"
+
+namespace xyco::runtime {
+class FutureBase;
+class Registry;
+class Event;
+using Events = std::vector<std::shared_ptr<Event>>;
+
+class Extra {
+ public:
+  [[nodiscard]] virtual auto print() const -> std::string = 0;
+
+  Extra() = default;
+
+  Extra(const Extra &extra) = delete;
+
+  Extra(Extra &&extra) = delete;
+
+  auto operator=(const Extra &) -> Extra & = delete;
+
+  auto operator=(Extra &&) -> Extra & = delete;
+
+  virtual ~Extra() = default;
+};
+
+class Event {
+ public:
+  runtime::FutureBase *future_{};
+  std::unique_ptr<Extra> extra_;
+};
+
+class Registry {
+ public:
+  [[nodiscard]] virtual auto Register(std::shared_ptr<Event> event)
+      -> utils::Result<void> = 0;
+
+  [[nodiscard]] virtual auto reregister(std::shared_ptr<Event> event)
+      -> utils::Result<void> = 0;
+
+  [[nodiscard]] virtual auto deregister(std::shared_ptr<Event> event)
+      -> utils::Result<void> = 0;
+
+  [[nodiscard]] virtual auto select(Events &events,
+                                    std::chrono::milliseconds timeout)
+      -> utils::Result<void> = 0;
+
+  Registry() = default;
+
+  Registry(const Registry &) = delete;
+
+  Registry(Registry &&) = delete;
+
+  auto operator=(const Registry &) -> Registry & = delete;
+
+  auto operator=(Registry &&) -> Registry & = delete;
+
+  virtual ~Registry() = default;
+};
+}  // namespace xyco::runtime
+
+template <>
+struct std::formatter<xyco::runtime::Event> : public std::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const xyco::runtime::Event &event, FormatContext &ctx) const
+      -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "Event{{extra_={}}}",
+                          event.extra_ ? event.extra_->print() : "nullptr");
+  }
+};
+
+#endif  // XYCO_RUNTIME_REGISTRY_H_

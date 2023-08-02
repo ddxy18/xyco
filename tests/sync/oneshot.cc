@@ -1,4 +1,4 @@
-#include "sync/oneshot.h"
+#include "xyco/sync/oneshot.h"
 
 #include <gtest/gtest.h>
 #include <unistd.h>

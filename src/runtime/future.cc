@@ -1,4 +1,4 @@
-#include "future.h"
+#include "xyco/runtime/future.h"
 
 auto xyco::runtime::Future<void>::PromiseType::get_return_object()
     -> Future<void> {

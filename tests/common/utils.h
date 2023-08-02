@@ -5,11 +5,11 @@
 
 #include <gsl/pointers>
 
-#include "fs/file.h"
-#include "io/extra.h"
-#include "net/listener.h"
-#include "runtime/runtime.h"
-#include "time/clock.h"
+#include "xyco/fs/file.h"
+#include "xyco/io/extra.h"
+#include "xyco/net/listener.h"
+#include "xyco/runtime/runtime.h"
+#include "xyco/time/clock.h"
 
 #define CO_ASSERT_EQ(val1, val2)               \
   ({                                           \

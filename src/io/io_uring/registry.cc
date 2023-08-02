@@ -1,8 +1,8 @@
-#include "registry.h"
+#include "xyco/io/io_uring/registry.h"
 
-#include "extra.h"
-#include "runtime/registry.h"
-#include "utils/logger.h"
+#include "xyco/io/io_uring/extra.h"
+#include "xyco/runtime/registry.h"
+#include "xyco/utils/logger.h"
 
 auto xyco::io::uring::IoRegistryImpl::Register(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {

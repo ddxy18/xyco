@@ -1,5 +1,5 @@
 
-#include "file.h"
+#include "xyco/fs/epoll/file.h"
 
 #include <__utility/to_underlying.h>
 #include <sys/stat.h>
@@ -9,8 +9,8 @@
 #include <filesystem>
 #include <utility>
 
-#include "task/blocking_task.h"
-#include "utils/result.h"
+#include "xyco/task/blocking_task.h"
+#include "xyco/utils/result.h"
 
 class StatxExtraFields {
  public:

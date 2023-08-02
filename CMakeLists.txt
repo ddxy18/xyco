@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16.0)
+cmake_minimum_required(VERSION 3.24.0)
 
 project(
   xyco
@@ -9,9 +9,8 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 
 add_compile_options(-std=c++20 -stdlib=libc++ -fexperimental-library)
-# FIXME(xiaoyu): llvm path added cuz latest toolchain fails to find 
-# c++experimental lib, removes it after toolchain fixed
-add_link_options(-fuse-ld=lld-17 -lc++ -lm -rdynamic -L/usr/lib/llvm-17/lib)
+add_link_options(-fuse-ld=lld-17 -lc++ -lm -rdynamic)
+cmake_policy(SET CMP0135 NEW)
 
 include(FetchContent)
 FetchContent_Declare(googletest
@@ -31,11 +30,84 @@ FetchContent_Declare(asio
                      URL_HASH SHA256=226438b0798099ad2a202563a83571ce06dd13b570d8fded4840dbc1f97fa328)
 FetchContent_MakeAvailable(asio)
 
-include_directories(src)
+include_directories(include)
 
 find_package(Boost REQUIRED)
 
-add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(benchmark)
 add_subdirectory(examples)
+
+add_executable(xyco_epoll_main src/main.cc)
+target_link_libraries(xyco_epoll_main io_epoll net_epoll runtime)
+
+add_executable(xyco_uring_main src/main.cc)
+target_link_libraries(xyco_uring_main io_uring net_uring runtime)
+
+set(fs_epoll_src "src/fs/utils.cc" "src/fs/epoll/file.cc")
+set(fs_uring_src "src/fs/utils.cc" "src/fs/io_uring/file.cc")
+set(fs_all_src "src/fs/utils.cc" "src/fs/epoll/file.cc" "src/fs/io_uring/file.cc")
+
+set(io_epoll_src "src/io/epoll/registry.cc" "src/io/epoll/extra.cc")
+set(io_uring_src "src/io/io_uring/registry.cc" "src/io/io_uring/extra.cc")
+set(io_all_src "src/io/epoll/registry.cc" "src/io/epoll/extra.cc" "src/io/io_uring/registry.cc" "src/io/io_uring/extra.cc")
+
+set(net_epoll_src "src/net/socket.cc" "src/net/epoll/listener.cc")
+set(net_uring_src "src/net/socket.cc" "src/net/io_uring/listener.cc")
+set(net_all_src "src/net/socket.cc" "src/net/epoll/listener.cc" "src/net/io_uring/listener.cc")
+
+set(task_src "src/task/registry.cc")
+
+set(runtime_src "src/runtime/driver.cc" "src/runtime/future.cc" "src/runtime/runtime.cc" "src/runtime/runtime_ctx.cc")
+
+set(time_src "src/time/driver.cc" "src/time/wheel.cc" "src/time/clock.cc")
+
+set(utils_src "src/utils/error.cc" "src/utils/panic.cc")
+
+add_library(fs_epoll ${fs_epoll_src})
+target_link_libraries(fs_epoll io_epoll task runtime utils)
+target_include_directories(fs_epoll INTERFACE include/xyco/fs/standalone/epoll)
+add_library(fs_uring ${fs_uring_src})
+target_link_libraries(fs_uring io_uring task runtime utils uring)
+target_include_directories(fs_uring INTERFACE include/xyco/fs/standalone/io_uring)
+add_library(fs_all ${fs_all_src})
+target_link_libraries(fs_all io_all task runtime utils uring)
+
+add_library(io_epoll ${io_epoll_src})
+target_link_libraries(io_epoll runtime utils spdlog)
+target_include_directories(io_epoll INTERFACE include/xyco/io/standalone/epoll)
+add_library(io_uring ${io_uring_src})
+target_link_libraries(io_uring runtime utils spdlog uring)
+target_include_directories(io_uring INTERFACE include/xyco/io/standalone/io_uring)
+add_library(io_all ${io_all_src})
+target_link_libraries(io_all runtime utils spdlog uring)
+
+add_library(net_epoll ${net_epoll_src})
+target_link_libraries(net_epoll io_epoll task runtime utils spdlog)
+target_include_directories(net_epoll INTERFACE include/xyco/net/standalone/epoll)
+add_library(net_uring ${net_uring_src})
+target_link_libraries(net_uring io_uring task runtime utils spdlog uring)
+target_include_directories(net_uring INTERFACE include/xyco/net/standalone/io_uring)
+add_library(net_all ${net_all_src})
+target_link_libraries(net_all io_all task runtime utils spdlog uring)
+
+add_library(task ${task_src})
+target_link_libraries(task GSL runtime)
+
+add_library(runtime ${runtime_src})
+target_link_libraries(runtime utils GSL)
+
+add_library(time ${time_src})
+target_link_libraries(time runtime spdlog)
+
+option(XYCO_ENABLE_LOGGING "OFF")
+
+add_library(utils ${utils_src})
+target_link_libraries(utils spdlog ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
+if(XYCO_ENABLE_LOGGING)
+    target_link_libraries(utils logging)
+endif(XYCO_ENABLE_LOGGING)
+
+add_library(logging "src/utils/logger.cc")
+target_link_libraries(logging spdlog)
+target_compile_definitions(logging PUBLIC XYCO_ENABLE_LOG)

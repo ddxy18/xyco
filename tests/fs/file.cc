@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "fs/utils.h"
 #include "utils.h"
+#include "xyco/fs/utils.h"
 
 class FileTest : public ::testing::Test {
  protected:

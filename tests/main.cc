@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "time/clock.h"
 #include "utils.h"
+#include "xyco/time/clock.h"
 
 auto main(int argc, char **argv) -> int {
   xyco::time::Clock::init<xyco::time::FrozenClock>();
