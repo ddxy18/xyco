@@ -1,9 +1,9 @@
 #ifndef XYCO_TASK_SELECT_H_
 #define XYCO_TASK_SELECT_H_
 
-#include "xyco/task/type_wrapper.h"
 #include "xyco/runtime/runtime.h"
 #include "xyco/runtime/runtime_ctx.h"
+#include "xyco/task/type_wrapper.h"
 
 namespace xyco::task {
 template <typename T1, typename T2>

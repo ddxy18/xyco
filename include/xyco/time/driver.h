@@ -3,8 +3,8 @@
 
 #include <iomanip>
 
-#include "xyco/time/wheel.h"
 #include "xyco/runtime/global_registry.h"
+#include "xyco/time/wheel.h"
 
 namespace xyco::time {
 class TimeExtra : public runtime::Extra {
