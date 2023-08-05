@@ -45,10 +45,11 @@ jobs:
           key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
       - name: build
         run: |
+          ALL_TARGET='xyco_epoll_echo_server;xyco_epoll_http_server;xyco_epoll_main;xyco_test_epoll;xyco_test_uring;xyco_uring_echo_server;xyco_uring_http_server;xyco_uring_main;asio_echo_server'
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang-$llvm_version -S . -B build -G "Ninja"
-          cmake --build build --config Release --target all
+          cmake --build build --config Release --target $ALL_TARGET
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=TRUE -DCMAKE_CXX_COMPILER=clang-$llvm_version -DXYCO_ENABLE_LOGGING=ON -S . -B build -G "Ninja"
-          cmake --build build --config Release --target all
+          cmake --build build --config Release --target $ALL_TARGET
           rustup override set nightly
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format --source src benchmark tests examples --tool-version $llvm_version
           cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source include src benchmark examples --build build --tool-version $llvm_version --extra-arg="-I/usr/lib/llvm-$llvm_version/include/c++/v1/"
