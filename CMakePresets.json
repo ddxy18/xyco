@@ -1,0 +1,115 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "root",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+                "CMAKE_CXX_COMPILER": "clang-$env{LLVM_VERSION}"
+            }
+        },
+        {
+            "name": "enable_logging",
+            "displayName": "Enable Logging Config",
+            "inherits": [ "root" ],
+            "cacheVariables": {
+                "XYCO_ENABLE_LOGGING": "ON"
+            }
+        },
+        {
+            "name": "disable_logging",
+            "displayName": "Disable Logging Config",
+            "inherits": [ "root" ],
+            "cacheVariables": {
+                "XYCO_ENABLE_LOGGING": "OFF"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "non_test_root",
+            "hidden": true,
+            "configuration": "Release",
+            "targets": [
+                "xyco_epoll_echo_server",
+                "xyco_epoll_http_server",
+                "xyco_epoll_main",
+                "xyco_uring_echo_server",
+                "xyco_uring_http_server",
+                "xyco_uring_main",
+                "asio_echo_server"
+            ]
+        },
+        {
+            "name": "all_with_logging_on",
+            "configurePreset": "enable_logging",
+            "inherits": [ "non_test_root" ]
+        },
+        {
+            "name": "all_with_logging_off",
+            "configurePreset": "disable_logging",
+            "inherits": [ "non_test_root" ]
+        },
+        {
+            "name": "test",
+            "configurePreset": "enable_logging",
+            "configuration": "Release",
+            "targets": [
+                "xyco_test_epoll",
+                "xyco_test_uring"
+            ]
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "ci_build_with_logging_off",
+            "displayName": "CI Build Without Logging Step",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "disable_logging"
+                },
+                {
+                    "type": "build",
+                    "name": "all_with_logging_off"
+                }
+            ]
+        },
+        {
+            "name": "ci_build_with_logging_on",
+            "displayName": "CI Build With Logging Step",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "enable_logging"
+                },
+                {
+                    "type": "build",
+                    "name": "all_with_logging_on"
+                }
+            ]
+        },
+        {
+            "name": "ci_test",
+            "displayName": "CI Test Step",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "enable_logging"
+                },
+                {
+                    "type": "build",
+                    "name": "test"
+                }
+            ]
+        }
+    ]
+}
