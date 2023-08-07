@@ -9,7 +9,7 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 
 add_compile_options(-std=c++20 -stdlib=libc++ -fexperimental-library)
-add_link_options(-fuse-ld=lld-17 -lc++ -lm -rdynamic)
+add_link_options(-fuse-ld=lld-$ENV{LLVM_VERSION} -lc++ -lm -rdynamic)
 cmake_policy(SET CMP0135 NEW)
 
 include(FetchContent)
