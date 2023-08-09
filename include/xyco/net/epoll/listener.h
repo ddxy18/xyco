@@ -82,11 +82,12 @@ class TcpStream {
             INFO("read {} bytes from {}", read_bytes, *self_);
             extra->state_
                 .set_field<io::epoll::IoExtra::State::Readable, false>();
-            return runtime::Ready<CoOutput>{CoOutput::ok(read_bytes)};
+            return runtime::Ready<CoOutput>{read_bytes};
           }
           if (errno != EAGAIN && errno != EWOULDBLOCK) {
             return runtime::Ready<CoOutput>{
-                CoOutput::err(utils::into_sys_result(-1).unwrap_err())};
+                utils::into_sys_result(-1).transform(
+                    [](auto value) { return -1; })};
           }
         }
         self_->event_->future_ = this;
@@ -151,7 +152,7 @@ class TcpStream {
           auto write_bytes = ::write(self_->socket_.into_c_fd(), &*begin_,
                                      std::distance(begin_, end_));
           auto nbytes =
-              utils::into_sys_result(write_bytes).map([](auto n) -> uintptr_t {
+              utils::into_sys_result(write_bytes).transform([](auto n) {
                 return static_cast<uintptr_t>(n);
               });
           INFO("write {} bytes to {}", write_bytes, self_->socket_);

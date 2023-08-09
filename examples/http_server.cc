@@ -100,14 +100,13 @@ class Server {
 
  private:
   auto init_server(uint16_t port) -> xyco::runtime::Future<void> {
-    auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
-    tcp_socket.set_reuseaddr(true).unwrap();
-    (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port)))
-        .unwrap();
-    auto listener = (co_await tcp_socket.listen(LISTEN_BACKLOG)).unwrap();
+    auto tcp_socket = *xyco::net::TcpSocket::new_v4();
+    *tcp_socket.set_reuseaddr(true);
+    *co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port));
+    auto listener = *co_await tcp_socket.listen(LISTEN_BACKLOG);
 
     while (true) {
-      auto server_stream = (co_await listener.accept()).unwrap().first;
+      auto server_stream = std::move((co_await listener.accept())->first);
       runtime_->spawn(receive_request(std::move(server_stream)));
     }
   }
@@ -118,19 +117,17 @@ class Server {
         &server_stream);
     Request request;
     auto line =
-        (co_await xyco::io::BufferReadExt::read_line<decltype(reader),
-                                                     std::string>(reader))
-            .unwrap();
+        *co_await xyco::io::BufferReadExt::read_line<decltype(reader),
+                                                     std::string>(reader);
     if (line.length() == 0) {
-      (co_await server_stream.shutdown(xyco::io::Shutdown::All)).unwrap();
+      *co_await server_stream.shutdown(xyco::io::Shutdown::All);
       co_return;
     }
     request.request_line_ = RequestLine(line.substr(0, line.length() - 2));
 
     while (true) {
-      line = (co_await xyco::io::BufferReadExt::read_line<decltype(reader),
-                                                          std::string>(reader))
-                 .unwrap();
+      line = *co_await xyco::io::BufferReadExt::read_line<decltype(reader),
+                                                          std::string>(reader);
       if (line == "\r\n") {
         break;
       }
@@ -154,7 +151,7 @@ class Server {
     auto end = request.body_.end();
     while (begin != end) {
       begin += static_cast<decltype(begin)::difference_type>(
-          (co_await server_stream.read(begin, end)).unwrap());
+          *co_await server_stream.read(begin, end));
     }
     runtime_->spawn(execute_request(request, std::move(server_stream)));
   }
@@ -171,58 +168,50 @@ class Server {
     if (request.request_line_.method_ == RequestLine::Method::Get) {
       auto open_file_result =
           (co_await xyco::fs::File::open(request.request_line_.url_));
-      if (open_file_result.is_err()) {
+      if (!open_file_result) {
         status_line.code_ = NOT_FOUND_CODE;
         status_line.reason_ = "ERROR";
       } else {
         status_line.code_ = SUCCESS_CODE;
         status_line.reason_ = "OK";
       }
-      (co_await xyco::io::WriteExt::write_all(server_stream,
-                                              status_line.to_string()))
-          .unwrap();
+      *co_await xyco::io::WriteExt::write_all(server_stream,
+                                              status_line.to_string());
 
-      if (open_file_result.is_err()) {
+      if (!open_file_result) {
         std::string body = "<P>Your browser sent a bad request.\r\n";
-        (co_await xyco::io::WriteExt::write_all(
-             server_stream,
-             "Content-Length: " + std::to_string(body.size()) + "\r\n"))
-            .unwrap();
-        (co_await xyco::io::WriteExt::write_all(server_stream, "\r\n"))
-            .unwrap();
-        (co_await xyco::io::WriteExt::write_all(server_stream, body)).unwrap();
+        *co_await xyco::io::WriteExt::write_all(
+            server_stream,
+            "Content-Length: " + std::to_string(body.size()) + "\r\n");
+        *co_await xyco::io::WriteExt::write_all(server_stream, "\r\n");
+        *co_await xyco::io::WriteExt::write_all(server_stream, body);
         co_return;
       }
-      auto file = open_file_result.unwrap();
-      (co_await xyco::io::WriteExt::write_all(
-           server_stream, "Content-Length: " +
-                              std::to_string((co_await file.size()).unwrap()) +
-                              "\r\n"))
-          .unwrap();
-      (co_await xyco::io::WriteExt::write_all(server_stream, "\r\n")).unwrap();
+      auto file = *std::move(open_file_result);
+      *co_await xyco::io::WriteExt::write_all(
+          server_stream,
+          "Content-Length: " + std::to_string(*co_await file.size()) + "\r\n");
+      *co_await xyco::io::WriteExt::write_all(server_stream, "\r\n");
       auto reader = xyco::io::BufferReader<xyco::fs::File, std::string>(&file);
       std::string line = "a";
       while (!line.empty()) {
         line =
-            (co_await xyco::io::BufferReadExt::read_line<decltype(reader),
-                                                         std::string>(reader))
-                .unwrap();
-        (co_await xyco::io::WriteExt::write_all(server_stream, line)).unwrap();
+            *co_await xyco::io::BufferReadExt::read_line<decltype(reader),
+                                                         std::string>(reader);
+        *co_await xyco::io::WriteExt::write_all(server_stream, line);
       }
     } else {
       status_line.code_ = SERVER_ERROR_CODE;
       status_line.reason_ = "Internal Server Error";
-      (co_await xyco::io::WriteExt::write_all(server_stream,
-                                              status_line.to_string()))
-          .unwrap();
+      *co_await xyco::io::WriteExt::write_all(server_stream,
+                                              status_line.to_string());
 
       std::string body = "<P>Unsupported method.\r\n";
-      (co_await xyco::io::WriteExt::write_all(
-           server_stream,
-           "Content-Length: " + std::to_string(body.size()) + "\r\n"))
-          .unwrap();
-      (co_await xyco::io::WriteExt::write_all(server_stream, "\r\n")).unwrap();
-      (co_await xyco::io::WriteExt::write_all(server_stream, body)).unwrap();
+      *co_await xyco::io::WriteExt::write_all(
+          server_stream,
+          "Content-Length: " + std::to_string(body.size()) + "\r\n");
+      *co_await xyco::io::WriteExt::write_all(server_stream, "\r\n");
+      *co_await xyco::io::WriteExt::write_all(server_stream, body);
     }
   }
 
@@ -236,12 +225,11 @@ auto main() -> int {
   constexpr uint16_t port = 8080;
 
   // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
-  auto server = Server(xyco::runtime::Builder::new_multi_thread()
-                           .worker_threads(1)
-                           .registry<xyco::task::BlockingRegistry>(1)
-                           .registry<xyco::io::IoRegistry>(4)
-                           .build()
-                           .unwrap(),
+  auto server = Server(*xyco::runtime::Builder::new_multi_thread()
+                            .worker_threads(1)
+                            .registry<xyco::task::BlockingRegistry>(1)
+                            .registry<xyco::io::IoRegistry>(4)
+                            .build(),
                        port);
 
   while (true) {

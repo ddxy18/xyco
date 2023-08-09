@@ -1,6 +1,7 @@
 #ifndef XYCO_RUNTIME_DRIVER_H_
 #define XYCO_RUNTIME_DRIVER_H_
 
+#include <functional>
 #include <thread>
 #include <unordered_map>
 
@@ -15,26 +16,23 @@ class Driver {
 
   template <typename R>
   auto Register(std::shared_ptr<Event> event) -> void {
-    local_registries_.find(std::this_thread::get_id())
-        ->second.find(typeid(R).hash_code())
-        ->second->Register(std::move(event))
-        .unwrap();
+    *local_registries_.find(std::this_thread::get_id())
+         ->second.find(typeid(R).hash_code())
+         ->second->Register(std::move(event));
   }
 
   template <typename R>
   auto reregister(std::shared_ptr<Event> event) -> void {
-    local_registries_.find(std::this_thread::get_id())
-        ->second.find(typeid(R).hash_code())
-        ->second->reregister(std::move(event))
-        .unwrap();
+    *local_registries_.find(std::this_thread::get_id())
+         ->second.find(typeid(R).hash_code())
+         ->second->reregister(std::move(event));
   }
 
   template <typename R>
   auto deregister(std::shared_ptr<Event> event) -> void {
-    local_registries_.find(std::this_thread::get_id())
-        ->second.find(typeid(R).hash_code())
-        ->second->deregister(std::move(event))
-        .unwrap();
+    *local_registries_.find(std::this_thread::get_id())
+         ->second.find(typeid(R).hash_code())
+         ->second->deregister(std::move(event));
   }
 
   template <typename R, typename... Args>

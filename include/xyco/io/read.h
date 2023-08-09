@@ -58,9 +58,9 @@ class BufferReadExt {
     B content;
 
     while (true) {
-      auto [begin, end] = (co_await reader.fill_buffer()).unwrap();
+      auto [begin, end] = *co_await reader.fill_buffer();
       if (begin == end) {
-        co_return utils::Result<B>::ok(content);
+        co_return content;
       }
       auto prev_size = std::size(content);
       content.resize(prev_size + std::distance(begin, end));
@@ -78,9 +78,9 @@ class BufferReadExt {
     B content;
 
     while (true) {
-      auto [begin, end] = (co_await reader.fill_buffer()).unwrap();
+      auto [begin, end] = *co_await reader.fill_buffer();
       if (begin == end) {
-        co_return utils::Result<B>::ok(content);
+        co_return content;
       }
       auto pos = std::find(begin, end, character);
       auto prev_size = std::size(content);
@@ -88,7 +88,7 @@ class BufferReadExt {
       std::copy(begin, pos + 1, std::begin(content) + prev_size);
       reader.consume(std::distance(begin, pos + 1));
       if (pos != end) {
-        co_return utils::Result<B>::ok(content);
+        co_return content;
       }
     }
   }

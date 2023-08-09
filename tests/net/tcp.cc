@@ -11,18 +11,18 @@ TEST(TcpTest, reuseaddr) {
     const uint16_t port = 8081;
 
     {
-      auto tcp_socket1 = xyco::net::TcpSocket::new_v4().unwrap();
-      tcp_socket1.set_reuseaddr(true).unwrap();
+      auto tcp_socket1 = *xyco::net::TcpSocket::new_v4();
+      *tcp_socket1.set_reuseaddr(true);
       auto result1 =
           co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4({}, port));
-      CO_ASSERT_EQ(result1.is_ok(), true);
+      CO_ASSERT_EQ(result1.has_value(), true);
     }
     {
-      auto tcp_socket2 = xyco::net::TcpSocket::new_v4().unwrap();
-      tcp_socket2.set_reuseport(true).unwrap();
+      auto tcp_socket2 = *xyco::net::TcpSocket::new_v4();
+      *tcp_socket2.set_reuseport(true);
       auto result2 =
           co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4({}, port));
-      CO_ASSERT_EQ(result2.is_ok(), true);
+      CO_ASSERT_EQ(result2.has_value(), true);
     }
   });
 }
@@ -31,18 +31,18 @@ TEST(TcpTest, reuseport) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
     const uint16_t port = 8082;
 
-    auto tcp_socket1 = xyco::net::TcpSocket::new_v4().unwrap();
-    tcp_socket1.set_reuseport(true).unwrap();
+    auto tcp_socket1 = *xyco::net::TcpSocket::new_v4();
+    *tcp_socket1.set_reuseport(true);
     auto result1 =
         co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4({}, port));
 
-    auto tcp_socket2 = xyco::net::TcpSocket::new_v4().unwrap();
-    tcp_socket2.set_reuseport(true).unwrap();
+    auto tcp_socket2 = *xyco::net::TcpSocket::new_v4();
+    *tcp_socket2.set_reuseport(true);
     auto result2 =
         co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4({}, port));
 
-    CO_ASSERT_EQ(result1.is_ok(), true);
-    CO_ASSERT_EQ(result2.is_ok(), true);
+    CO_ASSERT_EQ(result1.has_value(), true);
+    CO_ASSERT_EQ(result2.has_value(), true);
   });
 }
 
@@ -56,8 +56,8 @@ TEST(TcpTest, bind_same_addr) {
     auto result2 = co_await xyco::net::TcpListener::bind(
         xyco::net::SocketAddr::new_v4({}, port));
 
-    CO_ASSERT_EQ(result1.is_ok(), true);
-    CO_ASSERT_EQ(result2.is_err(), true);
+    CO_ASSERT_EQ(result1.has_value(), true);
+    CO_ASSERT_EQ(result2.has_value(), false);
   });
 }
 
@@ -66,12 +66,11 @@ TEST(TcpTest, TcpSocket_listen) {
     // Skip 8084 since the port is occupied by github runner.
     const uint16_t port = 8085;
 
-    auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
-    (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port)))
-        .unwrap();
+    auto tcp_socket = *xyco::net::TcpSocket::new_v4();
+    *co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port));
     auto listener = co_await tcp_socket.listen(1);
 
-    CO_ASSERT_EQ(listener.is_ok(), true);
+    CO_ASSERT_EQ(listener.has_value(), true);
   });
 }
 
@@ -82,7 +81,7 @@ TEST(TcpTest, TcpListener_bind) {
     auto result = co_await xyco::net::TcpListener::bind(
         xyco::net::SocketAddr::new_v4({}, port));
 
-    CO_ASSERT_EQ(result.is_ok(), true);
+    CO_ASSERT_EQ(result.has_value(), true);
   });
 }
 
@@ -94,7 +93,7 @@ TEST(TcpTest, connect_to_closed_server) {
     auto client = co_await xyco::net::TcpStream::connect(
         xyco::net::SocketAddr::new_v4(ip, port));
 
-    CO_ASSERT_EQ(client.unwrap_err().errno_, ECONNREFUSED);
+    CO_ASSERT_EQ(client.error().errno_, ECONNREFUSED);
   });
 }
 
@@ -102,12 +101,11 @@ class WithServerTest : public ::testing::Test {
  protected:
   static void SetUpTestSuite() {
     TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-      auto tcp_socket = xyco::net::TcpSocket::new_v4().unwrap();
-      tcp_socket.set_reuseaddr(true).unwrap();
-      (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port_)))
-          .unwrap();
+      auto tcp_socket = *xyco::net::TcpSocket::new_v4();
+      *tcp_socket.set_reuseaddr(true);
+      *co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port_));
       listener_ = std::make_unique<xyco::net::TcpListener>(
-          xyco::net::TcpListener((co_await tcp_socket.listen(1)).unwrap()));
+          xyco::net::TcpListener(*co_await tcp_socket.listen(1)));
     });
   }
 
@@ -130,29 +128,28 @@ const uint16_t WithServerTest::port_ = 8080;
 
 TEST_F(WithServerTest, TcpSocket_connect) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    auto client = co_await xyco::net::TcpSocket::new_v4().unwrap().connect(
+    auto client = co_await xyco::net::TcpSocket::new_v4()->connect(
         xyco::net::SocketAddr::new_v4(ip_, port_));
 
-    (co_await listener_->accept()).unwrap();
+    *co_await listener_->accept();
 
-    CO_ASSERT_EQ(client.is_ok(), true);
+    CO_ASSERT_EQ(client.has_value(), true);
   });
 }
 
 TEST_F(WithServerTest, TcpStream_flush) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    auto client = (co_await xyco::net::TcpSocket::new_v4().unwrap().connect(
-                       xyco::net::SocketAddr::new_v4(ip_, port_)))
-                      .unwrap();
-    (co_await listener_->accept()).unwrap();
+    auto client = *co_await xyco::net::TcpSocket::new_v4()->connect(
+        xyco::net::SocketAddr::new_v4(ip_, port_));
+    *co_await listener_->accept();
     auto flush_result = co_await client.flush();
 
-    CO_ASSERT_EQ(flush_result.is_ok(), true);
+    CO_ASSERT_EQ(flush_result.has_value(), true);
   });
 }
 
 TEST_F(WithServerTest, TcpSocket_new_v6) {
-  ASSERT_EQ(xyco::net::TcpSocket::new_v6().is_ok(), true);
+  ASSERT_EQ(xyco::net::TcpSocket::new_v6().has_value(), true);
 }
 
 TEST_F(WithServerTest, TcpStream_connect) {
@@ -160,25 +157,22 @@ TEST_F(WithServerTest, TcpStream_connect) {
     auto client = co_await xyco::net::TcpStream::connect(
         xyco::net::SocketAddr::new_v4(ip_, port_));
 
-    (co_await listener_->accept()).unwrap();
+    *co_await listener_->accept();
 
-    CO_ASSERT_EQ(client.is_ok(), true);
+    CO_ASSERT_EQ(client.has_value(), true);
   });
 }
 
 TEST_F(WithServerTest, TcpStream_rw) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    auto client = (co_await xyco::net::TcpStream::connect(
-                       xyco::net::SocketAddr::new_v4(ip_, port_)))
-                      .unwrap();
-    auto [server_stream, addr] = (co_await listener_->accept()).unwrap();
+    auto client = *co_await xyco::net::TcpStream::connect(
+        xyco::net::SocketAddr::new_v4(ip_, port_));
+    auto [server_stream, addr] = *co_await listener_->accept();
 
     std::string_view w_buf = "a";
-    auto w_nbytes =
-        (co_await xyco::io::WriteExt::write(client, w_buf)).unwrap();
+    auto w_nbytes = *co_await xyco::io::WriteExt::write(client, w_buf);
     auto r_buf = std::string(w_buf.size(), 0);
-    auto r_nbytes =
-        (co_await xyco::io::ReadExt::read(server_stream, r_buf)).unwrap();
+    auto r_nbytes = *co_await xyco::io::ReadExt::read(server_stream, r_buf);
 
     CO_ASSERT_EQ(w_nbytes, w_buf.size());
     CO_ASSERT_EQ(r_nbytes, r_buf.size());
@@ -187,10 +181,9 @@ TEST_F(WithServerTest, TcpStream_rw) {
 
 TEST_F(WithServerTest, TcpListener_accept) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    auto client = (co_await xyco::net::TcpSocket::new_v4().unwrap().connect(
-                       xyco::net::SocketAddr::new_v4(ip_, port_)))
-                      .unwrap();
-    auto [stream, addr] = (co_await listener_->accept()).unwrap();
+    auto client = *co_await xyco::net::TcpSocket::new_v4()->connect(
+        xyco::net::SocketAddr::new_v4(ip_, port_));
+    auto [stream, addr] = *co_await listener_->accept();
     const auto *raw_addr = static_cast<const sockaddr_in *>(
         static_cast<const void *>(addr.into_c_addr()));
 
@@ -206,18 +199,15 @@ TEST_F(WithServerTest, TcpStream_rw_loop) {
   LoggerCtx::get_logger()->set_level(spdlog::level::off);
 #endif
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    auto client = (co_await xyco::net::TcpStream::connect(
-                       xyco::net::SocketAddr::new_v4(ip_, port_)))
-                      .unwrap();
-    auto [server_stream, addr] = (co_await listener_->accept()).unwrap();
+    auto client = *co_await xyco::net::TcpStream::connect(
+        xyco::net::SocketAddr::new_v4(ip_, port_));
+    auto [server_stream, addr] = *co_await listener_->accept();
 
     for (int i = 0; i < ITERATION_TIMES; i++) {
       std::string_view w_buf = "a";
-      auto w_nbytes =
-          (co_await xyco::io::WriteExt::write(client, w_buf)).unwrap();
+      auto w_nbytes = *co_await xyco::io::WriteExt::write(client, w_buf);
       auto r_buf = std::string(w_buf.size(), 0);
-      auto r_nbytes =
-          (co_await xyco::io::ReadExt::read(server_stream, r_buf)).unwrap();
+      auto r_nbytes = *co_await xyco::io::ReadExt::read(server_stream, r_buf);
 
       CO_ASSERT_EQ(w_nbytes, w_buf.size());
       CO_ASSERT_EQ(r_nbytes, r_buf.size());
@@ -230,24 +220,20 @@ TEST_F(WithServerTest, TcpStream_rw_loop) {
 
 TEST_F(WithServerTest, TcpStream_rw_twice) {
   TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
-    auto client = (co_await xyco::net::TcpStream::connect(
-                       xyco::net::SocketAddr::new_v4(ip_, port_)))
-                      .unwrap();
-    auto [server_stream, addr] = (co_await listener_->accept()).unwrap();
+    auto client = *co_await xyco::net::TcpStream::connect(
+        xyco::net::SocketAddr::new_v4(ip_, port_));
+    auto [server_stream, addr] = *co_await listener_->accept();
 
     std::string_view w_buf = "a";
-    auto w_nbytes =
-        (co_await xyco::io::WriteExt::write(client, w_buf)).unwrap();
+    auto w_nbytes = *co_await xyco::io::WriteExt::write(client, w_buf);
     auto r_buf = std::string(w_buf.size(), 0);
-    auto r_nbytes =
-        (co_await xyco::io::ReadExt::read(server_stream, r_buf)).unwrap();
+    auto r_nbytes = *co_await xyco::io::ReadExt::read(server_stream, r_buf);
 
     CO_ASSERT_EQ(w_nbytes, w_buf.size());
     CO_ASSERT_EQ(r_nbytes, r_buf.size());
 
-    w_nbytes = (co_await xyco::io::WriteExt::write(client, w_buf)).unwrap();
-    r_nbytes =
-        (co_await xyco::io::ReadExt::read(server_stream, r_buf)).unwrap();
+    w_nbytes = *co_await xyco::io::WriteExt::write(client, w_buf);
+    r_nbytes = *co_await xyco::io::ReadExt::read(server_stream, r_buf);
 
     CO_ASSERT_EQ(w_nbytes, w_buf.size());
     CO_ASSERT_EQ(r_nbytes, r_buf.size());

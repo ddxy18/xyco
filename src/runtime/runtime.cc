@@ -145,7 +145,7 @@ auto xyco::runtime::Builder::build()
     runtime->workers_.emplace(worker->get_native_id(), std::move(worker));
   }
 
-  return utils::Result<std::unique_ptr<Runtime>>::ok(std::move(runtime));
+  return runtime;
 }
 
 auto xyco::runtime::Builder::default_f() -> void {}

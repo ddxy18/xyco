@@ -24,8 +24,7 @@ class JoinFuture
       return runtime::Pending();
     }
 
-    return runtime::Ready<CoOutput>{
-        CoOutput(result_.first.value(), result_.second.value())};
+    return runtime::Ready<CoOutput>{CoOutput(*result_.first, *result_.second)};
   }
 
   JoinFuture(runtime::Future<T1> &&future1, runtime::Future<T2> &&future2)
@@ -54,8 +53,7 @@ class JoinFuture
     }
     {
       std::scoped_lock<std::mutex> lock_guard(mutex_);
-      if (!registered_ && result_.first.has_value() &&
-          result_.second.has_value()) {
+      if (!registered_ && result_.first && result_.second) {
         registered_ = true;
         runtime::RuntimeCtx::get_ctx()->register_future(this);
       }

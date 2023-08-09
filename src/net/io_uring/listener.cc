@@ -2,12 +2,10 @@
 
 #include <arpa/inet.h>
 
-#include <cerrno>
-#include <clocale>
-#include <cstdint>
 #include <variant>
 
 #include "xyco/task/blocking_task.h"
+#include "xyco/utils/result.h"
 
 template <typename T>
 using Future = xyco::runtime::Future<T>;
@@ -18,11 +16,11 @@ auto xyco::net::uring::TcpSocket::bind(SocketAddr addr)
     return utils::into_sys_result(
         ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
   });
-  if (bind_result.is_ok()) {
+  if (bind_result) {
     INFO("{} bind to {}", socket_, addr);
   }
 
-  co_return bind_result;
+  co_return bind_result.transform([](auto n) {});
 }
 
 auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
@@ -56,11 +54,10 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
       extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
       if (extra->return_ < 0) {
         return runtime::Ready<CoOutput>{
-            CoOutput::err(utils::Error{.errno_ = -extra->return_})};
+            std::unexpected(utils::Error{.errno_ = -extra->return_})};
       }
       INFO("{} connect to {}", *socket_, addr_);
-      return runtime::Ready<CoOutput>{
-          CoOutput::ok(TcpStream(std::move(*socket_)))};
+      return runtime::Ready<CoOutput>{TcpStream(std::move(*socket_))};
     }
 
    private:
@@ -77,34 +74,41 @@ auto xyco::net::uring::TcpSocket::listen(int backlog)
   auto listen_result = co_await task::BlockingTask([&]() {
     return utils::into_sys_result(::listen(socket_.into_c_fd(), backlog));
   });
-  ASYNC_TRY(listen_result.map([&](auto n) { return TcpListener(Socket(-1)); }));
+  ASYNC_TRY(
+      listen_result.transform([&](auto n) { return TcpListener(Socket(-1)); }));
   INFO("{} listening", socket_);
 
-  co_return utils::Result<TcpListener>::ok(TcpListener(std::move(socket_)));
+  co_return TcpListener(std::move(socket_));
 }
 
 auto xyco::net::uring::TcpSocket::set_reuseaddr(bool reuseaddr)
     -> utils::Result<void> {
   int optval = static_cast<int>(reuseaddr);
-  return utils::into_sys_result(::setsockopt(
-      socket_.into_c_fd(), SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
+  return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
+                                             SO_REUSEADDR, &optval,
+                                             sizeof(optval)))
+      .transform([](auto result) {});
 }
 
 auto xyco::net::uring::TcpSocket::set_reuseport(bool reuseport)
     -> utils::Result<void> {
   int optval = static_cast<int>(reuseport);
-  return utils::into_sys_result(::setsockopt(
-      socket_.into_c_fd(), SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)));
+  return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
+                                             SO_REUSEPORT, &optval,
+                                             sizeof(optval)))
+      .transform([](auto result) {});
 }
 
 auto xyco::net::uring::TcpSocket::new_v4() -> utils::Result<TcpSocket> {
   return utils::into_sys_result(::socket(AF_INET, SOCK_STREAM, 0))
-      .map([](auto file_descriptor) { return TcpSocket(file_descriptor); });
+      .transform(
+          [](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
 
 auto xyco::net::uring::TcpSocket::new_v6() -> utils::Result<TcpSocket> {
   return utils::into_sys_result(::socket(AF_INET6, SOCK_STREAM, 0))
-      .map([](auto file_descriptor) { return TcpSocket(file_descriptor); });
+      .transform(
+          [](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
 
 xyco::net::uring::TcpSocket::TcpSocket(Socket &&socket)
@@ -113,14 +117,14 @@ xyco::net::uring::TcpSocket::TcpSocket(Socket &&socket)
 auto xyco::net::uring::TcpStream::connect(SocketAddr addr)
     -> Future<utils::Result<TcpStream>> {
   auto socket = addr.is_v4() ? TcpSocket::new_v4() : TcpSocket::new_v6();
-  if (socket.is_err()) {
-    co_return utils::Result<TcpStream>::err(socket.unwrap_err());
+  if (!socket) {
+    co_return std::unexpected(socket.error());
   }
-  co_return co_await socket.unwrap().connect(addr);
+  co_return co_await socket->connect(addr);
 }
 
 auto xyco::net::uring::TcpStream::flush() -> Future<utils::Result<void>> {
-  co_return utils::Result<void>::ok();
+  co_return {};
 }
 
 auto xyco::net::uring::TcpStream::shutdown(io::Shutdown shutdown)
@@ -152,10 +156,10 @@ auto xyco::net::uring::TcpStream::shutdown(io::Shutdown shutdown)
       extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
       if (extra->return_ < 0) {
         return runtime::Ready<CoOutput>{
-            CoOutput::err(utils::Error{.errno_ = -extra->return_})};
+            std::unexpected(utils::Error{.errno_ = -extra->return_})};
       }
       INFO("shutdown {}", self_->socket_);
-      return runtime::Ready<CoOutput>{CoOutput::ok()};
+      return runtime::Ready<CoOutput>{{}};
     }
 
    private:
@@ -185,13 +189,13 @@ auto xyco::net::uring::TcpListener::bind(SocketAddr addr)
   const int max_pending_connection = 128;
 
   auto socket_result = TcpSocket::new_v4();
-  if (socket_result.is_err()) {
-    co_return utils::Result<TcpListener>::err(socket_result.unwrap_err());
+  if (!socket_result) {
+    co_return std::unexpected(socket_result.error());
   }
-  auto tcp_socket = socket_result.unwrap();
+  auto tcp_socket = *std::move(socket_result);
   auto bind_result = co_await tcp_socket.bind(addr);
-  if (bind_result.is_err()) {
-    co_return utils::Result<TcpListener>::err(bind_result.unwrap_err());
+  if (!bind_result) {
+    co_return std::unexpected(bind_result.error());
   }
   co_return co_await tcp_socket.listen(max_pending_connection);
 }
@@ -221,7 +225,7 @@ auto xyco::net::uring::TcpListener::accept()
       extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
       if (extra->return_ < 0) {
         return runtime::Ready<CoOutput>{
-            CoOutput::err(utils::Error{.errno_ = -extra->return_})};
+            std::unexpected(utils::Error{.errno_ = -extra->return_})};
       }
       std::string ip_addr(INET_ADDRSTRLEN, 0);
       auto sock_addr = SocketAddr::new_v4(
@@ -232,7 +236,7 @@ auto xyco::net::uring::TcpListener::accept()
       INFO("accept from {} new connect={{{}, addr:{}}}", self_->socket_, socket,
            sock_addr);
       return runtime::Ready<CoOutput>{
-          CoOutput::ok(TcpStream(std::move(socket)), sock_addr)};
+          std::pair{TcpStream(std::move(socket)), sock_addr}};
     }
 
     explicit Future(TcpListener *self)

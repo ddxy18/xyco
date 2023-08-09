@@ -78,17 +78,17 @@ auto xyco::task::BlockingRegistryImpl::Register(
   }
   pool_.spawn(task::Task(
       dynamic_cast<BlockingExtra*>(event->extra_.get())->before_extra_));
-  return utils::Result<void>::ok();
+  return {};
 }
 
 auto xyco::task::BlockingRegistryImpl::reregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
-  return utils::Result<void>::ok();
+  return {};
 }
 
 auto xyco::task::BlockingRegistryImpl::deregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
-  return utils::Result<void>::ok();
+  return {};
 }
 
 auto xyco::task::BlockingRegistryImpl::select(runtime::Events& events,
@@ -109,5 +109,5 @@ auto xyco::task::BlockingRegistryImpl::select(runtime::Events& events,
                });
   events_ = new_events;
 
-  return utils::Result<void>::ok();
+  return {};
 }

@@ -10,7 +10,7 @@ TEST(MpscTest, one_sender) {
     auto send_result = co_await sender.send(1);
     auto receive_result = co_await receiver.receive();
 
-    CO_ASSERT_EQ(send_result.is_ok(), true);
+    CO_ASSERT_EQ(send_result.has_value(), true);
     CO_ASSERT_EQ(receive_result.has_value(), true);
   });
 }
@@ -24,10 +24,10 @@ TEST(MpscTest, multi_sender) {
     co_await another_sender.send(2);
 
     auto receive_result = co_await receiver.receive();
-    CO_ASSERT_EQ(receive_result.value(), 1);
+    CO_ASSERT_EQ(*receive_result, 1);
 
     receive_result = co_await receiver.receive();
-    CO_ASSERT_EQ(receive_result.value(), 2);
+    CO_ASSERT_EQ(*receive_result, 2);
   });
 }
 
@@ -40,7 +40,7 @@ TEST(MpscTest, receiver_close) {
     }
     auto send_result = co_await sender.send(1);
 
-    CO_ASSERT_EQ(send_result.unwrap_err(), 1);
+    CO_ASSERT_EQ(send_result.error(), 1);
   });
 }
 
@@ -61,7 +61,7 @@ TEST(MpscTest, send_to_full_channel) {
   auto channel_pair = xyco::sync::mpsc::channel<int, 1>();
 
   int value = 0;
-  auto send_result = Result<void, int>::ok();
+  auto send_result = std::expected<void, int>();
 
   std::thread send([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
@@ -74,7 +74,7 @@ TEST(MpscTest, send_to_full_channel) {
 
   std::thread receive([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-      value = (co_await channel_pair.second.receive()).value();
+      value = *co_await channel_pair.second.receive();
     });
   });
 
@@ -82,18 +82,18 @@ TEST(MpscTest, send_to_full_channel) {
   receive.join();
 
   ASSERT_EQ(value, 1);
-  ASSERT_EQ(send_result.is_ok(), true);
+  ASSERT_EQ(send_result.has_value(), true);
 }
 
 TEST(MpscTest, receive_from_empty_channel) {
   auto channel_pair = xyco::sync::mpsc::channel<int, 2>();
 
   int value = 0;
-  auto send_result = Result<void, int>::ok();
+  auto send_result = std::expected<void, int>();
 
   std::thread receive([&]() {
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-      value = (co_await channel_pair.second.receive()).value();
+      value = *co_await channel_pair.second.receive();
     });
   });
 
@@ -109,5 +109,5 @@ TEST(MpscTest, receive_from_empty_channel) {
   send.join();
 
   ASSERT_EQ(value, 1);
-  ASSERT_EQ(send_result.is_ok(), true);
+  ASSERT_EQ(send_result.has_value(), true);
 }

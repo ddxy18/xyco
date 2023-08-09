@@ -3,6 +3,7 @@
 
 #include "xyco/io/read.h"
 #include "xyco/utils/error.h"
+#include "xyco/utils/result.h"
 
 namespace xyco::io {
 template <typename Reader, typename B>
@@ -16,29 +17,27 @@ class BufferReader {
       std::copy(std::begin(buffer_) + pos_, std::begin(buffer_) + pos_ + len,
                 begin);
       consume(len);
-      co_return utils::Result<uintptr_t>::ok(len);
+      co_return len;
     }
-    ASYNC_TRY((co_await fill_buffer()).map([](auto pair) { return 0; }));
+    ASYNC_TRY((co_await fill_buffer()).transform([](auto pair) { return 0; }));
     len = std::min(len, static_cast<decltype(len)>(cap_ - pos_));
     std::copy(std::begin(buffer_), std::begin(buffer_) + len, begin);
     consume(len);
-    co_return utils::Result<uintptr_t>::ok(len);
+    co_return len;
   }
 
   auto fill_buffer() -> runtime::Future<
       utils::Result<std::pair<typename B::iterator, typename B::iterator>>> {
     if (pos_ == cap_) {
       ASYNC_TRY((co_await ReadExt::read(*inner_reader_, buffer_))
-                    .map([&](auto nbytes) {
+                    .transform([&](auto nbytes) {
                       cap_ = nbytes;
                       pos_ = 0;
                       return std::pair(std::begin(buffer_),
                                        std::begin(buffer_) + cap_);
                     }));
     }
-    co_return utils::
-        Result<std::pair<typename B::iterator, typename B::iterator>>::ok(
-            std::begin(buffer_) + pos_, std::begin(buffer_) + cap_);
+    co_return std::pair{std::begin(buffer_) + pos_, std::begin(buffer_) + cap_};
   }
 
   auto consume(uint16_t amt) -> void {

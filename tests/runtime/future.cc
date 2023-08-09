@@ -103,11 +103,10 @@ TEST(RuntimeDeathTest, terminate) {
         // coverage statistics.
         std::set_terminate([] { std::exit(-1); });
 
-        auto runtime = xyco::runtime::Builder::new_multi_thread()
-                           .worker_threads(1)
-                           .registry<xyco::task::BlockingRegistry>(1)
-                           .build()
-                           .unwrap();
+        auto runtime = *xyco::runtime::Builder::new_multi_thread()
+                            .worker_threads(1)
+                            .registry<xyco::task::BlockingRegistry>(1)
+                            .build();
 
         runtime->spawn([]() -> xyco::runtime::Future<void> {
           throw std::runtime_error("");
@@ -127,11 +126,10 @@ TEST(RuntimeDeathTest, coroutine_exception) {
       {
         // Wrap it in a block to coverage dtor of `Runtime`.
         {
-          auto runtime = xyco::runtime::Builder::new_multi_thread()
-                             .worker_threads(2)
-                             .registry<xyco::task::BlockingRegistry>(1)
-                             .build()
-                             .unwrap();
+          auto runtime = *xyco::runtime::Builder::new_multi_thread()
+                              .worker_threads(2)
+                              .registry<xyco::task::BlockingRegistry>(1)
+                              .build();
 
           runtime->spawn([]() -> xyco::runtime::Future<void> {
             throw std::runtime_error("");
@@ -197,11 +195,10 @@ TEST(RuntimeDeathTest, drop_parameter) {
   EXPECT_EXIT(
       {
         {
-          auto runtime = xyco::runtime::Builder::new_multi_thread()
-                             .worker_threads(1)
-                             .registry<xyco::task::BlockingRegistry>(1)
-                             .build()
-                             .unwrap();
+          auto runtime = *xyco::runtime::Builder::new_multi_thread()
+                              .worker_threads(1)
+                              .registry<xyco::task::BlockingRegistry>(1)
+                              .build();
 
           auto drop_asserter = DropAsserter(2);
           runtime->spawn(

@@ -13,7 +13,7 @@ TEST(TimeoutTest, no_timeout) {
 
         auto result = co_await xyco::time::timeout(timeout_ms, co_inner());
 
-        CO_ASSERT_EQ(result.unwrap(), 1);
+        CO_ASSERT_EQ(*result, 1);
       },
       {timeout_ms + std::chrono::milliseconds(1)});
 }
@@ -30,7 +30,7 @@ TEST(TimeoutTest, timeout) {
 
         auto result = co_await xyco::time::timeout(timeout_ms, co_inner());
 
-        CO_ASSERT_EQ(result.is_err(), true);
+        CO_ASSERT_EQ(result.has_value(), false);
       },
       {timeout_ms + std::chrono::milliseconds(1)});
 }
@@ -49,7 +49,7 @@ TEST(TimeoutTest, longer_timeout) {
         auto result = co_await xyco::time::timeout(
             timeout_ms + +std::chrono::milliseconds(2), co_inner());
 
-        CO_ASSERT_EQ(result.is_ok(), true);
+        CO_ASSERT_EQ(result.has_value(), true);
       },
       {timeout_ms + std::chrono::milliseconds(1),
        std::chrono::milliseconds(2)});
@@ -64,7 +64,7 @@ TEST(TimeoutTest, void_future) {
 
         auto result = co_await xyco::time::timeout(timeout_ms, co_inner());
 
-        CO_ASSERT_EQ(result.is_ok(), true);
+        CO_ASSERT_EQ(result.has_value(), true);
       },
       {timeout_ms + std::chrono::milliseconds(1)});
 }

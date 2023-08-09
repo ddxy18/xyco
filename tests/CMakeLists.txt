@@ -44,7 +44,6 @@ add_executable(
   time/clock.cc
   time/sleep.cc
   time/timeout.cc
-  utils/result_test.cc
   utils/epoll/fmt_test.cc
   utils/fmt_test.cc)
 target_link_libraries(xyco_test_epoll PRIVATE common_epoll)
@@ -65,7 +64,6 @@ add_executable(
   time/clock.cc
   time/sleep.cc
   time/timeout.cc
-  utils/result_test.cc
   utils/io_uring/fmt_test.cc
   utils/fmt_test.cc)
 target_link_libraries(xyco_test_uring PRIVATE common_uring)
