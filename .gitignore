@@ -2,7 +2,6 @@
 build
 CMakeUserPresets.json
 tools/target
-bazel-*
 
 # clangd
 .cache
