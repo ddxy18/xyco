@@ -21,9 +21,12 @@ class Runtime;
 class Worker {
   friend class Runtime;
   friend class RuntimeBridge;
+  friend class Builder;
 
  public:
-  auto lanuch(Runtime *runtime) -> void;
+  auto run_in_new_thread(Runtime *runtime) -> void;
+
+  auto run_in_place(Runtime *runtime) -> void;
 
   auto stop() -> void;
 
@@ -31,6 +34,8 @@ class Worker {
 
  private:
   auto run_loop_once(Runtime *runtime) -> void;
+
+  static auto init_in_thread(Runtime *runtime) -> void;
 
   std::atomic_bool end_;
   std::thread ctx_;
@@ -49,11 +54,21 @@ class Runtime {
  public:
   template <typename T>
   auto spawn(Future<T> future) -> void {
-    auto handle = spawn_catch_exception(std::move(future)).get_handle();
-    if (handle) {
-      std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
-      handles_.insert(handles_.begin(), {handle, nullptr});
-    }
+    spawn_impl(spawn_catch_exception(std::move(future)));
+  }
+
+  // Blocks the current thread until `future` completes.
+  // Note: Current thread is strictly restricted to the thread creating the
+  // runtime, and also the thread must not be a worker of another runtime.
+  template <typename T>
+  auto block_on(Future<T> future) -> void {
+    auto blocking_future = [](Runtime *runtime, auto future) -> Future<void> {
+      co_await future;
+      runtime->in_place_worker_.stop();
+    };
+    spawn_impl(blocking_future(this, std::move(future)));
+
+    in_place_worker_.run_in_place(this);
   }
 
   Runtime(Privater priv,
@@ -70,6 +85,15 @@ class Runtime {
   ~Runtime();
 
  private:
+  template <typename T>
+  auto spawn_impl(Future<T> future) -> void {
+    auto handle = future.get_handle();
+    if (handle) {
+      std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
+      handles_.insert(handles_.begin(), {handle, nullptr});
+    }
+  }
+
   // Handle all unhandled exceptions of spawned coroutine.
   // more than one worker: kill the current worker
   // last worker: terminate the process
@@ -102,6 +126,7 @@ class Runtime {
 
   std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
   std::mutex worker_mutex_;
+  Worker in_place_worker_;
 
   std::vector<std::thread::id> idle_workers_;
   std::mutex idle_workers_mutex_;
