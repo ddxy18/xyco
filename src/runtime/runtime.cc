@@ -4,33 +4,44 @@
 
 #include "xyco/runtime/runtime_ctx.h"
 
-auto xyco::runtime::Worker::lanuch(Runtime *runtime) -> void {
+auto xyco::runtime::Worker::run_in_new_thread(Runtime *runtime) -> void {
   ctx_ = std::thread([this, runtime]() {
-    runtime->on_start_f_();
-    RuntimeCtx::set_ctx(runtime);
+    init_in_thread(runtime);
 
-    // Workers have to add local registry to `Driver` and this modifies non
-    // thread safe container in `Driver`. The container is read only after all
-    // initializing completes. So wait until all workers complete initializing
-    // to avoid concurrent write and read.
-    std::unique_lock<std::mutex> worker_init_lock_guard(
-        runtime->worker_launch_mutex_);
-    runtime->driver_.add_thread();
-    if (++runtime->init_worker_num_ == runtime->worker_num_) {
-      worker_init_lock_guard.unlock();
-      runtime->worker_launch_cv_.notify_all();
-    } else {
-      runtime->worker_launch_cv_.wait(worker_init_lock_guard);
-    }
-
-    while (!end_) {
-      run_loop_once(runtime);
-    }
-    runtime->on_stop_f_();
+    run_in_place(runtime);
 
     std::unique_lock<std::mutex> lock_guard(runtime->idle_workers_mutex_);
     runtime->idle_workers_.push_back(std::this_thread::get_id());
   });
+}
+
+auto xyco::runtime::Worker::run_in_place(Runtime *runtime) -> void {
+  end_ = false;
+  while (!end_) {
+    run_loop_once(runtime);
+  }
+  runtime->on_stop_f_();
+}
+
+auto xyco::runtime::Worker::init_in_thread(Runtime *runtime) -> void {
+  runtime->on_start_f_();
+  RuntimeCtx::set_ctx(runtime);
+
+  // Workers have to add local registry to `Driver` and this modifies non
+  // thread safe container in `Driver`. The container is read only after all
+  // initializing completes. So wait until all workers complete initializing
+  // to avoid concurrent write and read.
+  std::unique_lock<std::mutex> worker_init_lock_guard(
+      runtime->worker_launch_mutex_);
+  runtime->driver_.add_thread();
+  // Count in-place worker
+  auto worker_count = runtime->worker_num_ + 1;
+  if (++runtime->init_worker_num_ == worker_count) {
+    worker_init_lock_guard.unlock();
+    runtime->worker_launch_cv_.notify_all();
+  } else {
+    runtime->worker_launch_cv_.wait(worker_init_lock_guard);
+  }
 }
 
 auto xyco::runtime::Worker::stop() -> void { end_ = true; }
@@ -141,9 +152,11 @@ auto xyco::runtime::Builder::build()
   runtime->worker_num_ = worker_num_;
   for (auto i = 0; i < worker_num_; i++) {
     auto worker = std::make_unique<Worker>();
-    worker->lanuch(runtime.get());
+    worker->run_in_new_thread(runtime.get());
     runtime->workers_.emplace(worker->get_native_id(), std::move(worker));
   }
+  // initialized last to avoid blocking other workers
+  runtime->in_place_worker_.init_in_thread(runtime.get());
 
   return runtime;
 }

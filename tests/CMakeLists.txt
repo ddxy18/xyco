@@ -38,6 +38,7 @@ add_executable(
   net/tcp.cc
   runtime/future.cc
   runtime/join.cc
+  runtime/runtime.cc
   runtime/select.cc
   sync/mpsc.cc
   sync/oneshot.cc
@@ -58,6 +59,7 @@ add_executable(
   net/tcp.cc
   runtime/future.cc
   runtime/join.cc
+  runtime/runtime.cc
   runtime/select.cc
   sync/mpsc.cc
   sync/oneshot.cc

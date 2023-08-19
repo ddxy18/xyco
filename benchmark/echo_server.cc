@@ -8,15 +8,15 @@
 class Server {
  public:
   Server(std::unique_ptr<xyco::runtime::Runtime> runtime, uint16_t port)
-      : runtime_(std::move(runtime)) {
-    runtime_->spawn(init_server(port));
-  }
+      : runtime_(std::move(runtime)), port_(port) {}
+
+  auto run() -> void { runtime_->block_on(init_server()); }
 
  private:
-  auto init_server(uint16_t port) -> xyco::runtime::Future<void> {
+  auto init_server() -> xyco::runtime::Future<void> {
     auto tcp_socket = *xyco::net::TcpSocket::new_v4();
     *tcp_socket.set_reuseaddr(true);
-    *co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port));
+    *co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, port_));
     auto listener = *co_await tcp_socket.listen(LISTEN_BACKLOG);
 
     while (true) {
@@ -40,6 +40,7 @@ class Server {
   }
 
   std::unique_ptr<xyco::runtime::Runtime> runtime_;
+  int port_;
 
   static constexpr int LISTEN_BACKLOG = 5000;
 };
@@ -47,15 +48,12 @@ class Server {
 // NOLINTNEXTLINE(bugprone-exception-escape)
 auto main() -> int {
   constexpr uint16_t port = 8080;
-  // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
+
   auto server = Server(*xyco::runtime::Builder::new_multi_thread()
                             .worker_threads(2)
                             .registry<xyco::task::BlockingRegistry>(2)
                             .registry<xyco::io::IoRegistry>(4)
                             .build(),
                        port);
-
-  while (true) {
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-  }
+  server.run();
 }

@@ -64,9 +64,7 @@ auto main(int /*unused*/, char** /*unused*/) -> int {
   runtime->spawn(start_server());
   // ensure server prepared to accept new connections
   std::this_thread::sleep_for(std::chrono::seconds(1));
-  runtime->spawn(start_client());
-  runtime->spawn(start_client());
-  runtime->spawn(start_client());
-
-  std::this_thread::sleep_for(wait_seconds);
+  for (auto i = 0; i < 3; i++) {
+    runtime->block_on(start_client());
+  }
 }

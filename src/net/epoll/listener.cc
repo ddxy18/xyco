@@ -39,10 +39,7 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
               runtime::Event{.future_ = this,
                              .extra_ = std::make_unique<io::epoll::IoExtra>(
                                  io::epoll::IoExtra::Interest::Write,
-                                 socket_->into_c_fd())})) {
-      runtime::RuntimeCtx::get_ctx()->driver().Register<io::epoll::IoRegistry>(
-          event_);
-    }
+                                 socket_->into_c_fd())})) {}
 
     auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
       auto *extra = dynamic_cast<io::epoll::IoExtra *>(event_->extra_.get());
@@ -68,9 +65,8 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
             extra->state_.get_field<io::epoll::IoExtra::State::Readable>())};
       }
       event_->future_ = this;
-      runtime::RuntimeCtx::get_ctx()
-          ->driver()
-          .reregister<io::epoll::IoRegistry>(event_);
+      runtime::RuntimeCtx::get_ctx()->driver().Register<io::epoll::IoRegistry>(
+          event_);
       return runtime::Pending();
     }
 
