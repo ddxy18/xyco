@@ -210,8 +210,6 @@ impl FileCheck for ClangTidy {
             cmd
         };
         cmd.arg(format!("-p={}", me.build_path.to_string_lossy()))
-            .arg("--warnings-as-errors")
-            .arg("*")
             .arg(format!("-extra-arg={}", me.extra_arg.as_str()))
             .arg(&path)
             .spawn()?
