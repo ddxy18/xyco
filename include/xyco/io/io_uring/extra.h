@@ -68,9 +68,9 @@ class IoExtra : public runtime::Extra {
   [[nodiscard]] auto print() const -> std::string override;
 
   std::variant<Read, Write, Close, Accept, Connect, Shutdown> args_;
-  int fd_;
-  int return_;
-  State state_;
+  int fd_{};
+  int return_{};
+  State state_{};
 };
 }  // namespace xyco::io::uring
 
@@ -131,7 +131,7 @@ struct std::formatter<xyco::io::uring::IoExtra::Accept>
     ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
                 ip_addr.size());
     return std::format_to(ctx.out(), "Accept{{addr_={{{}:{}}}, flags_={}}}",
-                          ip_addr.c_str(), addr->sin_port, args.flags_);
+                          ip_addr, addr->sin_port, args.flags_);
   }
 };
 
@@ -146,8 +146,8 @@ struct std::formatter<xyco::io::uring::IoExtra::Connect>
     std::string ip_addr(INET_ADDRSTRLEN, 0);
     ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
                 ip_addr.size());
-    return std::format_to(ctx.out(), "Connect{{addr_={{{}:{}}}}}",
-                          ip_addr.c_str(), addr->sin_port);
+    return std::format_to(ctx.out(), "Connect{{addr_={{{}:{}}}}}", ip_addr,
+                          addr->sin_port);
   }
 };
 

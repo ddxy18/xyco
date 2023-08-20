@@ -155,7 +155,8 @@ class Awaitable {
     }
 
     if constexpr (!std::is_same_v<Output, void>) {
-      return std::move(*std::move(future_->return_));
+      // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+      return *std::move(future_->return_);
     }
   }
 
@@ -213,7 +214,7 @@ class Future : public FutureBase {
       future_->waited_ = future;
     }
 
-    Future<Output> *future_;
+    Future<Output> *future_{};
   };
 
   auto operator co_await() -> Awaitable<Output> { return Awaitable(this); }

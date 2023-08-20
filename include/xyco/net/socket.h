@@ -1,5 +1,5 @@
-#ifndef XYCO_IO_NET_SOCKET_H_
-#define XYCO_IO_NET_SOCKET_H_
+#ifndef XYCO_NET_SOCKET_H_
+#define XYCO_NET_SOCKET_H_
 
 #include <arpa/inet.h>
 
@@ -113,8 +113,8 @@ struct std::formatter<xyco::net::SocketAddr> : public std::formatter<bool> {
       port = std::get<1>(addr.addr_).get_port();
     }
 
-    return std::format_to(ctx.out(), "SocketAddr{{ip={},port={}}}",
-                          ip_addr.c_str(), port);
+    return std::format_to(ctx.out(), "SocketAddr{{ip={},port={}}}", ip_addr,
+                          port);
   }
 };
 
@@ -127,4 +127,4 @@ struct std::formatter<xyco::net::Socket> : public std::formatter<bool> {
   }
 };
 
-#endif  // XYCO_IO_NET_SOCKET_H_
+#endif  // XYCO_NET_SOCKET_H_

@@ -176,9 +176,7 @@ auto xyco::fs::uring::File::seek(off64_t offset, int whence) const
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
-xyco::fs::uring::File::File(File&& file) noexcept : fd_(-1) {
-  *this = std::move(file);
-}
+xyco::fs::uring::File::File(File&& file) noexcept { *this = std::move(file); }
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 auto xyco::fs::uring::File::operator=(File&& file) noexcept -> File& {
@@ -257,14 +255,7 @@ auto xyco::fs::uring::OpenOptions::mode(uint32_t mode) -> OpenOptions& {
   return *this;
 }
 
-xyco::fs::uring::OpenOptions::OpenOptions()
-    : read_(false),
-      write_(false),
-      append_(false),
-      truncate_(false),
-      create_(false),
-      create_new_(false),
-      mode_(default_mode_) {}
+xyco::fs::uring::OpenOptions::OpenOptions() : mode_(default_mode_) {}
 
 auto xyco::fs::uring::OpenOptions::get_access_mode() const
     -> utils::Result<int> {

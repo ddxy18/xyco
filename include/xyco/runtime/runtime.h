@@ -169,10 +169,10 @@ class Builder {
  private:
   static auto default_f() -> void;
 
-  uintptr_t worker_num_;
+  uintptr_t worker_num_{};
 
-  auto (*on_start_f_)() -> void;
-  auto (*on_stop_f_)() -> void;
+  auto (*on_start_f_)() -> void{};
+  auto (*on_stop_f_)() -> void{};
 
   std::vector<std::function<void(Runtime *)>> registry_initializers_;
 };

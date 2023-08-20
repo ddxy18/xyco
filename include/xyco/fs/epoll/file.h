@@ -81,7 +81,7 @@ class File {
  private:
   File(int file_descriptor, std::filesystem::path &&path);
 
-  int fd_;
+  int fd_{-1};
   std::filesystem::path path_;
 };
 
@@ -113,12 +113,12 @@ class OpenOptions {
   static constexpr int default_mode_ = 0666;
 
   // generic
-  bool read_;
-  bool write_;
-  bool append_;
-  bool truncate_;
-  bool create_;
-  bool create_new_;
+  bool read_{};
+  bool write_{};
+  bool append_{};
+  bool truncate_{};
+  bool create_{};
+  bool create_new_{};
   // system-specific
   mode_t mode_;
 };

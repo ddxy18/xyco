@@ -175,9 +175,7 @@ auto xyco::fs::epoll::File::seek(off64_t offset, int whence) const
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
-xyco::fs::epoll::File::File(File&& file) noexcept : fd_(-1) {
-  *this = std::move(file);
-}
+xyco::fs::epoll::File::File(File&& file) noexcept { *this = std::move(file); }
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
 auto xyco::fs::epoll::File::operator=(File&& file) noexcept -> File& {
@@ -256,14 +254,7 @@ auto xyco::fs::epoll::OpenOptions::mode(uint32_t mode) -> OpenOptions& {
   return *this;
 }
 
-xyco::fs::epoll::OpenOptions::OpenOptions()
-    : read_(false),
-      write_(false),
-      append_(false),
-      truncate_(false),
-      create_(false),
-      create_new_(false),
-      mode_(default_mode_) {}
+xyco::fs::epoll::OpenOptions::OpenOptions() : mode_(default_mode_) {}
 
 auto xyco::fs::epoll::OpenOptions::get_access_mode() const
     -> utils::Result<int> {
