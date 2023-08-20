@@ -53,9 +53,7 @@ auto start_client() -> Future<void> {
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape)
-auto main(int /*unused*/, char** /*unused*/) -> int {
-  constexpr std::chrono::seconds wait_seconds(5);
-
+auto main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) -> int {
   auto runtime = *xyco::runtime::Builder::new_multi_thread()
                       .worker_threads(2)
                       .registry<xyco::task::BlockingRegistry>(2)

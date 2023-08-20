@@ -84,7 +84,8 @@ auto xyco::io::uring::IoRegistryImpl::Register(
 }
 
 auto xyco::io::uring::IoRegistryImpl::reregister(
-    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
+    [[maybe_unused]] std::shared_ptr<runtime::Event> event)
+    -> utils::Result<void> {
   return {};
 }
 

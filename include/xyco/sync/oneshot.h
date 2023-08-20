@@ -86,7 +86,7 @@ class Receiver {
       explicit Future(Receiver<Value> *self)
           : runtime::Future<FutureReturn>(nullptr), self_(self) {}
 
-      auto poll(runtime::Handle<void> self)
+      auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {
         if (self_->shared_ == nullptr) {
           return runtime::Ready<FutureReturn>{std::unexpected(std::nullopt)};

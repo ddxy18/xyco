@@ -26,7 +26,7 @@ auto epoll_file_attr(int file_descriptor) -> xyco::runtime::Future<
               return xyco::utils::into_sys_result(statx(
                   file_descriptor, "\0", AT_EMPTY_PATH | AT_STATX_SYNC_AS_STAT,
                   STATX_ALL, &stx));
-            })).transform([](auto n) {
+            })).transform([]([[maybe_unused]] auto n) {
     return std::pair<struct stat64, StatxExtraFields>{{}, StatxExtraFields()};
   }));
 
@@ -157,7 +157,8 @@ auto xyco::fs::epoll::File::set_permissions(
 auto xyco::fs::epoll::File::flush() const
     -> runtime::Future<utils::Result<void>> {
   co_return co_await task::BlockingTask([this]() {
-    return utils::into_sys_result(::fsync(fd_)).transform([](auto result) {});
+    return utils::into_sys_result(::fsync(fd_))
+        .transform([]([[maybe_unused]] auto result) {});
   });
 }
 
@@ -200,13 +201,15 @@ auto xyco::fs::epoll::OpenOptions::open(std::filesystem::path path)
   co_return co_await task::BlockingTask([&]() {
     auto access_mode = get_access_mode();
     if (!access_mode) {
-      return access_mode.transform(
-          [](auto n) { return File(-1, std::filesystem::path()); });
+      return access_mode.transform([]([[maybe_unused]] auto n) {
+        return File(-1, std::filesystem::path());
+      });
     }
     auto creation_mode = get_creation_mode();
     if (!creation_mode) {
-      return creation_mode.transform(
-          [](auto n) { return File(-1, std::filesystem::path()); });
+      return creation_mode.transform([]([[maybe_unused]] auto n) {
+        return File(-1, std::filesystem::path());
+      });
     }
 
     // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
@@ -235,7 +238,7 @@ auto xyco::fs::epoll::OpenOptions::truncate(bool truncate) -> OpenOptions& {
 }
 
 auto xyco::fs::epoll::OpenOptions::append(bool append) -> OpenOptions& {
-  append_ = true;
+  append_ = append;
   return *this;
 }
 

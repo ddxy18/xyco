@@ -96,7 +96,7 @@ class FinalAwaitable {
     return waiting_ == nullptr;
   }
 
-  auto await_suspend(Handle<void> waiting_coroutine) noexcept {
+  auto await_suspend([[maybe_unused]] Handle<void> waiting_coroutine) noexcept {
     return waiting_;
   }
 
@@ -219,7 +219,8 @@ class Future : public FutureBase {
 
   auto operator co_await() -> Awaitable<Output> { return Awaitable(this); }
 
-  [[nodiscard]] virtual auto poll(Handle<void> self) -> Poll<Output> {
+  [[nodiscard]] virtual auto poll([[maybe_unused]] Handle<void> self)
+      -> Poll<Output> {
     return Pending();
   }
 

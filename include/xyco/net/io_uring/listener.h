@@ -57,7 +57,7 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll(runtime::Handle<void> self)
+      auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
         auto *extra =
             dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
@@ -84,9 +84,9 @@ class TcpStream {
 
       Future(Iterator begin, Iterator end, TcpStream *self)
           : runtime::Future<CoOutput>(nullptr),
+            self_(self),
             begin_(begin),
-            end_(end),
-            self_(self) {}
+            end_(end) {}
 
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
@@ -117,7 +117,7 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll(runtime::Handle<void> self)
+      auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
         auto *extra =
             dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
@@ -143,9 +143,9 @@ class TcpStream {
 
       Future(Iterator begin, Iterator end, TcpStream *self)
           : runtime::Future<CoOutput>(nullptr),
+            self_(self),
             begin_(begin),
-            end_(end),
-            self_(self) {}
+            end_(end) {}
 
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
@@ -186,8 +186,7 @@ class TcpStream {
   ~TcpStream() = default;
 
  private:
-  explicit TcpStream(Socket &&socket, bool writable = false,
-                     bool readable = false);
+  explicit TcpStream(Socket &&socket);
 
   Socket socket_;
   std::shared_ptr<runtime::Event> event_;

@@ -35,7 +35,7 @@ auto xyco::runtime::Worker::init_in_thread(Runtime *runtime) -> void {
       runtime->worker_launch_mutex_);
   runtime->driver_.add_thread();
   // Count in-place worker
-  auto worker_count = runtime->worker_num_ + 1;
+  auto worker_count = static_cast<int>(runtime->worker_num_ + 1);
   if (++runtime->init_worker_num_ == worker_count) {
     worker_init_lock_guard.unlock();
     runtime->worker_launch_cv_.notify_all();
@@ -51,7 +51,7 @@ auto xyco::runtime::Worker::get_native_id() const -> std::thread::id {
 }
 
 auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
-  auto resume = [runtime, &end = end_](auto &handles, auto &handle_mutex) {
+  auto resume = [&end = end_](auto &handles, auto &handle_mutex) {
     std::unique_lock<std::mutex> lock_guard(handle_mutex, std::try_to_lock);
     if (!lock_guard) {
       return;
@@ -106,7 +106,7 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
 }
 
 xyco::runtime::Runtime::Runtime(
-    Privater priv,
+    [[maybe_unused]] Privater priv,
     std::vector<std::function<void(Runtime *)>> &&registry_initializers)
     : driver_(std::move(registry_initializers)) {}
 
@@ -150,7 +150,7 @@ auto xyco::runtime::Builder::build()
   runtime->on_stop_f_ = on_stop_f_;
 
   runtime->worker_num_ = worker_num_;
-  for (auto i = 0; i < worker_num_; i++) {
+  for (uintptr_t i = 0; i < worker_num_; i++) {
     auto worker = std::make_unique<Worker>();
     worker->run_in_new_thread(runtime.get());
     runtime->workers_.emplace(worker->get_native_id(), std::move(worker));

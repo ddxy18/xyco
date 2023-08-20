@@ -74,14 +74,14 @@ auto xyco::io::epoll::IoRegistryImpl::Register(
         std::find(registered_events_.begin(), registered_events_.end(), event));
   }
 
-  return result.transform([](auto result) {});
+  return result.transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::io::epoll::IoRegistryImpl::reregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   auto *extra = dynamic_cast<io::epoll::IoExtra *>(event->extra_.get());
-  epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
-  epoll_event.data.ptr = event.get();
+  epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_)),
+                          {.ptr = event.get()}};
 
   {
     std::scoped_lock<std::mutex> lock_guard(events_mutex_);
@@ -97,14 +97,14 @@ auto xyco::io::epoll::IoRegistryImpl::reregister(
         std::find(registered_events_.begin(), registered_events_.end(), event));
   }
 
-  return result.transform([](auto result) {});
+  return result.transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::io::epoll::IoRegistryImpl::deregister(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
   auto *extra = dynamic_cast<io::epoll::IoExtra *>(event->extra_.get());
-  epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_))};
-  epoll_event.data.ptr = event.get();
+  epoll_event epoll_event{static_cast<uint32_t>(to_sys(extra->interest_)),
+                          {.ptr = event.get()}};
 
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_DEL, extra->fd_, &epoll_event));
@@ -122,7 +122,7 @@ auto xyco::io::epoll::IoRegistryImpl::deregister(
     extra->state_.set_field<io::epoll::IoExtra::State::Registered, false>();
   }
 
-  return result.transform([](auto result) {});
+  return result.transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::io::epoll::IoRegistryImpl::select(runtime::Events &events,

@@ -98,8 +98,8 @@ template <>
 struct std::formatter<xyco::task::BlockingExtra>
     : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const xyco::task::BlockingExtra& extra, FormatContext& ctx) const
-      -> decltype(ctx.out()) {
+  auto format([[maybe_unused]] const xyco::task::BlockingExtra& extra,
+              FormatContext& ctx) const -> decltype(ctx.out()) {
     return std::format_to(ctx.out(), "BlockingExtra{{}}");
   }
 };

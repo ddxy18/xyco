@@ -114,7 +114,7 @@ template <>
 struct std::formatter<xyco::io::uring::IoExtra::Close>
     : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const xyco::io::uring::IoExtra::Close &args,
+  auto format([[maybe_unused]] const xyco::io::uring::IoExtra::Close &args,
               FormatContext &ctx) const -> decltype(ctx.out()) {
     return std::format_to(ctx.out(), "Close{{}}");
   }

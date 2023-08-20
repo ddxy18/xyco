@@ -9,8 +9,6 @@ template <typename T, typename Rep, typename Ratio>
 auto timeout(std::chrono::duration<Rep, Ratio> duration,
              runtime::Future<T> future)
     -> runtime::Future<std::expected<T, std::nullopt_t>> {
-  using CoOutput = std::expected<T, std::nullopt_t>;
-
   auto result = co_await task::select(std::move(future), sleep(duration));
 
   if (result.index() == 1) {

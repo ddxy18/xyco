@@ -18,7 +18,8 @@ auto sleep(std::chrono::duration<Rep, Ratio> duration)
           event_(std::make_shared<runtime::Event>(
               runtime::Event{.extra_ = std::make_unique<TimeExtra>()})) {}
 
-    auto poll(runtime::Handle<void> self) -> runtime::Poll<void> override {
+    auto poll([[maybe_unused]] runtime::Handle<void> self)
+        -> runtime::Poll<void> override {
       if (!ready_) {
         ready_ = true;
         auto *extra = dynamic_cast<TimeExtra *>(event_->extra_.get());

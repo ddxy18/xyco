@@ -82,17 +82,19 @@ auto xyco::task::BlockingRegistryImpl::Register(
 }
 
 auto xyco::task::BlockingRegistryImpl::reregister(
-    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
+    [[maybe_unused]] std::shared_ptr<runtime::Event> event)
+    -> utils::Result<void> {
   return {};
 }
 
 auto xyco::task::BlockingRegistryImpl::deregister(
-    std::shared_ptr<runtime::Event> event) -> utils::Result<void> {
+    [[maybe_unused]] std::shared_ptr<runtime::Event> event)
+    -> utils::Result<void> {
   return {};
 }
 
-auto xyco::task::BlockingRegistryImpl::select(runtime::Events& events,
-                                              std::chrono::milliseconds timeout)
+auto xyco::task::BlockingRegistryImpl::select(
+    runtime::Events& events, [[maybe_unused]] std::chrono::milliseconds timeout)
     -> utils::Result<void> {
   decltype(events_) new_events;
 
