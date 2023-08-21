@@ -96,7 +96,7 @@ struct std::formatter<xyco::net::SocketAddr> : public std::formatter<bool> {
     uint16_t port = -1;
 
     if (addr.addr_.index() == 0) {
-      inet_ntop(
+      ip_addr = inet_ntop(
           sock_addr->sa_family,
           static_cast<const void*>(&static_cast<const sockaddr_in*>(
                                         static_cast<const void*>(sock_addr))
@@ -104,7 +104,7 @@ struct std::formatter<xyco::net::SocketAddr> : public std::formatter<bool> {
           ip_addr.data(), ip_addr.size());
       port = std::get<0>(addr.addr_).get_port();
     } else {
-      inet_ntop(
+      ip_addr = inet_ntop(
           sock_addr->sa_family,
           static_cast<const void*>(&static_cast<const sockaddr_in6*>(
                                         static_cast<const void*>(sock_addr))

@@ -128,8 +128,8 @@ struct std::formatter<xyco::io::uring::IoExtra::Accept>
               FormatContext &ctx) const -> decltype(ctx.out()) {
     auto *addr = static_cast<sockaddr_in *>(static_cast<void *>(args.addr_));
     std::string ip_addr(INET_ADDRSTRLEN, 0);
-    ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
-                ip_addr.size());
+    ip_addr = ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
+                          ip_addr.size());
     return std::format_to(ctx.out(), "Accept{{addr_={{{}:{}}}, flags_={}}}",
                           ip_addr, addr->sin_port, args.flags_);
   }
@@ -144,8 +144,8 @@ struct std::formatter<xyco::io::uring::IoExtra::Connect>
     const auto *addr =
         static_cast<const sockaddr_in *>(static_cast<const void *>(args.addr_));
     std::string ip_addr(INET_ADDRSTRLEN, 0);
-    ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
-                ip_addr.size());
+    ip_addr = ::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(),
+                          ip_addr.size());
     return std::format_to(ctx.out(), "Connect{{addr_={{{}:{}}}}}", ip_addr,
                           addr->sin_port);
   }
