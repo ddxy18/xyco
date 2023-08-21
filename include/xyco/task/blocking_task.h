@@ -23,6 +23,7 @@ class BlockingTask : public runtime::Future<std::invoke_result_t<Fn>> {
       return runtime::Pending();
     }
 
+    // NOLINTNEXTLINE(modernize-use-auto)
     gsl::owner<ReturnType *> ret = gsl::owner<ReturnType *>(
         dynamic_cast<BlockingExtra *>(event_->extra_.get())->after_extra_);
     auto result = std::move(*ret);
@@ -50,7 +51,7 @@ class BlockingTask : public runtime::Future<std::invoke_result_t<Fn>> {
 
   auto operator=(BlockingTask<Fn> &&) -> BlockingTask<Fn> & = delete;
 
-  virtual ~BlockingTask() = default;
+  ~BlockingTask() override = default;
 
  private:
   bool ready_{};

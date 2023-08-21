@@ -12,7 +12,7 @@ readability-*,
 -cppcoreguidelines-avoid-non-const-global-variables'
 
 WarningsAsErrors: '*'
-HeaderFilterRegex: ''
+HeaderFilterRegex: '^.*xyco(/include/xyco/|/src/|/tests/).*$'
 FormatStyle: none
 
 CheckOptions:

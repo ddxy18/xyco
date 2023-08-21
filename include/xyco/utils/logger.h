@@ -45,11 +45,25 @@ class LoggerCtx {
 
 #else
 
-#define TRACE(...) (void)0
-#define DEBUG(...) (void)0
-#define INFO(...) (void)0
-#define WARN(...) (void)0
-#define ERROR(...) (void)0
+template <typename... T>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+constexpr auto TRACE(T&&... /*unused*/) {}
+
+template <typename... T>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+constexpr auto DEBUG(T&&... /*unused*/) {}
+
+template <typename... T>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+constexpr auto INFO(T&&... /*unused*/) {}
+
+template <typename... T>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+constexpr auto WARN(T&&... /*unused*/) {}
+
+template <typename... T>
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+constexpr auto ERROR(T&&... /*unused*/) {}
 
 #endif
 
