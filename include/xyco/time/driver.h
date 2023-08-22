@@ -1,7 +1,5 @@
-#ifndef XYCO_TIME_DRIVER_H
-#define XYCO_TIME_DRIVER_H
-
-#include <iomanip>
+#ifndef XYCO_TIME_DRIVER_H_
+#define XYCO_TIME_DRIVER_H_
 
 #include "xyco/runtime/global_registry.h"
 #include "xyco/time/wheel.h"
@@ -47,16 +45,10 @@ struct std::formatter<xyco::time::TimeExtra>
   template <typename FormatContext>
   auto format(const xyco::time::TimeExtra &extra, FormatContext &ctx) const
       -> decltype(ctx.out()) {
-    // FIXME(xiaoyu): Replaced with `std::format` after libc++ implementation of
-    // `std::formatter<std::chrono::sys_time>` is available.
-    auto time_t_time = std::chrono::system_clock::to_time_t(extra.expire_time_);
-    // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    auto *tm_time = std::localtime(&time_t_time);
-    std::stringstream stream;
-    stream << std::put_time(tm_time, "%F %T");
-    return std::format_to(ctx.out(), "TimeExtra{{expire_time_={}}}",
-                          stream.str());
+    return std::format_to(
+        ctx.out(), "TimeExtra{{expire_time_={:%F %T}}}",
+        std::chrono::round<std::chrono::seconds>(extra.expire_time_));
   }
 };
 
-#endif  // XYCO_TIME_DRIVER_H
+#endif  // XYCO_TIME_DRIVER_H_
