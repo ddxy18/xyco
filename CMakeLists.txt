@@ -19,11 +19,13 @@ FetchContent_Declare(
   URL_HASH
     SHA256=f0e32cb10654fea91ad56bde89170d78cfbf4363ee0b01d8f097de2ba49f6ce9)
 FetchContent_MakeAvailable(GSL)
+
+set(SPDLOG_USE_STD_FORMAT ON)
 FetchContent_Declare(
   spdlog
-  URL "https://github.com/gabime/spdlog/archive/refs/tags/v1.10.0.tar.gz"
+  URL "https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.tar.gz"
   URL_HASH
-    SHA256=697f91700237dbae2326b90469be32b876b2b44888302afbc7aceb68bcfe8224)
+    SHA256=4dccf2d10f410c1e2feaff89966bfc49a1abb29ef6f08246335b110e001e09a9)
 FetchContent_MakeAvailable(spdlog)
 
 find_package(Boost REQUIRED)
