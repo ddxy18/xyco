@@ -46,6 +46,7 @@ endif()
 # External dependencies ought to be declared ahead to skip linting for them
 if(ENABLE_LINTING)
   add_compile_options(-Wall -Wextra -Wdeprecated -Werror)
+  set(CMAKE_CXX_CLANG_TIDY clang-tidy-$ENV{LLVM_VERSION})
 endif(ENABLE_LINTING)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)

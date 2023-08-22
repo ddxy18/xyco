@@ -1,4 +1,4 @@
-name: xyco ci
+name: pre-merge checks
 
 on:
   pull_request:
@@ -10,23 +10,6 @@ env:
   llvm_version: 17
 
 jobs:
-  rust-tool:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            tools/target/
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
-      - run: |
-          rustup override set nightly && rustup component add clippy
-          cargo clippy --manifest-path tools/Cargo.toml --all-targets -- -D warnings
-          cargo test --manifest-path ./tools/Cargo.toml
-
   cpp-build:
     runs-on: ubuntu-22.04
     steps:
@@ -35,21 +18,11 @@ jobs:
         run: |
           sudo apt-get install -y ninja-build liburing-dev libboost-all-dev
           sudo bash scripts/install_llvm.sh $llvm_version
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            tools/target/
-          key: ${{ runner.os }}-rust-${{ hashFiles('**/Cargo.lock') }}
       - name: build
         run: |
-          LLVM_VERSION=$llvm_version cmake --workflow --preset ci_build_with_logging_off
-          LLVM_VERSION=$llvm_version cmake --workflow --preset ci_linting
-          rustup override set nightly
-          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-format --source include src benchmark tests examples --tool-version $llvm_version
-          cargo run --manifest-path tools/Cargo.toml -p git-hooks -- check clang-tidy --source include src benchmark tests examples --build build/ci_linting --tool-version $llvm_version --extra-arg="-I/usr/lib/llvm-$llvm_version/include/c++/v1/"
+          find . -type f \( -name \*.cc -or -name \*.h \) -not -path ./build/\* | xargs clang-format-$llvm_version --Werror --fcolor-diagnostics --dry-run --verbose
+          LLVM_VERSION=$llvm_version cmake --workflow --preset ci_linting_with_logging_off
+          LLVM_VERSION=$llvm_version cmake --workflow --preset ci_linting_with_logging_on
 
   cpp-test:
     runs-on: ubuntu-22.04
