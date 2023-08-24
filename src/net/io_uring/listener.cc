@@ -20,7 +20,7 @@ auto xyco::net::uring::TcpSocket::bind(SocketAddr addr)
     INFO("{} bind to {}", socket_, addr);
   }
 
-  co_return bind_result.transform([](auto n) {});
+  co_return bind_result.transform([]([[maybe_unused]] auto n) {});
 }
 
 auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
@@ -37,7 +37,8 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
           event_(std::make_shared<runtime::Event>(runtime::Event{
               .extra_ = std::make_unique<io::uring::IoExtra>()})) {}
 
-    auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+    auto poll([[maybe_unused]] runtime::Handle<void> self)
+        -> runtime::Poll<CoOutput> override {
       auto *extra = dynamic_cast<io::uring::IoExtra *>(event_->extra_.get());
       if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
         event_->future_ = this;
@@ -74,8 +75,8 @@ auto xyco::net::uring::TcpSocket::listen(int backlog)
   auto listen_result = co_await task::BlockingTask([&]() {
     return utils::into_sys_result(::listen(socket_.into_c_fd(), backlog));
   });
-  ASYNC_TRY(
-      listen_result.transform([&](auto n) { return TcpListener(Socket(-1)); }));
+  ASYNC_TRY(listen_result.transform(
+      [&]([[maybe_unused]] auto n) { return TcpListener(Socket(-1)); }));
   INFO("{} listening", socket_);
 
   co_return TcpListener(std::move(socket_));
@@ -87,7 +88,7 @@ auto xyco::net::uring::TcpSocket::set_reuseaddr(bool reuseaddr)
   return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
                                              SO_REUSEADDR, &optval,
                                              sizeof(optval)))
-      .transform([](auto result) {});
+      .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::uring::TcpSocket::set_reuseport(bool reuseport)
@@ -96,7 +97,7 @@ auto xyco::net::uring::TcpSocket::set_reuseport(bool reuseport)
   return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
                                              SO_REUSEPORT, &optval,
                                              sizeof(optval)))
-      .transform([](auto result) {});
+      .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::uring::TcpSocket::new_v4() -> utils::Result<TcpSocket> {
@@ -136,10 +137,11 @@ auto xyco::net::uring::TcpStream::shutdown(io::Shutdown shutdown)
    public:
     explicit Future(io::Shutdown shutdown, TcpStream *tcp_stream)
         : runtime::Future<CoOutput>(nullptr),
-          shutdown_(shutdown),
-          self_(tcp_stream) {}
+          self_(tcp_stream),
+          shutdown_(shutdown) {}
 
-    auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+    auto poll([[maybe_unused]] runtime::Handle<void> self)
+        -> runtime::Poll<CoOutput> override {
       auto *extra =
           dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
       if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
@@ -172,8 +174,7 @@ auto xyco::net::uring::TcpStream::shutdown(io::Shutdown shutdown)
   co_return result;
 }
 
-xyco::net::uring::TcpStream::TcpStream(Socket &&socket, bool writable,
-                                       bool readable)
+xyco::net::uring::TcpStream::TcpStream(Socket &&socket)
     : socket_(std::move(socket)),
       event_(std::make_shared<runtime::Event>(
           runtime::Event{.extra_ = std::make_unique<io::uring::IoExtra>()})) {
@@ -206,7 +207,8 @@ auto xyco::net::uring::TcpListener::accept()
 
   class Future : public runtime::Future<CoOutput> {
    public:
-    auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+    auto poll([[maybe_unused]] runtime::Handle<void> self)
+        -> runtime::Poll<CoOutput> override {
       auto *extra =
           dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
       if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {

@@ -60,7 +60,7 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll(runtime::Handle<void> self)
+      auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
         auto *extra =
             dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
@@ -87,7 +87,7 @@ class TcpStream {
           if (errno != EAGAIN && errno != EWOULDBLOCK) {
             return runtime::Ready<CoOutput>{
                 utils::into_sys_result(-1).transform(
-                    [](auto value) { return -1; })};
+                    []([[maybe_unused]] auto value) { return -1; })};
           }
         }
         self_->event_->future_ = this;
@@ -101,9 +101,9 @@ class TcpStream {
 
       Future(Iterator begin, Iterator end, net::epoll::TcpStream *self)
           : runtime::Future<CoOutput>(nullptr),
+            self_(self),
             begin_(begin),
-            end_(end),
-            self_(self) {}
+            end_(end) {}
 
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
@@ -134,7 +134,7 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll(runtime::Handle<void> self)
+      auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
         auto *extra =
             dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
@@ -168,9 +168,9 @@ class TcpStream {
 
       Future(Iterator begin, Iterator end, TcpStream *self)
           : runtime::Future<CoOutput>(nullptr),
+            self_(self),
             begin_(begin),
-            end_(end),
-            self_(self) {}
+            end_(end) {}
 
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;

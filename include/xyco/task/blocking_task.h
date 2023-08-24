@@ -14,7 +14,7 @@ class BlockingTask : public runtime::Future<std::invoke_result_t<Fn>> {
   using ReturnType = std::invoke_result_t<Fn>;
 
  public:
-  [[nodiscard]] auto poll(runtime::Handle<void> self)
+  [[nodiscard]] auto poll([[maybe_unused]] runtime::Handle<void> self)
       -> runtime::Poll<ReturnType> override {
     if (!ready_) {
       ready_ = true;

@@ -50,7 +50,7 @@ class WriteExt {
     requires(Writable<Writer, decltype(std::begin(buffer))> && Buffer<B>)
   {
     auto buf_size = std::size(buffer);
-    auto total_write = 0;
+    unsigned long total_write = 0;
     auto begin = std::begin(buffer);
     auto end = std::end(buffer);
 

@@ -28,6 +28,32 @@ FetchContent_Declare(
     SHA256=4dccf2d10f410c1e2feaff89966bfc49a1abb29ef6f08246335b110e001e09a9)
 FetchContent_MakeAvailable(spdlog)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  FetchContent_Declare(
+    googletest
+    URL "https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz"
+    URL_HASH
+      SHA256=81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2)
+  FetchContent_MakeAvailable(googletest)
+  FetchContent_Declare(
+    asio
+    URL "https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-28-0.tar.gz"
+    URL_HASH
+      SHA256=226438b0798099ad2a202563a83571ce06dd13b570d8fded4840dbc1f97fa328)
+  FetchContent_MakeAvailable(asio)
+endif()
+
+# External dependencies ought to be declared ahead to skip linting for them
+if(ENABLE_LINTING)
+  add_compile_options(-Wall -Wextra -Wdeprecated -Werror)
+endif(ENABLE_LINTING)
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  add_subdirectory(tests)
+  add_subdirectory(benchmark)
+  add_subdirectory(examples)
+endif()
+
 find_package(Boost REQUIRED)
 
 add_executable(xyco_epoll_main src/main.cc)
@@ -218,22 +244,3 @@ target_include_directories(time PUBLIC include)
 target_link_libraries(time PRIVATE runtime_ctx)
 
 option(XYCO_ENABLE_LOGGING "OFF")
-
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  FetchContent_Declare(
-    googletest
-    URL "https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz"
-    URL_HASH
-      SHA256=81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2)
-  FetchContent_MakeAvailable(googletest)
-  FetchContent_Declare(
-    asio
-    URL "https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-28-0.tar.gz"
-    URL_HASH
-      SHA256=226438b0798099ad2a202563a83571ce06dd13b570d8fded4840dbc1f97fa328)
-  FetchContent_MakeAvailable(asio)
-
-  add_subdirectory(tests)
-  add_subdirectory(benchmark)
-  add_subdirectory(examples)
-endif()

@@ -21,7 +21,7 @@ auto xyco::net::epoll::TcpSocket::bind(SocketAddr addr)
   if (bind_result) {
     INFO("{} bind to {}", socket_, addr);
   }
-  co_return bind_result.transform([](auto bind_result) {});
+  co_return bind_result.transform([]([[maybe_unused]] auto bind_result) {});
 }
 
 auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
@@ -41,7 +41,8 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
                                  io::epoll::IoExtra::Interest::Write,
                                  socket_->into_c_fd())})) {}
 
-    auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+    auto poll([[maybe_unused]] runtime::Handle<void> self)
+        -> runtime::Poll<CoOutput> override {
       auto *extra = dynamic_cast<io::epoll::IoExtra *>(event_->extra_.get());
       if (extra->state_.get_field<io::epoll::IoExtra::State::Error>() ||
           extra->state_.get_field<io::epoll::IoExtra::State::Writable>()) {
@@ -96,8 +97,8 @@ auto xyco::net::epoll::TcpSocket::listen(int backlog)
   auto listen_result = co_await task::BlockingTask([&]() {
     return utils::into_sys_result(::listen(socket_.into_c_fd(), backlog));
   });
-  ASYNC_TRY(
-      listen_result.transform([&](auto n) { return TcpListener(Socket(-1)); }));
+  ASYNC_TRY(listen_result.transform(
+      [&]([[maybe_unused]] auto n) { return TcpListener(Socket(-1)); }));
   INFO("{} listening", socket_);
 
   co_return TcpListener(std::move(socket_));
@@ -109,7 +110,7 @@ auto xyco::net::epoll::TcpSocket::set_reuseaddr(bool reuseaddr)
   return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
                                              SO_REUSEADDR, &optval,
                                              sizeof(optval)))
-      .transform([](auto result) {});
+      .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::epoll::TcpSocket::set_reuseport(bool reuseport)
@@ -118,7 +119,7 @@ auto xyco::net::epoll::TcpSocket::set_reuseport(bool reuseport)
   return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
                                              SO_REUSEPORT, &optval,
                                              sizeof(optval)))
-      .transform([](auto result) {});
+      .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::epoll::TcpSocket::new_v4() -> utils::Result<TcpSocket> {
@@ -158,7 +159,7 @@ auto xyco::net::epoll::TcpStream::shutdown(io::Shutdown shutdown) const
               return utils::into_sys_result(::shutdown(
                   socket_.into_c_fd(),
                   static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
-            })).transform([](auto result) {}));
+            })).transform([]([[maybe_unused]] auto result) {}));
   INFO("shutdown {}", socket_);
 
   co_return {};
@@ -214,7 +215,8 @@ auto xyco::net::epoll::TcpListener::accept()
 
   class Future : public runtime::Future<CoOutput> {
    public:
-    auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+    auto poll([[maybe_unused]] runtime::Handle<void> self)
+        -> runtime::Poll<CoOutput> override {
       auto *extra =
           dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
       if (!extra->state_.get_field<io::epoll::IoExtra::State::Registered>()) {

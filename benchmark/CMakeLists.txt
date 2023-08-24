@@ -10,3 +10,12 @@ add_executable(asio_echo_server asio_echo_server.cc)
 target_include_directories(
   asio_echo_server PUBLIC ${CMAKE_BINARY_DIR}/_deps/asio-src/asio/include)
 target_link_libraries(asio_echo_server GSL)
+
+if(ENABLE_LINTING)
+  target_compile_options(
+    asio_echo_server
+    PRIVATE -Wno-deprecated-copy-with-user-provided-dtor
+            -Wno-deprecated-literal-operator
+            -Wno-deprecated-redundant-constexpr-static-def
+            -Wno-unknown-pragmas)
+endif(ENABLE_LINTING)

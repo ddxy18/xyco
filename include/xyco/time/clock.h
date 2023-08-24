@@ -1,5 +1,5 @@
-#ifndef XYCO_TIME_CLOCK_H
-#define XYCO_TIME_CLOCK_H
+#ifndef XYCO_TIME_CLOCK_H_
+#define XYCO_TIME_CLOCK_H_
 
 #include <chrono>
 #include <variant>
@@ -31,17 +31,18 @@ class Clock {
  public:
   static auto now() -> std::chrono::system_clock::time_point {
     return std::visit(
-        overloaded{
-            [](std::chrono::system_clock clock) {
-              return std::chrono::system_clock::now();
-            },
-            [](FrozenClock clock) { return xyco::time::FrozenClock::now(); },
-            [](auto clock) {
-              auto now = clock.now();
-              return std::chrono::time_point_cast<
-                  std::chrono::system_clock::duration>(
-                  now - clock.now() + std::chrono::system_clock::now());
-            }},
+        overloaded{[]([[maybe_unused]] std::chrono::system_clock clock) {
+                     return std::chrono::system_clock::now();
+                   },
+                   []([[maybe_unused]] FrozenClock clock) {
+                     return xyco::time::FrozenClock::now();
+                   },
+                   [](auto clock) {
+                     auto now = clock.now();
+                     return std::chrono::time_point_cast<
+                         std::chrono::system_clock::duration>(
+                         now - clock.now() + std::chrono::system_clock::now());
+                   }},
         clock_);
   }
 
@@ -65,4 +66,4 @@ class Clock {
 };
 }  // namespace xyco::time
 
-#endif  // XYCO_TIME_CLOCK_H
+#endif  // XYCO_TIME_CLOCK_H_

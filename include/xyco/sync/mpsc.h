@@ -53,7 +53,7 @@ class Sender {
             self_(self),
             value_(std::move(value)) {}
 
-      auto poll(runtime::Handle<void> self)
+      auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {
         if (self_->shared_->state_ == Shared<Value, Size>::receiver_closed) {
           return runtime::Ready<FutureReturn>{
@@ -138,7 +138,7 @@ class Receiver {
       explicit Future(Receiver<Value, Size> *self)
           : runtime::Future<FutureReturn>(nullptr), self_(self) {}
 
-      auto poll(runtime::Handle<void> self)
+      auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {
         std::unique_lock<std::mutex> queue_guard(self_->shared_->queue_mutex_);
         if (!self_->shared_->queue_.empty()) {

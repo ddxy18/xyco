@@ -31,6 +31,14 @@
             "cacheVariables": {
                 "XYCO_ENABLE_LOGGING": "OFF"
             }
+        },
+        {
+            "inherits": [ "enable_logging" ],
+            "name": "ci_linting",
+            "displayName": "CI Linting Config",
+            "cacheVariables": {
+                "ENABLE_LINTING": true
+            }
         }
     ],
     "buildPresets": [
@@ -66,6 +74,11 @@
                 "xyco_test_epoll",
                 "xyco_test_uring"
             ]
+        },
+        {
+            "inherits": [ "non_test_root" ],
+            "name": "ci_linting",
+            "configurePreset": "ci_linting"
         }
     ],
     "workflowPresets": [
@@ -84,16 +97,16 @@
             ]
         },
         {
-            "name": "ci_build_with_logging_on",
-            "displayName": "CI Build With Logging Step",
+            "name": "ci_linting",
+            "displayName": "CI Linting Step",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "enable_logging"
+                    "name": "ci_linting"
                 },
                 {
                     "type": "build",
-                    "name": "all_with_logging_on"
+                    "name": "ci_linting"
                 }
             ]
         },

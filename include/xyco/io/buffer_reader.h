@@ -19,7 +19,10 @@ class BufferReader {
       consume(len);
       co_return len;
     }
-    ASYNC_TRY((co_await fill_buffer()).transform([](auto pair) { return 0; }));
+    ASYNC_TRY(
+        (co_await fill_buffer()).transform([]([[maybe_unused]] auto pair) {
+          return 0;
+        }));
     len = std::min(len, static_cast<decltype(len)>(cap_ - pos_));
     std::copy(std::begin(buffer_), std::begin(buffer_) + len, begin);
     consume(len);

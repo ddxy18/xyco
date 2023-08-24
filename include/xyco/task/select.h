@@ -12,7 +12,8 @@ class SelectFuture
   using CoOutput = std::variant<TypeWrapper<T1>, TypeWrapper<T2>>;
 
  public:
-  auto poll(runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+  auto poll([[maybe_unused]] runtime::Handle<void> self)
+      -> runtime::Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
       auto [wrapper1, wrapper2] =

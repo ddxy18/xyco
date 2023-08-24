@@ -39,7 +39,8 @@ auto xyco::runtime::Future<void>::operator co_await() -> Awaitable<void> {
   return Awaitable(this);
 }
 
-auto xyco::runtime::Future<void>::poll(Handle<void> self) -> Poll<void> {
+auto xyco::runtime::Future<void>::poll([[maybe_unused]] Handle<void> self)
+    -> Poll<void> {
   return Pending();
 }
 

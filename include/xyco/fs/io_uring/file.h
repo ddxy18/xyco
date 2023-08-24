@@ -53,7 +53,7 @@ class File {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll(runtime::Handle<void> self)
+      auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
         auto *extra = dynamic_cast<io::uring::IoExtra *>(event_->extra_.get());
 
@@ -78,11 +78,11 @@ class File {
 
       Future(Iterator begin, Iterator end, File *self)
           : runtime::Future<CoOutput>(nullptr),
+            self_(self),
             event_(std::make_shared<runtime::Event>(runtime::Event{
                 .extra_ = std::make_unique<io::uring::IoExtra>()})),
             begin_(begin),
-            end_(end),
-            self_(self) {
+            end_(end) {
         auto *extra = dynamic_cast<io::uring::IoExtra *>(event_->extra_.get());
         extra->fd_ = self_->fd_;
       }
@@ -118,7 +118,7 @@ class File {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll(runtime::Handle<void> self)
+      auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<CoOutput> override {
         auto *extra = dynamic_cast<io::uring::IoExtra *>(event_->extra_.get());
         if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
@@ -143,11 +143,11 @@ class File {
 
       Future(Iterator begin, Iterator end, File *self)
           : runtime::Future<CoOutput>(nullptr),
+            self_(self),
             event_(std::make_shared<runtime::Event>(runtime::Event{
                 .extra_ = std::make_unique<io::uring::IoExtra>()})),
             begin_(begin),
-            end_(end),
-            self_(self) {
+            end_(end) {
         auto *extra = dynamic_cast<io::uring::IoExtra *>(event_->extra_.get());
         extra->fd_ = self_->fd_;
       }
