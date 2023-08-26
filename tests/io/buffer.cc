@@ -7,38 +7,38 @@
 class BufferTest : public ::testing::Test {
  protected:
   static void SetUpTestSuite() {
-    TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+    TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
       listener_ = std::make_unique<xyco::net::TcpListener>(
           xyco::net::TcpListener(*co_await xyco::net::TcpListener::bind(
               xyco::net::SocketAddr::new_v4({}, port_))));
-    });
+    }());
   }
 
   static void TearDownTestSuite() {
-    TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+    TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
       listener_ = nullptr;
 
       co_return;
-    });
+    }());
   }
 
   void SetUp() override {
-    TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+    TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
       client_ = std::make_unique<xyco::net::TcpStream>(
           xyco::net::TcpStream(*co_await xyco::net::TcpStream::connect(
               xyco::net::SocketAddr::new_v4(ip_, port_))));
       server_ = std::make_unique<xyco::net::TcpStream>(xyco::net::TcpStream(
           std::move((co_await listener_->accept())->first)));
-    });
+    }());
   }
 
   void TearDown() override {
-    TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+    TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
       client_ = nullptr;
       server_ = nullptr;
 
       co_return;
-    });
+    }());
   }
 
   static std::unique_ptr<xyco::net::TcpListener> listener_;
@@ -73,7 +73,7 @@ TEST_F(BufferTest, concept) {
 }
 
 TEST_F(BufferTest, read_to_end) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     std::string_view write_bytes = "ab";
     auto write_nbytes =
         *co_await xyco::io::WriteExt::write(*client_, write_bytes);
@@ -87,11 +87,11 @@ TEST_F(BufferTest, read_to_end) {
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
     CO_ASSERT_EQ(readed, write_bytes);
-  });
+  }());
 }
 
 TEST_F(BufferTest, read_until) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     std::string_view write_bytes = "abc";
     auto write_nbytes =
         *co_await xyco::io::WriteExt::write(*client_, write_bytes);
@@ -105,11 +105,11 @@ TEST_F(BufferTest, read_until) {
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
     CO_ASSERT_EQ(line, write_bytes);
-  });
+  }());
 }
 
 TEST_F(BufferTest, read_until_eof) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     std::string_view write_bytes = "ab";
     auto write_nbytes =
         *co_await xyco::io::WriteExt::write(*client_, write_bytes);
@@ -125,11 +125,11 @@ TEST_F(BufferTest, read_until_eof) {
     std::string expected_line(write_bytes);
     expected_line.push_back('\0');
     CO_ASSERT_EQ(line, expected_line);
-  });
+  }());
 }
 
 TEST_F(BufferTest, read_line) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     std::string write_bytes = "ab\nc";
     auto write_nbytes =
         *co_await xyco::io::WriteExt::write(*client_, write_bytes);
@@ -143,11 +143,11 @@ TEST_F(BufferTest, read_line) {
 
     CO_ASSERT_EQ(write_nbytes, write_bytes.size());
     CO_ASSERT_EQ(line, "ab\n");
-  });
+  }());
 }
 
 TEST_F(BufferTest, buffer_read) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     std::string_view write_bytes = "abcde";
     auto _ = *co_await xyco::io::WriteExt::write(*client_, write_bytes);
     *co_await client_->shutdown(xyco::io::Shutdown::All);
@@ -165,11 +165,11 @@ TEST_F(BufferTest, buffer_read) {
 
     CO_ASSERT_EQ(read_bytes, readed.size());
     CO_ASSERT_EQ(readed, "cde");
-  });
+  }());
 }
 
 TEST_F(BufferTest, c_array_buffer) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     char write_bytes[] = "ab";
     *co_await xyco::io::WriteExt::write_all(*client_, write_bytes);
     *co_await client_->shutdown(xyco::io::Shutdown::All);
@@ -178,5 +178,5 @@ TEST_F(BufferTest, c_array_buffer) {
     auto readed_nbytes = *co_await xyco::io::ReadExt::read(*server_, readed);
 
     CO_ASSERT_EQ(std::string(readed), std::string(write_bytes));
-  });
+  }());
 }

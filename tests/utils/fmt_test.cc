@@ -79,13 +79,11 @@ TEST(FmtTypeTest, Socket) {
 }
 
 TEST(FmtTypeTest, File) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
-    auto file = *co_await xyco::fs::File ::create("README.md");
+  TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
+    auto file = *co_await xyco::fs::File ::open("README.md");
 
     auto fmt_str = std::format("{}", file);
 
     CO_ASSERT_EQ(fmt_str, "File{path_=README.md}");
-
-    std::filesystem::remove("README.md");
-  });
+  }());
 }

@@ -1,20 +1,14 @@
-#include "xyco/runtime/runtime.h"
-
 #include <gtest/gtest.h>
 
-class RuntimeTest : public ::testing::Test {
- protected:
-  void SetUp() override {
-    runtime_ =
-        *xyco::runtime::Builder::new_multi_thread().worker_threads(1).build();
-  }
+#include "utils.h"
 
-  static std::unique_ptr<xyco::runtime::Runtime> runtime_;
-};
+TEST(RuntimeTest, block_on_void) {
+  TestRuntimeCtx::runtime()->block_on(
+      []() -> xyco::runtime::Future<void> { co_return; }());
+}
 
-std::unique_ptr<xyco::runtime::Runtime> RuntimeTest::runtime_;
-
-TEST_F(RuntimeTest, block_on) {
-  runtime_->block_on([]() -> xyco::runtime::Future<void> { co_return; }());
-  runtime_->block_on([]() -> xyco::runtime::Future<int> { co_return 1; }());
+TEST(RuntimeTest, block_on_with_return_value) {
+  auto result = TestRuntimeCtx::runtime()->block_on(
+      []() -> xyco::runtime::Future<int> { co_return 1; }());
+  ASSERT_EQ(result, 1);
 }

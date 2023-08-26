@@ -15,7 +15,7 @@ class FileTest : public ::testing::Test {
 const char *FileTest::fs_root_ = "test_root/";
 
 TEST_F(FileTest, open_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_open_file";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -24,11 +24,11 @@ TEST_F(FileTest, open_file) {
     auto open_result = co_await xyco::fs::File::open(file_path);
 
     CO_ASSERT_EQ(open_result.has_value(), true);
-  });
+  }());
 }
 
 TEST_F(FileTest, open_nonexist_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_open_nonexist_file";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -36,11 +36,11 @@ TEST_F(FileTest, open_nonexist_file) {
     auto open_result = co_await xyco::fs::File::open(file_path);
 
     CO_ASSERT_EQ(open_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, all_mode_disable) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_all_mode_disable";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -49,11 +49,11 @@ TEST_F(FileTest, all_mode_disable) {
     auto open_result = co_await xyco::fs::OpenOptions().open(file_path);
 
     CO_ASSERT_EQ(open_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, create_enable_write_disable_mode) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_create_enable_write_disable_mode";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -62,11 +62,11 @@ TEST_F(FileTest, create_enable_write_disable_mode) {
             file_path);
 
     CO_ASSERT_EQ(open_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, append_enable_truncate_enable_mode) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_append_enable_truncate_enable_mode";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -75,11 +75,11 @@ TEST_F(FileTest, append_enable_truncate_enable_mode) {
             file_path);
 
     CO_ASSERT_EQ(open_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, create_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_create_file";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -95,11 +95,11 @@ TEST_F(FileTest, create_file) {
 
     auto size = *co_await open_result->size();
     CO_ASSERT_EQ(size, content.size());
-  });
+  }());
 }
 
 TEST_F(FileTest, create_new_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_create_new_file";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -108,11 +108,11 @@ TEST_F(FileTest, create_new_file) {
             file_path);
 
     CO_ASSERT_EQ(open_result.has_value(), true);
-  });
+  }());
 }
 
 TEST_F(FileTest, truncate_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_truncate_file";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -125,11 +125,11 @@ TEST_F(FileTest, truncate_file) {
 
     auto size = *co_await truncate_result->size();
     CO_ASSERT_EQ(size, 0);
-  });
+  }());
 }
 
 TEST_F(FileTest, append_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_append_file";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -143,11 +143,11 @@ TEST_F(FileTest, append_file) {
 
     auto size = *co_await append_result->size();
     CO_ASSERT_EQ(size, 6);
-  });
+  }());
 }
 
 TEST_F(FileTest, file_permisssion) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_permission_file";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -161,11 +161,11 @@ TEST_F(FileTest, file_permisssion) {
         co_await xyco::fs::OpenOptions().write(true).open(file_path);
 
     CO_ASSERT_EQ(open_result.error().errno_, EACCES);
-  });
+  }());
 }
 
 TEST_F(FileTest, resize_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_resize_file";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -178,11 +178,11 @@ TEST_F(FileTest, resize_file) {
     auto size = *co_await file.size();
 
     CO_ASSERT_EQ(size, 4);
-  });
+  }());
 }
 
 TEST_F(FileTest, file_status) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_file_status";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -196,11 +196,11 @@ TEST_F(FileTest, file_status) {
 
     CO_ASSERT_EQ(status.type(), std::filesystem::file_type::regular);
     CO_ASSERT_EQ(status.permissions(), std::filesystem::perms::owner_read);
-  });
+  }());
 }
 
 TEST_F(FileTest, file_attr) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_file_attr";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -212,11 +212,11 @@ TEST_F(FileTest, file_attr) {
 
     CO_ASSERT_EQ(create_time.tv_sec, modified_time.tv_sec);
     CO_ASSERT_EQ(create_time.tv_sec, access_time.tv_sec);
-  });
+  }());
 }
 
 TEST_F(FileTest, set_file_permission) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_set_file_permission";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -232,11 +232,11 @@ TEST_F(FileTest, set_file_permission) {
                                   std::filesystem::perms::group_write |
                                   std::filesystem::perms::owner_read |
                                   std::filesystem::perms::owner_write);
-  });
+  }());
 }
 
 TEST_F(FileTest, rename_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_rename_file";
 
     auto file_path = std::string(fs_root_).append(path);
@@ -247,11 +247,11 @@ TEST_F(FileTest, rename_file) {
 
     auto open_new_file_result = (co_await xyco::fs::File::open(new_file_path));
     CO_ASSERT_EQ(open_new_file_result.has_value(), true);
-  });
+  }());
 }
 
 TEST_F(FileTest, rename_nonexist_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_rename_nonexist_file";
 
     auto file_path = std::string(fs_root_).append(path);
@@ -260,11 +260,11 @@ TEST_F(FileTest, rename_nonexist_file) {
     auto rename_result = co_await (xyco::fs::rename(file_path, new_file_path));
 
     CO_ASSERT_EQ(rename_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, remove_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_remove_file";
 
     auto file_path = std::string(fs_root_).append(path);
@@ -274,19 +274,19 @@ TEST_F(FileTest, remove_file) {
 
     auto open_result = (co_await xyco::fs::File::open(file_path));
     CO_ASSERT_EQ(open_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, remove_file_permission_denied) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     auto remove_result = co_await (xyco::fs::remove("/proc/1"));
 
     CO_ASSERT_EQ(remove_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, copy_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_copy_file";
 
     auto file_path = std::string(fs_root_).append(path);
@@ -302,11 +302,11 @@ TEST_F(FileTest, copy_file) {
         *co_await (co_await xyco::fs::File::open(new_file_path))->size();
 
     CO_ASSERT_EQ(new_file_size, 4);
-  });
+  }());
 }
 
 TEST_F(FileTest, copy_nonexist_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_copy_nonexist_file";
 
     auto file_path = std::string(fs_root_).append(path);
@@ -317,11 +317,11 @@ TEST_F(FileTest, copy_nonexist_file) {
                             std::filesystem::copy_options::overwrite_existing));
 
     CO_ASSERT_EQ(copy_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, operate_removed_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_operate_removed_file";
 
     auto file_path = std::string(fs_root_).append(path);
@@ -342,11 +342,11 @@ TEST_F(FileTest, operate_removed_file) {
         co_await file.set_permissions(std::filesystem::perms::group_write,
                                       std::filesystem::perm_options::add);
     CO_ASSERT_EQ(set_permissions_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, rw_file) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_rw_file";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -368,11 +368,11 @@ TEST_F(FileTest, rw_file) {
         (co_await file.read(read_content.begin(), read_content.end()));
 
     CO_ASSERT_EQ(read_content, write_content);
-  });
+  }());
 }
 
 TEST_F(FileTest, seek_invalid) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_seek_invalid";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -385,11 +385,11 @@ TEST_F(FileTest, seek_invalid) {
     auto seek_result = (co_await file.seek(4, SEEK_DATA));
 
     CO_ASSERT_EQ(seek_result.has_value(), false);
-  });
+  }());
 }
 
 TEST_F(FileTest, flush) {
-  TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([&]() -> xyco::runtime::Future<void> {
     const char *path = "test_flush";
 
     auto file_path = (std::string(fs_root_).append(path));
@@ -400,5 +400,5 @@ TEST_F(FileTest, flush) {
     auto flush_result = (co_await file.flush());
 
     CO_ASSERT_EQ(flush_result.has_value(), true);
-  });
+  }());
 }
