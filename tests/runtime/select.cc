@@ -6,7 +6,7 @@
 #include "xyco/time/sleep.h"
 
 TEST(SelectTest, select_immediate_ready) {
-  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     auto co1 = []() -> xyco::runtime::Future<int> { co_return 1; };
 
     auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
@@ -14,7 +14,7 @@ TEST(SelectTest, select_immediate_ready) {
     auto result = co_await xyco::task::select(co1(), co2());
 
     CO_ASSERT_EQ(std::get<0>(result).inner_, 1);
-  });
+  }());
 }
 
 TEST(SelectTest, select_delay) {
@@ -51,7 +51,7 @@ TEST(SelectTest, select_delay) {
 }
 
 TEST(SelectTest, select_void) {
-  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     auto co1 = []() -> xyco::runtime::Future<void> { co_return; };
 
     auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
@@ -59,5 +59,5 @@ TEST(SelectTest, select_void) {
     auto result = co_await xyco::task::select(co1(), co2());
 
     CO_ASSERT_EQ(result.index(), 0);
-  });
+  }());
 }

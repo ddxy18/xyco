@@ -61,8 +61,22 @@ class Runtime {
   // Note: Current thread is strictly restricted to the thread creating the
   // runtime, and also the thread must not be a worker of another runtime.
   template <typename T>
-  auto block_on(Future<T> future) -> void {
-    auto blocking_future = [](Runtime *runtime, auto future) -> Future<void> {
+  auto block_on(Future<T> future) -> T {
+    std::optional<T> result;
+    auto blocking_future = [&](Runtime *runtime, auto future) -> Future<void> {
+      result = co_await future;
+      runtime->in_place_worker_.stop();
+    };
+    spawn_impl(blocking_future(this, std::move(future)));
+
+    in_place_worker_.run_in_place(this);
+
+    return std::move(*result);
+  }
+
+  template <>
+  auto block_on(Future<void> future) -> void {
+    auto blocking_future = [&](Runtime *runtime, auto future) -> Future<void> {
       co_await future;
       runtime->in_place_worker_.stop();
     };

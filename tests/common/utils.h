@@ -1,5 +1,5 @@
-#ifndef XYCO_TESTS_COMMON_UTILS_GLOBAL_H_
-#define XYCO_TESTS_COMMON_UTILS_GLOBAL_H_
+#ifndef XYCO_TESTS_COMMON_UTILS_H_
+#define XYCO_TESTS_COMMON_UTILS_H_
 
 #include <gtest/gtest.h>
 
@@ -98,6 +98,8 @@ class TestRuntimeCtx {
     return {co_outer, false};
   }
 
+  static auto runtime() -> xyco::runtime::Runtime * { return runtime_.get(); }
+
   static auto init() -> void;
 
  private:
@@ -109,4 +111,4 @@ class TestRuntimeCtx {
   static std::unique_ptr<xyco::runtime::Runtime> runtime_;
 };
 
-#endif  // XYCO_TESTS_COMMON_UTILS_GLOBAL_H_
+#endif  // XYCO_TESTS_COMMON_UTILS_H_

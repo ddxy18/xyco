@@ -6,7 +6,7 @@
 #include "xyco/time/sleep.h"
 
 TEST(JoinTest, join_immediate_ready) {
-  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     auto co1 = []() -> xyco::runtime::Future<int> { co_return 1; };
 
     auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
@@ -15,7 +15,7 @@ TEST(JoinTest, join_immediate_ready) {
 
     CO_ASSERT_EQ(result.first.inner_, 1);
     CO_ASSERT_EQ(result.second.inner_, "abc");
-  });
+  }());
 }
 
 TEST(JoinTest, join_delay) {
@@ -44,7 +44,7 @@ TEST(JoinTest, join_delay) {
 }
 
 TEST(JoinTest, join_void) {
-  TestRuntimeCtx::co_run([]() -> xyco::runtime::Future<void> {
+  TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     auto co1 = []() -> xyco::runtime::Future<void> { co_return; };
 
     auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
@@ -52,5 +52,5 @@ TEST(JoinTest, join_void) {
     auto result = co_await xyco::task::join(co1(), co2());
 
     CO_ASSERT_EQ(result.second.inner_, "abc");
-  });
+  }());
 }
