@@ -5,56 +5,75 @@
 
 #include "xyco/runtime/runtime.h"
 #include "xyco/runtime/runtime_ctx.h"
-#include "xyco/task/type_wrapper.h"
 
 namespace xyco::task {
-template <typename T1, typename T2>
-class JoinFuture
-    : public runtime::Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
-  using CoOutput = std::pair<TypeWrapper<T1>, TypeWrapper<T2>>;
+template <typename... T>
+class JoinFuture : public runtime::Future<std::tuple<T...>> {
+  using CoOutput = std::tuple<T...>;
 
  public:
   auto poll([[maybe_unused]] runtime::Handle<void> self)
       -> runtime::Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
-      runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(
-          future_wrapper<T1, 0>(std::move(future1_)));
-      runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(
-          future_wrapper<T2, 1>(std::move(future2_)));
+      std::apply(
+          [this](auto &...branch) {
+            (runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(
+                 run_single_branch<T>(branch)),
+             ...);
+          },
+          branches_);
+
       return runtime::Pending();
     }
 
-    return runtime::Ready<CoOutput>{CoOutput(*result_.first, *result_.second)};
+    auto unwrapped_result = std::apply(
+        [](auto &&...branch) {
+          auto extract_result = [](auto result) {
+            if (!result.has_value()) {
+              std::rethrow_exception(result.error());
+            }
+            return result.value();
+          };
+          return CoOutput(extract_result(branch.second.value())...);
+        },
+        branches_);
+    return runtime::Ready<CoOutput>{unwrapped_result};
   }
 
-  JoinFuture(runtime::Future<T1> &&future1, runtime::Future<T2> &&future2)
+  JoinFuture(runtime::Future<T> &&...future)
       : runtime::Future<CoOutput>(nullptr),
-        future1_(std::move(future1)),
-        future2_(std::move(future2)),
-        result_({}, {}) {}
+        branches_(std::make_pair(std::move(future), std::optional<T>())...) {}
 
  private:
-  template <typename T, int Index>
-  auto future_wrapper(runtime::Future<T> future) -> runtime::Future<void> {
-    if constexpr (!std::is_same_v<T, void>) {
-      auto result = co_await future;
-      if constexpr (Index == 0) {
-        result_.first = TypeWrapper<T>{result};
-      } else {
-        result_.second = TypeWrapper<T>{result};
-      }
-    } else {
-      co_await future;
-      if constexpr (Index == 0) {
-        result_.first = TypeWrapper<T>();
-      } else {
-        result_.second = TypeWrapper<T>();
-      }
+  template <typename ST>
+  auto run_single_branch(
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
+      std::pair<runtime::Future<ST>,
+                std::optional<std::expected<ST, std::exception_ptr>>> &branch)
+      -> runtime::Future<void> {
+    try {
+      branch.second = co_await branch.first;
+    } catch (...) {
+      branch.second = std::unexpected(std::current_exception());
     }
+
     {
-      std::scoped_lock<std::mutex> lock_guard(mutex_);
-      if (!registered_ && result_.first && result_.second) {
+      std::scoped_lock<std::mutex> lock_guard(branch_mutex_);
+      if (registered_) {
+        co_return;
+      }
+
+      auto all_completed = std::apply(
+          [](auto &...branch) {
+            auto branch_state_array =
+                std::array<bool, sizeof...(T)>{branch.second.has_value()...};
+            return std::all_of(branch_state_array.begin(),
+                               branch_state_array.end(),
+                               [](auto completed) { return completed; });
+          },
+          branches_);
+      if (all_completed) {
         registered_ = true;
         runtime::RuntimeCtx::get_ctx()->register_future(this);
       }
@@ -62,18 +81,28 @@ class JoinFuture
   }
 
   bool ready_{};
-  std::pair<std::optional<TypeWrapper<T1>>, std::optional<TypeWrapper<T2>>>
-      result_;
-  std::mutex mutex_;
+  std::mutex branch_mutex_;
   bool registered_{};
-  runtime::Future<T1> future1_;
-  runtime::Future<T2> future2_;
+  std::tuple<std::pair<runtime::Future<T>,
+                       std::optional<std::expected<T, std::exception_ptr>>>...>
+      branches_;
 };
 
-template <typename T1, typename T2>
-auto join(runtime::Future<T1> future1, runtime::Future<T2> future2)
-    -> runtime::Future<std::pair<TypeWrapper<T1>, TypeWrapper<T2>>> {
-  co_return co_await JoinFuture<T1, T2>(std::move(future1), std::move(future2));
+// Waits until completion of all futures.
+// Every future is independent from others. So crash of one future will not stop
+// others and `join`. `T` cannot contain `void` and the recommended alternative
+// here is `std::nullptr_t`.
+//
+// Exceptions:
+// If any one of the futures throws an uncaught exception, `join` finally throws
+// the first exception in a left to right sequence.
+template <typename... T>
+auto join(runtime::Future<T>... future) -> runtime::Future<std::tuple<T...>> {
+  if (sizeof...(T) == 0) {
+    co_return {};
+  }
+
+  co_return co_await JoinFuture<T...>(std::move(future)...);
 }
 }  // namespace xyco::task
 
