@@ -3,54 +3,57 @@
 #include <gtest/gtest.h>
 
 #include "utils.h"
-#include "xyco/time/sleep.h"
 
-TEST(JoinTest, join_immediate_ready) {
-  TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
-    auto co1 = []() -> xyco::runtime::Future<int> { co_return 1; };
-
-    auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
-
-    auto result = co_await xyco::task::join(co1(), co2());
-
-    CO_ASSERT_EQ(result.first.inner_, 1);
-    CO_ASSERT_EQ(result.second.inner_, "abc");
-  }());
+auto null_co() -> xyco::runtime::Future<std::nullptr_t> { co_return nullptr; }
+auto str_co() -> xyco::runtime::Future<std::string> { co_return "a"; }
+auto int_co() -> xyco::runtime::Future<int> { co_return 1; }
+auto failed_co() -> xyco::runtime::Future<int> {
+  throw std::runtime_error("fail co");
+  co_return 1;
 }
 
-TEST(JoinTest, join_delay) {
-  constexpr std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3);
+TEST(JoinTest, join_null) {
+  auto [single_result] =
+      TestRuntimeCtx::runtime()->block_on(xyco::task::join(null_co()));
 
-  TestRuntimeCtx::co_run(
-      [&]() -> xyco::runtime::Future<void> {
-        auto co1 = [&timeout_ms]() -> xyco::runtime::Future<int> {
-          co_await xyco::time::sleep(2 * timeout_ms);
+  ASSERT_EQ(single_result, nullptr);
+}
 
-          co_return 1;
-        };
+TEST(JoinTest, join_empty) {
+  auto empty_tuple = TestRuntimeCtx::runtime()->block_on(xyco::task::join());
 
-        auto co2 = [&timeout_ms]() -> xyco::runtime::Future<std::string> {
-          co_await xyco::time::sleep(timeout_ms);
+  ASSERT_EQ(std::tuple_size<decltype(empty_tuple)>(), 0);
+}
 
-          co_return "abc";
-        };
+TEST(JoinTest, join_one) {
+  auto [single_result] =
+      TestRuntimeCtx::runtime()->block_on(xyco::task::join(int_co()));
 
-        auto result = co_await xyco::task::join(co1(), co2());
+  ASSERT_EQ(single_result, 1);
+}
 
-        CO_ASSERT_EQ(result.first.inner_, 1);
-        CO_ASSERT_EQ(result.second.inner_, "abc");
+TEST(JoinTest, join_two) {
+  auto [first, second] = TestRuntimeCtx::runtime()->block_on(
+      xyco::task::join(null_co(), str_co()));
+
+  ASSERT_EQ(first, nullptr);
+  ASSERT_EQ(second, "a");
+}
+
+TEST(JoinTest, join_three) {
+  auto [first, second, third] = TestRuntimeCtx::runtime()->block_on(
+      xyco::task::join(null_co(), str_co(), int_co()));
+
+  ASSERT_EQ(first, nullptr);
+  ASSERT_EQ(second, "a");
+  ASSERT_EQ(third, 1);
+}
+
+TEST(JoinTest, join_partially_failed) {
+  EXPECT_THROW(
+      {
+        TestRuntimeCtx::runtime()->block_on(
+            xyco::task::join(null_co(), failed_co()));
       },
-      {timeout_ms + std::chrono::milliseconds(1), timeout_ms});
-}
-
-TEST(JoinTest, join_void) {
-  TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
-    auto co1 = []() -> xyco::runtime::Future<void> { co_return; };
-
-    auto co2 = []() -> xyco::runtime::Future<std::string> { co_return "abc"; };
-
-    auto result = co_await xyco::task::join(co1(), co2());
-
-    CO_ASSERT_EQ(result.second.inner_, "abc");
-  }());
+      std::runtime_error);
 }
