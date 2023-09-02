@@ -1,111 +1,132 @@
 #ifndef XYCO_TASK_SELECT_H_
 #define XYCO_TASK_SELECT_H_
 
+#include <shared_mutex>
+
 #include "xyco/runtime/runtime.h"
 #include "xyco/runtime/runtime_ctx.h"
-#include "xyco/task/type_wrapper.h"
 
 namespace xyco::task {
-template <typename T1, typename T2>
-class SelectFuture
-    : public runtime::Future<std::variant<TypeWrapper<T1>, TypeWrapper<T2>>> {
-  using CoOutput = std::variant<TypeWrapper<T1>, TypeWrapper<T2>>;
+template <typename T>
+using Branch = std::tuple<runtime::Future<T>,
+                          std::optional<std::expected<T, std::exception_ptr>>>;
+
+template <typename... T>
+class BranchShared {
+ public:
+  BranchShared(runtime::Future<T> &&...future)
+      : branches_({std::make_tuple(std::move(future), std::optional<T>())...}) {
+  }
+
+  std::shared_mutex branch_mutex_;
+  std::tuple<Branch<T>...> branches_;
+};
+
+template <typename... T>
+class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
+  using CoOutput = std::tuple<std::optional<T>...>;
 
  public:
   auto poll([[maybe_unused]] runtime::Handle<void> self)
       -> runtime::Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
-      auto [wrapper1, wrapper2] =
-          std::pair<runtime::Future<void>, runtime::Future<void>>(
-              future_wrapper<T1, 1>(std::move(futures_.first)),
-              future_wrapper<T2, 2>(std::move(futures_.second)));
-      wrappers_ = {wrapper1.get_handle(), wrapper2.get_handle()};
-      runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(std::move(wrapper1));
-      runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(std::move(wrapper2));
+      std::apply(
+          [this](auto &...branch) {
+            (runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(
+                 run_single_branch(branch, branch_shared_)),
+             ...);
+          },
+          branch_shared_->branches_);
+
       return runtime::Pending();
     }
 
-    decltype(result_.index()) index;
-    {
-      std::scoped_lock<std::mutex> result_lock(result_mutex_);
-      index = result_.index();
-    }
-    if (index == 1) {
-      {
-        std::scoped_lock<std::mutex> second_lock(ended_mutex_.second);
-        if (!ended_.second) {
-          wrappers_.second.promise().future()->cancel();
-        }
-      }
-      return runtime::Ready<CoOutput>{
-          CoOutput(std::in_place_index<0>, std::get<1>(result_))};
-    }
+    std::shared_lock<std::shared_mutex> guard(branch_shared_->branch_mutex_);
+    auto result = std::apply(
+        [](auto &...branch) {
+          auto cancel = [](auto handle, auto result) {
+            using ST =
+                std::remove_reference_t<decltype(result.value().value())>;
 
-    {
-      std::scoped_lock<std::mutex> first_lock(ended_mutex_.second);
-      if (!ended_.first) {
-        wrappers_.first.promise().future()->cancel();
-      }
-    }
-    return runtime::Ready<CoOutput>{
-        CoOutput(std::in_place_index<1>, std::get<2>(result_))};
+            if (!result) {
+              handle.promise().future()->cancel();
+              return std::optional<ST>();
+            }
+            if (!result.value()) {
+              std::rethrow_exception(result.value().error());
+            }
+            return std::optional<ST>(result.value().value());
+          };
+          return CoOutput(
+              cancel(std::get<0>(branch).get_handle(), std::get<1>(branch))...);
+        },
+        branch_shared_->branches_);
+    return runtime::Ready<CoOutput>{result};
   }
 
-  SelectFuture(runtime::Future<T1> &&future1, runtime::Future<T2> &&future2)
+  SelectFuture(runtime::Future<T> &&...future)
       : runtime::Future<CoOutput>(nullptr),
-        futures_(std::move(future1), std::move(future2)) {}
+        branch_shared_(
+            std::make_shared<BranchShared<T...>>(std::move(future)...)) {}
 
  private:
-  template <typename T, int Index>
-  auto future_wrapper(runtime::Future<T> future) -> runtime::Future<void> {
-    TypeWrapper<T> result;
-    if constexpr (std::is_same_v<T, void>) {
-      co_await future;
-    } else {
-      result = TypeWrapper<T>{co_await future};
+  template <typename ST>
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
+  auto run_single_branch(Branch<ST> &branch,
+                         std::shared_ptr<BranchShared<T...>> branches)
+      -> runtime::Future<void> {
+    std::unique_lock<std::shared_mutex> guard{branches->branch_mutex_,
+                                              std::defer_lock};
+    try {
+      auto result = co_await std::get<0>(branch);
+      guard.lock();
+      std::get<1>(branch) = result;
+    } catch (runtime::CancelException e) {
+      // Only thrown when one of other branches has finished, so we could ignore
+      // it safely without worrying about dangling `select`.
+      co_return;
+    } catch (...) {
+      guard.lock();
+      std::get<1>(branch) = std::unexpected(std::current_exception());
     }
-    {
-      std::scoped_lock<std::mutex> result_lock(result_mutex_);
-      if (result_.index() == 0) {
-        result_ =
-            std::variant<std::monostate, TypeWrapper<T1>, TypeWrapper<T2>>(
-                std::in_place_index<Index>, result);
-        runtime::RuntimeCtx::get_ctx()->register_future(this);
-      }
-    }
-    if constexpr (Index == 1) {
-      {
-        std::scoped_lock<std::mutex> first_lock(ended_mutex_.first);
-        ended_.first = true;
-      }
-    } else {
-      {
-        std::scoped_lock<std::mutex> second_lock(ended_mutex_.first);
-        ended_.second = true;
-      }
+
+    if (!registered_) {
+      runtime::RuntimeCtx::get_ctx()->register_future(this);
+      registered_ = true;
     }
   }
 
   bool ready_{};
+  bool registered_{};
 
-  std::mutex result_mutex_;
-  std::variant<std::monostate, TypeWrapper<T1>, TypeWrapper<T2>> result_;
-
-  std::pair<runtime::Future<T1>, runtime::Future<T2>> futures_;
-  std::pair<runtime::Handle<runtime::PromiseBase>,
-            runtime::Handle<runtime::PromiseBase>>
-      wrappers_;
-
-  std::pair<std::mutex, std::mutex> ended_mutex_;
-  std::pair<bool, bool> ended_;
+  // `select` returns once any branch completes, which means that the
+  // `SelectFuture` instance may be destructed before some branches complete. So
+  // we define this shared field passed to every branch to extend the lifetime
+  // until all branches finished.
+  std::shared_ptr<BranchShared<T...>> branch_shared_;
 };
 
-template <typename T1, typename T2>
-auto select(runtime::Future<T1> future1, runtime::Future<T2> future2)
-    -> runtime::Future<std::variant<TypeWrapper<T1>, TypeWrapper<T2>>> {
-  co_return co_await SelectFuture<T1, T2>(std::move(future1),
-                                          std::move(future2));
+// Waits until the completion of at least one future.
+// Uncaught exception from a future is also marked as the completion of the
+// branch. `T` cannot contain `void` and the recommended alternative here is
+// `std::nullptr_t`.
+//
+// Return value:
+// A tuple containing results of every branch. At least one of these
+// `std::optional` has a value.
+//
+// Exceptions:
+// If any one of the futures throws an uncaught exception before `select`
+// returns, it finally throws the first exception in a left to right sequence.
+template <typename... T>
+auto select(runtime::Future<T>... future)
+    -> runtime::Future<std::tuple<std::optional<T>...>> {
+  if (sizeof...(T) == 0) {
+    co_return {};
+  }
+
+  co_return co_await SelectFuture<T...>(std::move(future)...);
 }
 }  // namespace xyco::task
 

@@ -1,5 +1,5 @@
-#ifndef XYCO_TIME_SLEEP_H
-#define XYCO_TIME_SLEEP_H
+#ifndef XYCO_TIME_SLEEP_H_
+#define XYCO_TIME_SLEEP_H_
 
 #include "xyco/runtime/future.h"
 #include "xyco/runtime/runtime_ctx.h"
@@ -43,4 +43,4 @@ auto sleep(std::chrono::duration<Rep, Ratio> duration)
 }
 }  // namespace xyco::time
 
-#endif  // XYCO_TIME_SLEEP_H
+#endif  // XYCO_TIME_SLEEP_H_
