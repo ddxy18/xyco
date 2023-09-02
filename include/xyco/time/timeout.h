@@ -8,17 +8,32 @@ namespace xyco::time {
 template <typename T, typename Rep, typename Ratio>
 auto timeout(std::chrono::duration<Rep, Ratio> duration,
              runtime::Future<T> future)
-    -> runtime::Future<std::expected<T, std::nullopt_t>> {
-  auto result = co_await task::select(std::move(future), sleep(duration));
-
-  if (result.index() == 1) {
-    co_return std::unexpected(std::nullopt);
-  }
+    -> runtime::Future<std::expected<T, std::nullptr_t>> {
+  auto wrap_sleep = [](std::chrono::duration<Rep, Ratio> duration)
+      -> runtime::Future<std::nullptr_t> {
+    co_await sleep(duration);
+    co_return nullptr;
+  };
 
   if constexpr (std::is_same_v<T, void>) {
+    auto wrap_future =
+        [](runtime::Future<T> future) -> runtime::Future<std::nullptr_t> {
+      co_await future;
+      co_return nullptr;
+    };
+    auto [result, sleep_result] = co_await task::select(
+        wrap_future(std::move(future)), wrap_sleep(duration));
+    if (sleep_result) {
+      co_return std::unexpected(nullptr);
+    }
     co_return {};
   } else {
-    co_return std::get<0>(result).inner_;
+    auto [result, sleep_result] =
+        co_await task::select(std::move(future), wrap_sleep(duration));
+    if (sleep_result) {
+      co_return std::unexpected(nullptr);
+    }
+    co_return result.value();
   }
 }
 }  // namespace xyco::time
