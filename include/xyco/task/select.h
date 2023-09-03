@@ -12,11 +12,18 @@ using Branch = std::tuple<runtime::Future<T>,
                           std::optional<std::expected<T, std::exception_ptr>>>;
 
 template <typename... T>
+class SelectFuture;
+
+template <typename... T>
 class BranchShared {
  public:
-  BranchShared(runtime::Future<T> &&...future)
-      : branches_({std::make_tuple(std::move(future), std::optional<T>())...}) {
+  BranchShared(SelectFuture<T...> *self, runtime::Future<T> &&...future)
+      : self_(self),
+        branches_({std::make_tuple(std::move(future), std::optional<T>())...}) {
   }
+
+  bool registered_{};
+  SelectFuture<T...> *self_;
 
   std::shared_mutex branch_mutex_;
   std::tuple<Branch<T>...> branches_;
@@ -68,13 +75,33 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
   SelectFuture(runtime::Future<T> &&...future)
       : runtime::Future<CoOutput>(nullptr),
         branch_shared_(
-            std::make_shared<BranchShared<T...>>(std::move(future)...)) {}
+            std::make_shared<BranchShared<T...>>(this, std::move(future)...)) {}
+
+  ~SelectFuture() {
+    if (branch_shared_) {
+      branch_shared_->self_ = nullptr;
+    }
+  }
+
+  SelectFuture(const SelectFuture<T...> &future) = delete;
+
+  SelectFuture(SelectFuture<T...> &&future) noexcept {
+    *this = std::move(future);
+  }
+
+  auto operator=(const SelectFuture<T...> &future)
+      -> SelectFuture<T...> & = delete;
+
+  auto operator=(SelectFuture<T...> &&future) noexcept -> SelectFuture<T...> & {
+    ready_ = future.ready_;
+    branch_shared_ = std::move(future.branch_shared_);
+  }
 
  private:
   template <typename ST>
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
-  auto run_single_branch(Branch<ST> &branch,
-                         std::shared_ptr<BranchShared<T...>> branches)
+  static auto run_single_branch(Branch<ST> &branch,
+                                std::shared_ptr<BranchShared<T...>> branches)
       -> runtime::Future<void> {
     std::unique_lock<std::shared_mutex> guard{branches->branch_mutex_,
                                               std::defer_lock};
@@ -91,14 +118,15 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
       std::get<1>(branch) = std::unexpected(std::current_exception());
     }
 
-    if (!registered_) {
-      runtime::RuntimeCtx::get_ctx()->register_future(this);
-      registered_ = true;
+    if (!branches->registered_) {
+      if (branches->self_) {
+        runtime::RuntimeCtx::get_ctx()->register_future(branches->self_);
+        branches->registered_ = true;
+      }
     }
   }
 
   bool ready_{};
-  bool registered_{};
 
   // `select` returns once any branch completes, which means that the
   // `SelectFuture` instance may be destructed before some branches complete. So
