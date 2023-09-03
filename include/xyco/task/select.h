@@ -77,6 +77,26 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
         branch_shared_(
             std::make_shared<BranchShared<T...>>(this, std::move(future)...)) {}
 
+  ~SelectFuture() {
+    if (branch_shared_) {
+      branch_shared_->self_ = nullptr;
+    }
+  }
+
+  SelectFuture(const SelectFuture<T...> &future) = delete;
+
+  SelectFuture(SelectFuture<T...> &&future) noexcept {
+    *this = std::move(future);
+  }
+
+  auto operator=(const SelectFuture<T...> &future)
+      -> SelectFuture<T...> & = delete;
+
+  auto operator=(SelectFuture<T...> &&future) noexcept -> SelectFuture<T...> & {
+    ready_ = future.ready_;
+    branch_shared_ = std::move(future.branch_shared_);
+  }
+
  private:
   template <typename ST>
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
@@ -99,13 +119,14 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
     }
 
     if (!branches->registered_) {
-      runtime::RuntimeCtx::get_ctx()->register_future(branches->self_);
-      branches->registered_ = true;
+      if (branches->self_) {
+        runtime::RuntimeCtx::get_ctx()->register_future(branches->self_);
+        branches->registered_ = true;
+      }
     }
   }
 
   bool ready_{};
-  bool registered_{};
 
   // `select` returns once any branch completes, which means that the
   // `SelectFuture` instance may be destructed before some branches complete. So
