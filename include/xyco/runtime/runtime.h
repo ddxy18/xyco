@@ -63,6 +63,7 @@ class Runtime {
   template <typename T>
   auto block_on(Future<T> future) -> T {
     std::optional<T> result;
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     auto blocking_future = [&](Runtime *runtime, auto future) -> Future<void> {
       result = co_await future;
       runtime->in_place_worker_.stop();
@@ -71,12 +72,13 @@ class Runtime {
 
     in_place_worker_.run_in_place(this);
 
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     return std::move(*result);
   }
 
   template <>
   auto block_on(Future<void> future) -> void {
-    auto blocking_future = [&](Runtime *runtime, auto future) -> Future<void> {
+    auto blocking_future = [](Runtime *runtime, auto future) -> Future<void> {
       co_await future;
       runtime->in_place_worker_.stop();
     };

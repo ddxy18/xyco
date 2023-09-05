@@ -74,17 +74,19 @@ TEST(OneshotTest, receive_first) {
   auto send_result = std::expected<void, int>();
 
   std::thread receive([&]() {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
       value = *co_await channel_pair.second.receive();
-    });
+    }());
   });
 
   std::this_thread::sleep_for(wait_interval);  // wait receive pending
 
   std::thread send([&]() {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
       send_result = co_await channel_pair.first.send(1);
-    });
+    }());
   });
 
   receive.join();

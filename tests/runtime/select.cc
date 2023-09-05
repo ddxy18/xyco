@@ -25,19 +25,22 @@ TEST_F(SelectTest, select_null) {
   auto [result] =
       TestRuntimeCtx::runtime()->block_on(xyco::task::select(null_co()));
 
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   CO_ASSERT_EQ(result.value(), nullptr);
 }
 
 TEST_F(SelectTest, select_empty) {
-  auto result = TestRuntimeCtx::runtime()->block_on(xyco::task::select());
+  [[maybe_unused]] auto result =
+      TestRuntimeCtx::runtime()->block_on(xyco::task::select());
 
-  CO_ASSERT_EQ(std::tuple_size<decltype(result)>(), 0);
+  CO_ASSERT_EQ(std::tuple_size_v<decltype(result)>, 0);
 }
 
 TEST_F(SelectTest, select_one) {
   auto [result] =
       TestRuntimeCtx::runtime()->block_on(xyco::task::select(int_co()));
 
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   CO_ASSERT_EQ(result.value(), 1);
 }
 
@@ -45,6 +48,7 @@ TEST_F(SelectTest, select_two) {
   auto [result_first, result_second] = TestRuntimeCtx::runtime()->block_on(
       xyco::task::select(int_co(), str_co()));
 
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   CO_ASSERT_EQ(result_first.value(), 1);
 }
 
@@ -53,6 +57,7 @@ TEST_F(SelectTest, select_three) {
       TestRuntimeCtx::runtime()->block_on(
           xyco::task::select(int_co(), str_co(), null_co()));
 
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   CO_ASSERT_EQ(result_first.value(), 1);
 }
 
@@ -66,8 +71,10 @@ TEST_F(SelectTest, select_delay) {
   constexpr std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3);
 
   TestRuntimeCtx::co_run(
-      [&]() -> xyco::runtime::Future<void> {
+      [](const std::chrono::milliseconds timeout_ms)
+          -> xyco::runtime::Future<void> {
         auto common_value = -1;
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         auto co1 = [&]() -> xyco::runtime::Future<int> {
           co_await xyco::time::sleep(2 * timeout_ms);
 
@@ -76,6 +83,7 @@ TEST_F(SelectTest, select_delay) {
           co_return 1;
         };
 
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
         auto co2 = [&]() -> xyco::runtime::Future<std::string> {
           co_await xyco::time::sleep(timeout_ms);
 
@@ -91,7 +99,7 @@ TEST_F(SelectTest, select_delay) {
 
         CO_ASSERT_EQ(result_second.value(), "abc");
         CO_ASSERT_EQ(common_value, 2);  // co1 is cancelled
-      },
+      }(timeout_ms),
       {timeout_ms + std::chrono::milliseconds(1),
        timeout_ms + std::chrono::milliseconds(2)});
 }

@@ -64,18 +64,20 @@ TEST(MpscTest, send_to_full_channel) {
   auto send_result = std::expected<void, int>();
 
   std::thread send([&]() {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
       co_await channel_pair.first.send(1);
       send_result = co_await channel_pair.first.send(2);
-    });
+    }());
   });
 
   std::this_thread::sleep_for(wait_interval);  // wait sender pending
 
   std::thread receive([&]() {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
       value = *co_await channel_pair.second.receive();
-    });
+    }());
   });
 
   send.join();
@@ -92,17 +94,19 @@ TEST(MpscTest, receive_from_empty_channel) {
   auto send_result = std::expected<void, int>();
 
   std::thread receive([&]() {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
       value = *co_await channel_pair.second.receive();
-    });
+    }());
   });
 
   std::this_thread::sleep_for(wait_interval);  // wait receive pending
 
   std::thread send([&]() {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     TestRuntimeCtx::co_run([&]() -> xyco::runtime::Future<void> {
       send_result = co_await channel_pair.first.send(1);
-    });
+    }());
   });
 
   receive.join();

@@ -68,7 +68,7 @@ class Sender {
     }
   }
 
-  Sender(std::shared_ptr<Shared<Value>> shared) : shared_(shared) {}
+  Sender(std::shared_ptr<Shared<Value>> shared) : shared_(std::move(shared)) {}
 
   std::shared_ptr<Shared<Value>> shared_;
 };
@@ -81,6 +81,7 @@ class Receiver {
   auto receive() -> runtime::Future<std::expected<Value, std::nullopt_t>> {
     using FutureReturn = std::expected<Value, std::nullopt_t>;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
     class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Receiver<Value> *self)
@@ -91,8 +92,9 @@ class Receiver {
         if (self_->shared_ == nullptr) {
           return runtime::Ready<FutureReturn>{std::unexpected(std::nullopt)};
         }
-        if (self_->shared_->value_) {
-          return runtime::Ready<FutureReturn>{*self_->shared_->value_};
+        auto shared_value = self_->shared_->value_;
+        if (shared_value.has_value()) {
+          return runtime::Ready<FutureReturn>{*shared_value};
         }
         if (self_->shared_->state_ == Shared<Value>::sender_closed) {
           return runtime::Ready<FutureReturn>{std::unexpected(std::nullopt)};
@@ -129,7 +131,8 @@ class Receiver {
     }
   }
 
-  Receiver(std::shared_ptr<Shared<Value>> shared) : shared_(shared) {}
+  Receiver(std::shared_ptr<Shared<Value>> shared)
+      : shared_(std::move(shared)) {}
 
   std::shared_ptr<Shared<Value>> shared_;
 };

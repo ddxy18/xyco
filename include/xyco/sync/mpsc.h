@@ -46,6 +46,8 @@ class Sender {
  public:
   auto send(Value value) -> runtime::Future<std::expected<void, Value>> {
     using FutureReturn = std::expected<void, Value>;
+
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
     class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Sender<Value, Size> *self, Value value)
@@ -119,7 +121,8 @@ class Sender {
     }
   }
 
-  Sender(std::shared_ptr<Shared<Value, Size>> shared) : shared_(shared) {}
+  Sender(std::shared_ptr<Shared<Value, Size>> shared)
+      : shared_(std::move(shared)) {}
 
   std::shared_ptr<Shared<Value, Size>> shared_;
 };
@@ -133,6 +136,7 @@ class Receiver {
   auto receive() -> runtime::Future<std::optional<Value>> {
     using FutureReturn = std::optional<Value>;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
     class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Receiver<Value, Size> *self)
@@ -196,7 +200,8 @@ class Receiver {
     }
   }
 
-  Receiver(std::shared_ptr<Shared<Value, Size>> shared) : shared_(shared) {}
+  Receiver(std::shared_ptr<Shared<Value, Size>> shared)
+      : shared_(std::move(shared)) {}
 
   std::shared_ptr<Shared<Value, Size>> shared_;
 };

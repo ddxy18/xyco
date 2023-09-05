@@ -16,7 +16,7 @@ TEST(ClockDeathTest, system_clock) {
 
         ASSERT_EQ(gap.count(), 0);
 
-        std::exit(0);
+        std::quick_exit(0);
       },
       testing::ExitedWithCode(0), "");
 }
@@ -35,7 +35,7 @@ TEST(ClockDeathTest, steady_clock) {
 
         ASSERT_EQ(gap.count(), 0);
 
-        std::exit(0);
+        std::quick_exit(0);
       },
       testing::ExitedWithCode(0), "");
 }
@@ -52,7 +52,7 @@ TEST(ClockDeathTest, frozen_clock) {
 
         ASSERT_EQ(gap.count(), 1);
 
-        std::exit(0);
+        std::quick_exit(0);
       },
       testing::ExitedWithCode(0), "");
 }

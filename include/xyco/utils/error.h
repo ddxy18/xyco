@@ -17,7 +17,7 @@ class Error {
  public:
   static auto from_sys_error() -> Error;
 
-  int errno_;
+  int errno_{};
   std::string info_;
 };
 

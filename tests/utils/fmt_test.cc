@@ -49,10 +49,10 @@ TEST(FmtTypeTest, AsyncFutureExtra_Event) {
 }
 
 TEST(FmtTypeTest, SocketAddr_ipv4) {
-  const char *ip = "127.0.0.1";
+  const char *ip_addr = "127.0.0.1";
   const uint16_t port = 80;
 
-  auto local_http_addr = xyco::net::SocketAddr::new_v4(ip, port);
+  auto local_http_addr = xyco::net::SocketAddr::new_v4(ip_addr, port);
 
   auto fmt_str = std::format("{}", local_http_addr);
 
@@ -60,10 +60,10 @@ TEST(FmtTypeTest, SocketAddr_ipv4) {
 }
 
 TEST(FmtTypeTest, SocketAddr_ipv6) {
-  const char *ip = "0:0:0:0:0:0:0:1";
+  const char *ip_addr = "0:0:0:0:0:0:0:1";
   const uint16_t port = 80;
 
-  auto local_http_addr = xyco::net::SocketAddr::new_v6(ip, port);
+  auto local_http_addr = xyco::net::SocketAddr::new_v6(ip_addr, port);
 
   auto fmt_str = std::format("{}", local_http_addr);
 

@@ -11,44 +11,21 @@
 #include "xyco/runtime/runtime.h"
 #include "xyco/time/clock.h"
 
-#define CO_ASSERT_EQ(val1, val2)               \
-  ({                                           \
-    auto f = [&]() { ASSERT_EQ(val1, val2); }; \
-    f();                                       \
-  })
+template <typename T1, typename T2>
+constexpr auto CO_ASSERT_EQ(T1 val1, T2 val2) {
+  auto assert_eq_wrapper = [&]() { ASSERT_EQ(val1, val2); };
+  assert_eq_wrapper();
+}
 
 constexpr std::chrono::milliseconds wait_interval(5);
-
-class TestRuntimeCtxGuard {
- public:
-  TestRuntimeCtxGuard(
-      gsl::owner<std::function<xyco::runtime::Future<void>()> *> co_wrapper,
-      bool in_runtime);
-
-  TestRuntimeCtxGuard(const TestRuntimeCtxGuard &guard) = delete;
-
-  TestRuntimeCtxGuard(TestRuntimeCtxGuard &&guard) = delete;
-
-  auto operator=(const TestRuntimeCtxGuard &guard)
-      -> TestRuntimeCtxGuard & = delete;
-
-  auto operator=(TestRuntimeCtxGuard &&guard) -> TestRuntimeCtxGuard & = delete;
-
-  ~TestRuntimeCtxGuard();
-
- private:
-  gsl::owner<std::function<xyco::runtime::Future<void>()> *> co_wrapper_;
-};
 
 class TestRuntimeCtx {
  public:
   // run until co finished
-  template <typename Fn>
-  static auto co_run(Fn &&coroutine,
-                     std::vector<std::chrono::milliseconds> &&time_steps = {})
-      -> void
-    requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>)
-  {
+  template <typename T>
+  static auto co_run(xyco::runtime::Future<T> coroutine,
+                     std::vector<std::chrono::milliseconds> time_steps = {})
+      -> void {
     // co_outer's lifetime is managed by the caller to avoid being destroyed
     // automatically before resumed.
 
@@ -56,46 +33,20 @@ class TestRuntimeCtx {
     std::unique_lock<std::mutex> lock_guard(mutex);
     std::condition_variable condition_variable;
 
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     auto co_outer = [&]() -> xyco::runtime::Future<void> {
-      try {
-        std::thread t([&]() {
-          for (const auto &step : time_steps) {
-            std::this_thread::sleep_for(clock_interval_);
-            xyco::time::FrozenClock::advance(step);
-          }
-        });
-        co_await coroutine();
-        t.join();
-        condition_variable.notify_one();
-      } catch (std::exception e) {
-        [&]() { ASSERT_NO_THROW(throw e); }();
-        condition_variable.notify_one();
-      }
+      std::thread clock_driver([&]() {
+        for (const auto &step : time_steps) {
+          std::this_thread::sleep_for(clock_interval_);
+          xyco::time::FrozenClock::advance(step);
+        }
+      });
+      co_await coroutine;
+      clock_driver.join();
+      condition_variable.notify_one();
     };
     runtime_->spawn(co_outer());
     condition_variable.wait(lock_guard);
-  }
-
-  template <typename Fn>
-  static auto co_run_no_wait(Fn &&coroutine) -> TestRuntimeCtxGuard
-    requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>)
-  {
-    auto *co_outer = gsl::owner<std::function<xyco::runtime::Future<void>()> *>(
-        new std::function<xyco::runtime::Future<void>()>(
-            [=]() -> xyco::runtime::Future<void> { co_await coroutine(); }));
-
-    return {co_outer, true};
-  }
-
-  template <typename Fn>
-  static auto co_run_without_runtime(Fn &&coroutine) -> TestRuntimeCtxGuard
-    requires(std::is_invocable_r_v<xyco::runtime::Future<void>, Fn>)
-  {
-    auto *co_outer = gsl::owner<std::function<xyco::runtime::Future<void>()> *>(
-        new std::function<xyco::runtime::Future<void>()>(
-            [=]() -> xyco::runtime::Future<void> { co_await coroutine(); }));
-
-    return {co_outer, false};
   }
 
   static auto runtime() -> xyco::runtime::Runtime * { return runtime_.get(); }

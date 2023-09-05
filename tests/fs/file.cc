@@ -10,6 +10,8 @@ class FileTest : public ::testing::Test {
   static void TearDownTestSuite() { std::filesystem::remove_all(fs_root_); }
 
   static const char *fs_root_;
+
+  static constexpr auto OWNER_READ_FLAG = 0400;
 };
 
 const char *FileTest::fs_root_ = "test_root/";
@@ -142,7 +144,7 @@ TEST_F(FileTest, append_file) {
     *co_await append_result->write(content.begin(), content.end());
 
     auto size = *co_await append_result->size();
-    CO_ASSERT_EQ(size, 6);
+    CO_ASSERT_EQ(size, 2 * content.size());
   }());
 }
 
@@ -155,7 +157,7 @@ TEST_F(FileTest, file_permisssion) {
          .create(true)
          .write(true)
          .truncate(true)
-         .mode(0400)
+         .mode(OWNER_READ_FLAG)
          .open(file_path);
     auto open_result =
         co_await xyco::fs::OpenOptions().write(true).open(file_path);
@@ -189,7 +191,7 @@ TEST_F(FileTest, file_status) {
     auto file = *co_await xyco::fs::OpenOptions()
                      .create(true)
                      .write(true)
-                     .mode(0400)
+                     .mode(OWNER_READ_FLAG)
                      .open(file_path);
 
     auto status = *co_await file.status();

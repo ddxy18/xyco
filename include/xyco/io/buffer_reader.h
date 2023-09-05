@@ -13,7 +13,7 @@ class BufferReader {
   auto read(typename B::iterator begin, typename B::iterator end)
       -> runtime::Future<utils::Result<uintptr_t>> {
     auto len = std::distance(begin, end);
-    if (len <= cap_ - pos_) {
+    if (len <= static_cast<B::difference_type>(cap_ - pos_)) {
       std::copy(std::begin(buffer_) + pos_, std::begin(buffer_) + pos_ + len,
                 begin);
       consume(len);

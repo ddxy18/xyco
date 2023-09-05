@@ -10,6 +10,7 @@ namespace xyco::time {
 template <typename Rep, typename Ratio>
 auto sleep(std::chrono::duration<Rep, Ratio> duration)
     -> runtime::Future<void> {
+  // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   class Future : public runtime::Future<void> {
    public:
     explicit Future(std::chrono::duration<Rep, Ratio> duration)
