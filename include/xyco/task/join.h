@@ -19,7 +19,7 @@ class JoinFuture : public runtime::Future<std::tuple<T...>> {
       std::apply(
           [this](auto &...branch) {
             (runtime::RuntimeCtx::get_ctx()->get_runtime()->spawn(
-                 run_single_branch<T>(branch)),
+                 this->run_single_branch<T>(branch)),
              ...);
           },
           branches_);
@@ -65,6 +65,7 @@ class JoinFuture : public runtime::Future<std::tuple<T...>> {
       }
 
       auto all_completed = std::apply(
+          // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
           [](auto &...branch) {
             auto branch_state_array =
                 std::array<bool, sizeof...(T)>{branch.second.has_value()...};

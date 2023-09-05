@@ -33,6 +33,7 @@ auto timeout(std::chrono::duration<Rep, Ratio> duration,
     if (sleep_result) {
       co_return std::unexpected(nullptr);
     }
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     co_return result.value();
   }
 }

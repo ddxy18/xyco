@@ -77,7 +77,7 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
         branch_shared_(
             std::make_shared<BranchShared<T...>>(this, std::move(future)...)) {}
 
-  ~SelectFuture() {
+  ~SelectFuture() override {
     if (branch_shared_) {
       branch_shared_->self_ = nullptr;
     }

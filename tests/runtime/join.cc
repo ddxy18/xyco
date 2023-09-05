@@ -20,9 +20,10 @@ TEST(JoinTest, join_null) {
 }
 
 TEST(JoinTest, join_empty) {
-  auto empty_tuple = TestRuntimeCtx::runtime()->block_on(xyco::task::join());
+  [[maybe_unused]] auto empty_tuple =
+      TestRuntimeCtx::runtime()->block_on(xyco::task::join());
 
-  ASSERT_EQ(std::tuple_size<decltype(empty_tuple)>(), 0);
+  ASSERT_EQ(std::tuple_size_v<decltype(empty_tuple)>, 0);
 }
 
 TEST(JoinTest, join_one) {

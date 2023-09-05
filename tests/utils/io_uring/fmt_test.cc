@@ -28,13 +28,14 @@ TEST(FmtTypeTest, IoExtra_Event) {
   fmt_str = std::format("{}", event);
   ASSERT_EQ(fmt_str, "Event{extra_=IoExtra{args_=Close{}, fd_=1, return_=0}}");
 
+  constexpr auto port = 8888;
   in_addr char_addr{};
   sockaddr_in addr{};
   socklen_t len = 0;
   ::inet_pton(AF_INET, "127.0.0.1", &char_addr);
   addr.sin_family = AF_INET;
   addr.sin_addr = char_addr;
-  addr.sin_port = 8888;
+  addr.sin_port = port;
   extra->args_ = xyco::io::IoExtra::Accept{
       .addr_ = static_cast<sockaddr *>(static_cast<void *>(&addr)),
       .addrlen_ = &len,
@@ -47,7 +48,7 @@ TEST(FmtTypeTest, IoExtra_Event) {
   ::inet_pton(AF_INET, "127.0.0.1", &char_addr);
   addr.sin_family = AF_INET;
   addr.sin_addr = char_addr;
-  addr.sin_port = 8888;
+  addr.sin_port = port;
   extra->args_ = xyco::io::IoExtra::Connect{
       .addr_ = static_cast<sockaddr *>(static_cast<void *>(&addr)),
       .addrlen_ = sizeof(addr)};

@@ -87,11 +87,11 @@ TEST(TcpTest, TcpListener_bind) {
 
 TEST(TcpTest, connect_to_closed_server) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
-    const char *ip = "127.0.0.1";
+    const char *server_ip = "127.0.0.1";
     const uint16_t port = 9000;
 
     auto client = co_await xyco::net::TcpStream::connect(
-        xyco::net::SocketAddr::new_v4(ip, port));
+        xyco::net::SocketAddr::new_v4(server_ip, port));
 
     CO_ASSERT_EQ(client.error().errno_, ECONNREFUSED);
   }());
