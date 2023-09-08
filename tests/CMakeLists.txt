@@ -48,7 +48,6 @@ add_executable(
   utils/epoll/fmt_test.cc
   utils/fmt_test.cc)
 target_link_libraries(xyco_test_epoll PRIVATE common_epoll)
-gtest_discover_tests(xyco_test_epoll)
 
 add_executable(
   xyco_test_uring
@@ -69,4 +68,3 @@ add_executable(
   utils/io_uring/fmt_test.cc
   utils/fmt_test.cc)
 target_link_libraries(xyco_test_uring PRIVATE common_uring)
-gtest_discover_tests(xyco_test_uring)
