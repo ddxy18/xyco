@@ -152,7 +152,7 @@ auto xyco::io::epoll::IoRegistryImpl::select(runtime::Events &events,
         });
     dynamic_cast<io::epoll::IoExtra *>(ready_event->get()->extra_.get())
         ->state_ = to_state(epoll_events.at(i).events);
-    TRACE("select {}", *ready_event->get());
+    TRACE("select {}", **ready_event);
     events.push_back(*ready_event);
     registered_events_.erase(ready_event);
   }
