@@ -119,8 +119,8 @@ target_sources(
 target_include_directories(runtime_ctx PUBLIC include)
 target_link_libraries(
   runtime_ctx
-  INTERFACE result error overload panic
-  PUBLIC future)
+  INTERFACE result overload panic
+  PUBLIC error future)
 if(XYCO_ENABLE_LOGGING)
   target_link_libraries(runtime_ctx INTERFACE logging)
 endif(XYCO_ENABLE_LOGGING)
