@@ -5,6 +5,7 @@
 #include <sys/sysmacros.h>
 #include <unistd.h>
 
+#include <expected>
 #include <filesystem>
 #include <utility>
 

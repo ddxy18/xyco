@@ -1,9 +1,11 @@
-#include "xyco/utils/panic.h"
+module;
 
 #include <format>
 #include <iostream>
 
 #include "boost/stacktrace.hpp"
+
+module xyco.panic;
 
 auto xyco::utils::panic(const std::string &info) -> void {
   auto unwind_info = std::format("Panic:{}\n{}", info,

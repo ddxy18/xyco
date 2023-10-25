@@ -4,7 +4,8 @@
 #include <concepts>
 
 #include "xyco/runtime/future.h"
-#include "xyco/utils/error.h"
+
+import xyco.error;
 
 namespace xyco::io {
 template <typename Seeker>

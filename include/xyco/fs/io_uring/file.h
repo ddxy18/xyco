@@ -11,8 +11,9 @@
 #include "xyco/io/io_uring/registry.h"
 #include "xyco/runtime/runtime_ctx.h"
 #include "xyco/task/blocking_task.h"
-#include "xyco/utils/error.h"
 #include "xyco/utils/logger.h"
+
+import xyco.error;
 
 namespace xyco::fs::uring {
 class File {

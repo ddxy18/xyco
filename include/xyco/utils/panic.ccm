@@ -1,11 +1,10 @@
-#ifndef XYCO_UTILS_PANIC_H_
-#define XYCO_UTILS_PANIC_H_
+module;
 
 #include <string>
 
-namespace xyco::utils {
+export module xyco.panic;
+
+export namespace xyco::utils {
 // Terminates current thread
 auto panic(const std::string &info = "") -> void;
 }  // namespace xyco::utils
-
-#endif  // XYCO_UTILS_PANIC_H_

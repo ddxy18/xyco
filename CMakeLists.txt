@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24.0)
+cmake_minimum_required(VERSION 3.28.0)
 
 project(
   xyco
@@ -46,7 +46,15 @@ endif()
 # External dependencies ought to be declared ahead to skip linting for them
 if(ENABLE_LINTING)
   add_compile_options(-Wall -Wextra -Wdeprecated -Werror)
-  set(CMAKE_CXX_CLANG_TIDY clang-tidy-$ENV{LLVM_VERSION})
+  set(CMAKE_CXX_CLANG_TIDY
+      clang-tidy-$ENV{LLVM_VERSION}
+      # All BMI locations should be added manually here as the
+      # explanation(https://discourse.llvm.org/t/clang-tidy-doesnt-find-standard-c-modules-despite-providing-compilation-database-and-prebuilt-modules-path/71326/2)
+      # instructs in the solution (2).
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/error.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/overload.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/panic.dir/
+  )
 endif(ENABLE_LINTING)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -73,8 +81,8 @@ target_link_libraries(future PUBLIC GSL ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
 
 add_library(panic src/utils/panic.cc)
 add_library(xyco::panic ALIAS panic)
-target_sources(panic PUBLIC include/xyco/utils/panic.h)
-target_include_directories(panic PUBLIC include)
+target_sources(panic PUBLIC FILE_SET panic_module TYPE CXX_MODULES FILES
+                            include/xyco/utils/panic.ccm)
 target_link_libraries(panic PRIVATE ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
 
 add_library(result INTERFACE)
@@ -82,10 +90,10 @@ add_library(xyco::result ALIAS result)
 target_sources(result INTERFACE include/xyco/utils/result.h)
 target_include_directories(result INTERFACE include)
 
-add_library(overload INTERFACE)
+add_library(overload)
 add_library(xyco::overload ALIAS overload)
-target_sources(overload INTERFACE include/xyco/utils/overload.h)
-target_include_directories(overload INTERFACE include)
+target_sources(overload PUBLIC FILE_SET overload_module TYPE CXX_MODULES FILES
+                               include/xyco/utils/overload.ccm)
 
 add_library(logging src/utils/logger.cc)
 add_library(xyco::logging ALIAS logging)
@@ -98,9 +106,8 @@ target_compile_definitions(logging PUBLIC XYCO_ENABLE_LOG)
 
 add_library(error src/utils/error.cc)
 add_library(xyco::error ALIAS error)
-target_sources(error PUBLIC include/xyco/utils/error.h)
-target_include_directories(error PUBLIC include)
-target_link_libraries(error PUBLIC result)
+target_sources(error PUBLIC FILE_SET error_module TYPE CXX_MODULES FILES
+                            include/xyco/utils/error.ccm)
 
 add_library(runtime_ctx src/runtime/runtime_ctx.cc src/runtime/driver.cc)
 add_library(xyco::runtime_ctx ALIAS runtime_ctx)
@@ -112,8 +119,8 @@ target_sources(
 target_include_directories(runtime_ctx PUBLIC include)
 target_link_libraries(
   runtime_ctx
-  INTERFACE result error overload panic
-  PUBLIC future)
+  INTERFACE result overload panic
+  PUBLIC error future)
 if(XYCO_ENABLE_LOGGING)
   target_link_libraries(runtime_ctx INTERFACE logging)
 endif(XYCO_ENABLE_LOGGING)

@@ -3,11 +3,13 @@
 #include <arpa/inet.h>
 
 #include <cerrno>
+#include <expected>
 
 #include "xyco/io/epoll/extra.h"
 #include "xyco/task/blocking_task.h"
-#include "xyco/utils/error.h"
 #include "xyco/utils/result.h"
+
+import xyco.error;
 
 template <typename T>
 using Future = xyco::runtime::Future<T>;

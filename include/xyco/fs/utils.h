@@ -4,7 +4,8 @@
 #include <filesystem>
 
 #include "xyco/runtime/future.h"
-#include "xyco/utils/error.h"
+
+import xyco.error;
 
 namespace xyco::fs {
 auto rename(std::filesystem::path old_path, std::filesystem::path new_path)

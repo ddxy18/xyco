@@ -3,7 +3,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "xyco/utils/error.h"
+import xyco.error;
 
 auto xyco::net::SocketAddrV4::get_port() const -> uint16_t {
   return ntohs(inner_.sin_port);

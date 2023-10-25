@@ -1,7 +1,9 @@
 #ifndef XYCO_RUNTIME_REGISTRY_H_
 #define XYCO_RUNTIME_REGISTRY_H_
 
-#include "xyco/utils/error.h"
+#include <format>
+
+import xyco.error;
 
 namespace xyco::runtime {
 class FutureBase;

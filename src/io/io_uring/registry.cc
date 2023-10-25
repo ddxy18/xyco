@@ -3,7 +3,8 @@
 #include "xyco/io/io_uring/extra.h"
 #include "xyco/runtime/registry.h"
 #include "xyco/utils/logger.h"
-#include "xyco/utils/panic.h"
+
+import xyco.panic;
 
 auto xyco::io::uring::IoRegistryImpl::Register(
     std::shared_ptr<runtime::Event> event) -> utils::Result<void> {

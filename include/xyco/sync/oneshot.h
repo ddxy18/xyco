@@ -2,6 +2,7 @@
 #define XYCO_SYNC_ONESHOT_H
 
 #include <atomic>
+#include <expected>
 
 #include "xyco/runtime/future.h"
 #include "xyco/runtime/runtime_ctx.h"

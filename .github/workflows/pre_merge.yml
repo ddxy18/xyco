@@ -16,13 +16,13 @@ jobs:
       - uses: actions/checkout@v3
       - name: install essential packages
         run: |
-          sudo apt-get install -y ninja-build liburing-dev libboost-all-dev
-          sudo bash scripts/install_llvm.sh $llvm_version
+          sudo apt-get install -y liburing-dev libboost-all-dev
+          sudo bash scripts/install_build_toolchain.sh $llvm_version
       - name: build
         run: |
           find . -type f \( -name \*.cc -or -name \*.h \) -not -path ./build/\* | xargs clang-format-$llvm_version --Werror --fcolor-diagnostics --dry-run --verbose
-          LLVM_VERSION=$llvm_version cmake --workflow --preset ci_linting_with_logging_off
-          LLVM_VERSION=$llvm_version cmake --workflow --preset ci_linting_with_logging_on
+          LLVM_VERSION=$llvm_version /usr/bin/cmake --workflow --preset ci_linting_with_logging_off
+          LLVM_VERSION=$llvm_version /usr/bin/cmake --workflow --preset ci_linting_with_logging_on
 
   cpp-test:
     runs-on: ubuntu-22.04
@@ -30,12 +30,12 @@ jobs:
       - uses: actions/checkout@v3
       - name: install essential packages
         run: |
-          sudo apt-get install -y ninja-build lcov liburing-dev libboost-all-dev
-          sudo bash scripts/install_llvm.sh $llvm_version
+          sudo apt-get install -y lcov liburing-dev libboost-all-dev
+          sudo bash scripts/install_build_toolchain.sh $llvm_version
       - name: test
         run: |
           BINARY_DIR=build/enable_logging/tests
-          LLVM_VERSION=$llvm_version cmake --workflow --preset ci_test
+          LLVM_VERSION=$llvm_version /usr/bin/cmake --workflow --preset ci_test
           LLVM_PROFILE_FILE="$BINARY_DIR/xyco_test_epoll.profraw" $BINARY_DIR/xyco_test_epoll --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
           llvm-profdata-$llvm_version merge -sparse $BINARY_DIR/xyco_test_epoll.profraw -o $BINARY_DIR/xyco_test_epoll.profdata
           llvm-cov-$llvm_version show $BINARY_DIR/xyco_test_epoll -ignore-filename-regex=build -instr-profile=$BINARY_DIR/xyco_test_epoll.profdata > coverage_epoll.txt
