@@ -4,9 +4,9 @@
 #include <format>
 
 import xyco.error;
+import xyco.future;
 
 namespace xyco::runtime {
-class FutureBase;
 class Registry;
 class Event;
 using Events = std::vector<std::shared_ptr<Event>>;

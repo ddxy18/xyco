@@ -2,6 +2,7 @@
 
 #include <arpa/inet.h>
 
+#include <coroutine>
 #include <variant>
 
 #include "xyco/task/blocking_task.h"

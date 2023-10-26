@@ -5,9 +5,9 @@
 #include <span>
 
 #include "xyco/io/utils.h"
-#include "xyco/runtime/future.h"
 
 import xyco.error;
+import xyco.future;
 
 namespace xyco::io {
 template <typename Writer, typename Iterator>

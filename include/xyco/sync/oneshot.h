@@ -4,7 +4,6 @@
 #include <atomic>
 #include <expected>
 
-#include "xyco/runtime/future.h"
 #include "xyco/runtime/runtime_ctx.h"
 
 namespace xyco::sync::oneshot {

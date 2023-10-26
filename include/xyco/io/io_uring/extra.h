@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include <variant>
+
 #include "xyco/io/write.h"
 #include "xyco/runtime/registry.h"
 

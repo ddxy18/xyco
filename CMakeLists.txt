@@ -52,6 +52,7 @@ if(XYCO_ENABLE_LINTING)
       # explanation(https://discourse.llvm.org/t/clang-tidy-doesnt-find-standard-c-modules-despite-providing-compilation-database-and-prebuilt-modules-path/71326/2)
       # instructs in the solution (2).
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/error.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/future.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/overload.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/panic.dir/
   )
@@ -75,8 +76,8 @@ target_link_libraries(xyco_uring_main io_uring net_uring runtime)
 
 add_library(future src/runtime/future.cc)
 add_library(xyco::future ALIAS future)
-target_sources(future PUBLIC include/xyco/runtime/future.h)
-target_include_directories(future PUBLIC include)
+target_sources(future PUBLIC FILE_SET future_module TYPE CXX_MODULES FILES
+                             include/xyco/runtime/future.ccm)
 target_link_libraries(future PUBLIC GSL ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
 
 add_library(panic src/utils/panic.cc)

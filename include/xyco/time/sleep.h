@@ -1,7 +1,6 @@
 #ifndef XYCO_TIME_SLEEP_H_
 #define XYCO_TIME_SLEEP_H_
 
-#include "xyco/runtime/future.h"
 #include "xyco/runtime/runtime_ctx.h"
 #include "xyco/time/clock.h"
 #include "xyco/time/driver.h"

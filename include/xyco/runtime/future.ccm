@@ -1,5 +1,4 @@
-#ifndef XYCO_RUNTIME_FUTURE_H_
-#define XYCO_RUNTIME_FUTURE_H_
+module;
 
 #include <coroutine>
 #include <exception>
@@ -10,7 +9,9 @@
 
 #include "boost/stacktrace.hpp"
 
-namespace xyco::runtime {
+export module xyco.future;
+
+export namespace xyco::runtime {
 class FutureBase;
 template <typename Output>
 class Future;
@@ -356,5 +357,3 @@ class Future<void> : public FutureBase {
   bool cancelled_{};
 };
 }  // namespace xyco::runtime
-
-#endif  // XYCO_RUNTIME_FUTURE_H_

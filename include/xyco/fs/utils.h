@@ -3,7 +3,7 @@
 
 #include <filesystem>
 
-#include "xyco/runtime/future.h"
+import xyco.future;
 
 import xyco.error;
 

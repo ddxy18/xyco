@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 
 #include <cerrno>
+#include <coroutine>
 #include <expected>
 
 #include "xyco/io/epoll/extra.h"

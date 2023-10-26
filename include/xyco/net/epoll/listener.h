@@ -7,7 +7,6 @@
 #include "xyco/io/epoll/registry.h"
 #include "xyco/io/utils.h"
 #include "xyco/net/socket.h"
-#include "xyco/runtime/future.h"
 #include "xyco/runtime/runtime_ctx.h"
 #include "xyco/utils/logger.h"
 

@@ -4,7 +4,6 @@
 #include <gsl/pointers>
 #include <type_traits>
 
-#include "xyco/runtime/future.h"
 #include "xyco/runtime/runtime_ctx.h"
 #include "xyco/task/registry.h"
 

@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <coroutine>
 #include <exception>
 #include <functional>
 #include <mutex>
@@ -11,10 +12,10 @@
 #include <vector>
 
 #include "xyco/runtime/driver.h"
-#include "xyco/runtime/future.h"
 #include "xyco/utils/logger.h"
 
 import xyco.error;
+import xyco.future;
 
 namespace xyco::runtime {
 class Runtime;

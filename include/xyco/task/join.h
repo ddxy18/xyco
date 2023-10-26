@@ -1,6 +1,7 @@
 #ifndef XYCO_TASK_JOIN_H_
 #define XYCO_TASK_JOIN_H_
 
+#include <algorithm>
 #include <expected>
 #include <mutex>
 

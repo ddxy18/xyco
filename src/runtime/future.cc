@@ -1,4 +1,11 @@
-#include "xyco/runtime/future.h"
+module;
+
+#include <coroutine>
+#include <iostream>
+
+#include "boost/stacktrace.hpp"
+
+module xyco.future;
 
 auto xyco::runtime::Future<void>::PromiseType::get_return_object()
     -> Future<void> {

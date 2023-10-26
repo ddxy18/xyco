@@ -1,5 +1,6 @@
 #include "xyco/fs/utils.h"
 
+#include <coroutine>
 #include <expected>
 
 #include "xyco/task/blocking_task.h"
