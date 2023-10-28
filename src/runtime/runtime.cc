@@ -107,7 +107,7 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
 
 xyco::runtime::Runtime::Runtime(
     [[maybe_unused]] Privater priv,
-    std::vector<std::function<void(Runtime *)>> &&registry_initializers)
+    std::vector<std::function<void(Driver *)>> &&registry_initializers)
     : driver_(std::move(registry_initializers)) {}
 
 xyco::runtime::Runtime::~Runtime() {

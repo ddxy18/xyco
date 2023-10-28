@@ -8,8 +8,6 @@
 #include "xyco/runtime/registry.h"
 
 namespace xyco::runtime {
-class Runtime;
-
 class Driver {
  public:
   auto poll() -> void;
@@ -43,14 +41,14 @@ class Driver {
 
   auto add_thread() -> void;
 
-  Driver(std::vector<std::function<void(Runtime*)>>&& registry_initializers)
+  Driver(std::vector<std::function<void(Driver*)>>&& registry_initializers)
       : registry_initializers_(std::move(registry_initializers)) {}
 
  private:
   constexpr static std::chrono::milliseconds MAX_TIMEOUT =
       std::chrono::milliseconds(2);
 
-  std::vector<std::function<void(Runtime*)>> registry_initializers_;
+  std::vector<std::function<void(Driver*)>> registry_initializers_;
 
   std::unordered_map<std::thread::id,
                      std::unordered_map<decltype(typeid(int).hash_code()),
