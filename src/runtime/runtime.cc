@@ -20,11 +20,9 @@ auto xyco::runtime::Worker::run_in_place(Runtime *runtime) -> void {
   while (!end_) {
     run_loop_once(runtime);
   }
-  runtime->on_stop_f_();
 }
 
 auto xyco::runtime::Worker::init_in_thread(Runtime *runtime) -> void {
-  runtime->on_start_f_();
   RuntimeCtx::set_ctx(runtime);
 
   // Workers have to add local registry to `Driver` and this modifies non
@@ -106,9 +104,17 @@ auto xyco::runtime::Worker::run_loop_once(Runtime *runtime) -> void {
 }
 
 xyco::runtime::Runtime::Runtime(
-    [[maybe_unused]] Privater priv,
-    std::vector<std::function<void(Driver *)>> &&registry_initializers)
-    : driver_(std::move(registry_initializers)) {}
+    std::vector<std::function<void(Driver *)>> &&registry_initializers,
+    int worker_num)
+    : driver_(std::move(registry_initializers)), worker_num_(worker_num) {
+  for (auto i = 0; i < worker_num; i++) {
+    auto worker = std::make_unique<Worker>();
+    worker->run_in_new_thread(this);
+    workers_.emplace(worker->get_native_id(), std::move(worker));
+  }
+  // initialized last to avoid blocking other workers
+  in_place_worker_.init_in_thread(this);
+}
 
 xyco::runtime::Runtime::~Runtime() {
   std::unique_lock<std::mutex> lock_guard_(worker_mutex_);
@@ -118,47 +124,15 @@ xyco::runtime::Runtime::~Runtime() {
   }
 }
 
-auto xyco::runtime::Builder::new_multi_thread() -> Builder {
-  Builder builder{};
-  builder.on_start_f_ = default_f;
-  builder.on_stop_f_ = default_f;
-  return builder;
-}
+auto xyco::runtime::Builder::new_multi_thread() -> Builder { return {}; }
 
 auto xyco::runtime::Builder::worker_threads(uintptr_t val) -> Builder & {
   worker_num_ = val;
   return *this;
 }
 
-auto xyco::runtime::Builder::on_worker_start(auto (*function)()->void)
-    -> Builder & {
-  on_start_f_ = function;
-  return *this;
-}
-
-auto xyco::runtime::Builder::on_worker_stop(auto (*function)()->void)
-    -> Builder & {
-  on_stop_f_ = function;
-  return *this;
-}
-
 auto xyco::runtime::Builder::build()
-    -> utils::Result<std::unique_ptr<Runtime>> {
-  auto runtime = std::make_unique<Runtime>(Runtime::Privater(),
-                                           std::move(registry_initializers_));
-  runtime->on_start_f_ = on_start_f_;
-  runtime->on_stop_f_ = on_stop_f_;
-
-  runtime->worker_num_ = worker_num_;
-  for (uintptr_t i = 0; i < worker_num_; i++) {
-    auto worker = std::make_unique<Worker>();
-    worker->run_in_new_thread(runtime.get());
-    runtime->workers_.emplace(worker->get_native_id(), std::move(worker));
-  }
-  // initialized last to avoid blocking other workers
-  runtime->in_place_worker_.init_in_thread(runtime.get());
-
-  return runtime;
+    -> std::expected<std::unique_ptr<Runtime>, std::nullptr_t> {
+  return std::make_unique<Runtime>(std::move(registry_initializers_),
+                                   worker_num_);
 }
-
-auto xyco::runtime::Builder::default_f() -> void {}

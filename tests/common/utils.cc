@@ -12,7 +12,5 @@ auto TestRuntimeCtx::init() -> void {
                   .registry<xyco::task::BlockingRegistry>(1)
                   .registry<xyco::io::IoRegistry>(4)
                   .registry<xyco::time::TimeRegistry>()
-                  .on_worker_start([]() {})
-                  .on_worker_stop([]() {})
                   .build();
 }

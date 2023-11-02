@@ -50,8 +50,6 @@ class Runtime {
   friend class Builder;
   friend class RuntimeBridge;
 
-  class Privater {};
-
  public:
   template <typename T>
   auto spawn(Future<T> future) -> void {
@@ -88,8 +86,8 @@ class Runtime {
     in_place_worker_.run_in_place(this);
   }
 
-  Runtime(Privater priv,
-          std::vector<std::function<void(Driver *)>> &&registry_initializers);
+  Runtime(std::vector<std::function<void(Driver *)>> &&registry_initializers,
+          int worker_num);
 
   Runtime(const Runtime &runtime) = delete;
 
@@ -158,9 +156,6 @@ class Runtime {
   std::atomic_int init_worker_num_;
   std::mutex worker_launch_mutex_;
   std::condition_variable worker_launch_cv_;
-
-  auto (*on_start_f_)() -> void{};
-  auto (*on_stop_f_)() -> void{};
 };
 
 class Builder {
@@ -176,19 +171,11 @@ class Builder {
     return *this;
   }
 
-  auto on_worker_start(auto (*function)()->void) -> Builder &;
-
-  auto on_worker_stop(auto (*function)()->void) -> Builder &;
-
-  [[nodiscard]] auto build() -> utils::Result<std::unique_ptr<Runtime>>;
+  [[nodiscard]] auto build()
+      -> std::expected<std::unique_ptr<Runtime>, std::nullptr_t>;
 
  private:
-  static auto default_f() -> void;
-
   uintptr_t worker_num_{};
-
-  auto (*on_start_f_)() -> void{};
-  auto (*on_stop_f_)() -> void{};
 
   std::vector<std::function<void(Driver *)>> registry_initializers_;
 };
