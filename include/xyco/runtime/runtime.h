@@ -20,26 +20,35 @@ namespace xyco::runtime {
 class Runtime;
 
 class Worker {
-  friend class Runtime;
   friend class RuntimeBridge;
-  friend class Builder;
 
  public:
-  auto run_in_new_thread(Runtime *runtime) -> void;
-
   auto run_in_place(Runtime *runtime) -> void;
 
-  auto stop() -> void;
+  auto suspend() -> void;
 
-  auto get_native_id() const -> std::thread::id;
+  auto id() const -> std::thread::id;
+
+  Worker(Runtime *runtime, bool in_place = false);
+
+  ~Worker();
+
+  Worker(const Worker &) = delete;
+
+  Worker(Worker &&) = delete;
+
+  auto operator=(const Worker &) -> Worker & = delete;
+
+  auto operator=(Worker &&) -> Worker & = delete;
 
  private:
   auto run_loop_once(Runtime *runtime) -> void;
 
-  static auto init_in_thread(Runtime *runtime) -> void;
+  static auto init_in_thread(Runtime *runtime, bool in_place = false) -> void;
 
-  std::atomic_bool end_;
   std::thread ctx_;
+  std::atomic_bool suspend_flag_;
+
   // (handle, future) -> co_await on a future object
   std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
   std::mutex handle_mutex_;
@@ -47,13 +56,12 @@ class Worker {
 
 class Runtime {
   friend class Worker;
-  friend class Builder;
   friend class RuntimeBridge;
 
  public:
   template <typename T>
   auto spawn(Future<T> future) -> void {
-    spawn_impl(spawn_catch_exception(std::move(future)));
+    spawn_impl(spawn_with_exception_handling(std::move(future)));
   }
 
   // Blocks the current thread until `future` completes.
@@ -65,7 +73,7 @@ class Runtime {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-capturing-lambda-coroutines)
     auto blocking_future = [&](Runtime *runtime, auto future) -> Future<void> {
       result = co_await future;
-      runtime->in_place_worker_.stop();
+      runtime->in_place_worker_.suspend();
     };
     spawn_impl(blocking_future(this, std::move(future)));
 
@@ -79,7 +87,7 @@ class Runtime {
   auto block_on(Future<void> future) -> void {
     auto blocking_future = [](Runtime *runtime, auto future) -> Future<void> {
       co_await future;
-      runtime->in_place_worker_.stop();
+      runtime->in_place_worker_.suspend();
     };
     spawn_impl(blocking_future(this, std::move(future)));
 
@@ -87,7 +95,7 @@ class Runtime {
   }
 
   Runtime(std::vector<std::function<void(Driver *)>> &&registry_initializers,
-          int worker_num);
+          uint16_t worker_num);
 
   Runtime(const Runtime &runtime) = delete;
 
@@ -109,42 +117,17 @@ class Runtime {
     }
   }
 
-  // Handle all unhandled exceptions of spawned coroutine.
-  // more than one worker: kill the current worker
-  // last worker: terminate the process
   template <typename T>
-  auto spawn_catch_exception(Future<T> future) -> Future<void> {
+  auto spawn_with_exception_handling(Future<T> future) -> Future<void> {
     try {
       co_await future;
       // NOLINTNEXTLINE(bugprone-empty-catch)
     } catch (CancelException e) {
-    } catch (std::exception e) {
-      auto tid = std::this_thread::get_id();
-
-      // try to lock strategy to avoid deadlock in situation:
-      // ~Runtime owns the lock
-      std::unique_lock<std::mutex> lock_guard(worker_mutex_,
-                                              std::try_to_lock_t{});
-      auto pos = workers_.find(tid);
-      while (!pos->second->end_) {
-        if (lock_guard || lock_guard.try_lock()) {
-          if (workers_.size() == 1) {
-            ERROR("unhandled coroutine exception, terminate the process");
-            std::terminate();
-          }
-          ERROR("unhandled coroutine exception, kill current worker");
-          pos->second->stop();
-        }
-      }
+    } catch (const std::exception &e) {
+      ERROR("Uncaught coroutine exception: {}", e.what());
+      throw;
     }
   }
-
-  std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
-  std::mutex worker_mutex_;
-  Worker in_place_worker_;
-
-  std::vector<std::thread::id> idle_workers_;
-  std::mutex idle_workers_mutex_;
 
   // (handle, nullptr) -> initial_suspend of a spawned async function
   // (handle, future) -> co_await on a future object
@@ -152,17 +135,21 @@ class Runtime {
   std::mutex handle_mutex_;
   Driver driver_;
 
-  uintptr_t worker_num_{};
+  uint16_t worker_num_{};
   std::atomic_int init_worker_num_;
   std::mutex worker_launch_mutex_;
   std::condition_variable worker_launch_cv_;
+
+  Worker in_place_worker_;
+  // Put last to guarantee all workers destructed before other data members.
+  std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
 };
 
 class Builder {
  public:
   static auto new_multi_thread() -> Builder;
 
-  auto worker_threads(uintptr_t val) -> Builder &;
+  auto worker_threads(uint16_t val) -> Builder &;
 
   template <typename Registry, typename... Args>
   auto registry(Args... args) -> Builder & {
@@ -175,7 +162,7 @@ class Builder {
       -> std::expected<std::unique_ptr<Runtime>, std::nullptr_t>;
 
  private:
-  uintptr_t worker_num_{};
+  uint16_t worker_num_{};
 
   std::vector<std::function<void(Driver *)>> registry_initializers_;
 };
