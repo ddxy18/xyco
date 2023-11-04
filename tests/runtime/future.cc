@@ -96,22 +96,13 @@ TEST(NoRuntimeDeathTest, NeverRun) {
 }
 
 auto throw_uncaught_exception() -> xyco::runtime::Future<void> {
-  throw std::runtime_error("");
+  throw std::runtime_error("Throw runtime error!");
   co_return;
 }
 
-auto terminate() -> void {
-  // Default handler bypasses process finalization which skips coverage
-  // data flushing. So use `quick_exit` as terminate handler to produce
-  // correct coverage statistics.
-  std::set_terminate([] { std::quick_exit(-1); });
-}
-
-TEST(RuntimeDeathTest, terminate) {
+TEST(RuntimeDeathTest, throw_in_block_on) {
   EXPECT_DEATH(
       {
-        terminate();
-
         auto runtime = *xyco::runtime::Builder::new_multi_thread().build();
 
         runtime->block_on(throw_uncaught_exception());
@@ -119,7 +110,7 @@ TEST(RuntimeDeathTest, terminate) {
       "");
 }
 
-TEST(RuntimeDeathTest, coroutine_exception) {
+TEST(RuntimeDeathTest, throw_in_spawn) {
   EXPECT_DEATH(
       {
         auto runtime = *xyco::runtime::Builder::new_multi_thread()
@@ -129,8 +120,6 @@ TEST(RuntimeDeathTest, coroutine_exception) {
         runtime->spawn(throw_uncaught_exception());
 
         std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-
-        std::quick_exit(0);
       },
       "");
 }
