@@ -1,4 +1,9 @@
-#include "xyco/time/clock.h"
+module;
+
+#include <chrono>
+#include <variant>
+
+module xyco.time;
 
 std::variant<std::chrono::system_clock, std::chrono::steady_clock,
              xyco::time::FrozenClock>

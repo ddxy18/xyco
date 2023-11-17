@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "utils.h"
-#include "xyco/io/buffer_reader.h"
-#include "xyco/io/write.h"
+#include <coroutine>
+
+import xyco.test.utils;
+import xyco.net;
+import xyco.io;
 
 class BufferTest : public ::testing::Test {
  protected:

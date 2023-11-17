@@ -1,0 +1,6 @@
+export module xyco.sync;
+
+export import :mpsc;
+export import :oneshot;
+
+export import xyco.future;

@@ -1,8 +1,9 @@
-#include "xyco/task/join.h"
-
 #include <gtest/gtest.h>
 
-#include "utils.h"
+#include <coroutine>
+
+import xyco.test.utils;
+import xyco.task;
 
 auto null_co() -> xyco::runtime::Future<std::nullptr_t> { co_return nullptr; }
 auto str_co() -> xyco::runtime::Future<std::string> { co_return "a"; }

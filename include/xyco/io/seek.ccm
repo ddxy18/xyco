@@ -1,0 +1,19 @@
+module;
+
+#include <concepts>
+
+export module xyco.io.common:seek;
+
+import xyco.error;
+import xyco.future;
+import xyco.libc;
+
+export namespace xyco::io {
+template <typename Seeker>
+concept Seekable =
+    requires(Seeker seeker, xyco::libc::off64_t offset, int whence) {
+      {
+        seeker.seek(offset, whence)
+      } -> std::same_as<runtime::Future<utils::Result<xyco::libc::off64_t>>>;
+    };
+}  // namespace xyco::io

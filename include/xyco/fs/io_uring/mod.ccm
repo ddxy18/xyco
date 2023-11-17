@@ -1,0 +1,8 @@
+export module xyco.fs;
+
+export import xyco.fs.uring;
+export import xyco.fs.common;
+
+export namespace xyco::fs {
+using namespace uring;
+}  // namespace xyco::fs

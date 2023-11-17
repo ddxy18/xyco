@@ -1,9 +1,14 @@
 #include <gtest/gtest.h>
 
-#include "utils.h"
-#include "xyco/net/socket.h"
-#include "xyco/task/registry.h"
-#include "xyco/time/driver.h"
+#include <coroutine>
+#include <format>
+
+import xyco.test.utils;
+import xyco.runtime_core;
+import xyco.time;
+import xyco.net;
+import xyco.task;
+import xyco.fs;
 
 TEST(FmtTypeTest, IoError) {
   auto io_error = xyco::utils::Error();
@@ -16,13 +21,13 @@ TEST(FmtTypeTest, IoError) {
 
 TEST(FmtTypeTest, file_IoError) {
   auto io_error = xyco::utils::Error();
-  io_error.errno_ = std::__to_underlying(xyco::utils::ErrorKind::Unsupported);
+  io_error.errno_ = std::to_underlying(xyco::utils::ErrorKind::Unsupported);
 
   auto fmt_str = std::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Unsupported, info=}");
 
-  io_error.errno_ = std::__to_underlying(xyco::utils::ErrorKind::Uncategorized);
+  io_error.errno_ = std::to_underlying(xyco::utils::ErrorKind::Uncategorized);
   fmt_str = std::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Uncategorized, info=}");

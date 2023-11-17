@@ -1,0 +1,9 @@
+export module xyco.io.common;
+
+export import :buffer_reader;
+export import :read;
+export import :seek;
+export import :utils;
+export import :write;
+
+export import xyco.future;

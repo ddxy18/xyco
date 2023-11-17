@@ -1,27 +1,33 @@
-#include "xyco/fs/io_uring/file.h"
+module;
 
-#include <sys/stat.h>
 #include <sys/sysmacros.h>
-#include <unistd.h>
 
 #include <coroutine>
+#include <expected>
 #include <filesystem>
 #include <utility>
 
-#include "xyco/task/blocking_task.h"
 #include "xyco/utils/result.h"
 
-auto uring_file_attr(int file_descriptor) -> xyco::runtime::Future<
-    xyco::utils::Result<std::pair<struct stat64, xyco::fs::StatxExtraFields>>> {
-  struct statx stx {};
-  struct stat64 stat {};
+module xyco.fs.uring;
+
+import xyco.task;
+import xyco.libc;
+
+auto get_file_attr(int file_descriptor)
+    -> xyco::runtime::Future<xyco::utils::Result<
+        std::pair<xyco::libc::stat64_t, xyco::fs::StatxExtraFields>>> {
+  xyco::libc::statx_t stx{};
+  xyco::libc::stat64_t stat{};
 
   ASYNC_TRY((co_await xyco::task::BlockingTask([&]() {
-              return xyco::utils::into_sys_result(statx(
-                  file_descriptor, "\0", AT_EMPTY_PATH | AT_STATX_SYNC_AS_STAT,
-                  STATX_ALL, &stx));
+              return xyco::utils::into_sys_result(
+                  xyco::libc::statx(file_descriptor, "\0",
+                                    xyco::libc::K_AT_EMPTY_PATH |
+                                        xyco::libc::K_AT_STATX_SYNC_AS_STAT,
+                                    xyco::libc::K_STATX_ALL, &stx));
             })).transform([]([[maybe_unused]] auto n) {
-    return std::pair<struct stat64, xyco::fs::StatxExtraFields>({}, {});
+    return std::pair<xyco::libc::stat64_t, xyco::fs::StatxExtraFields>({}, {});
   }));
 
   stat.st_dev = makedev(stx.stx_dev_major, stx.stx_dev_minor);
@@ -41,7 +47,7 @@ auto uring_file_attr(int file_descriptor) -> xyco::runtime::Future<
   stat.st_ctim.tv_sec = stx.stx_ctime.tv_sec;
   stat.st_ctim.tv_nsec = stx.stx_ctime.tv_nsec;
 
-  co_return std::pair<struct stat64, xyco::fs::StatxExtraFields>(
+  co_return std::pair<xyco::libc::stat64_t, xyco::fs::StatxExtraFields>(
       stat, {
                 .stx_mask_ = stx.stx_mask,
                 .stx_btime_ = stx.stx_btime,
@@ -50,7 +56,7 @@ auto uring_file_attr(int file_descriptor) -> xyco::runtime::Future<
 
 auto xyco::fs::uring::File::modified() const
     -> runtime::Future<utils::Result<timespec>> {
-  co_return (co_await uring_file_attr(fd_)).transform([](auto pair) {
+  co_return (co_await get_file_attr(fd_)).transform([](auto pair) {
     auto stat = pair.first;
     return timespec{.tv_sec = stat.st_mtim.tv_sec,
                     .tv_nsec = stat.st_mtim.tv_nsec};
@@ -59,7 +65,7 @@ auto xyco::fs::uring::File::modified() const
 
 auto xyco::fs::uring::File::accessed() const
     -> runtime::Future<utils::Result<timespec>> {
-  co_return (co_await uring_file_attr(fd_)).transform([](auto pair) {
+  co_return (co_await get_file_attr(fd_)).transform([](auto pair) {
     auto stat = pair.first;
     return timespec{.tv_sec = stat.st_atim.tv_sec,
                     .tv_nsec = stat.st_atim.tv_nsec};
@@ -68,10 +74,10 @@ auto xyco::fs::uring::File::accessed() const
 
 auto xyco::fs::uring::File::created() const
     -> runtime::Future<utils::Result<timespec>> {
-  auto result = co_await uring_file_attr(fd_);
+  auto result = co_await get_file_attr(fd_);
   if (result) {
     auto ext = result->second;
-    if ((ext.stx_mask_ & STATX_BTIME) != 0) {
+    if ((ext.stx_mask_ & xyco::libc::K_STATX_BTIME) != 0) {
       co_return timespec{.tv_sec = ext.stx_btime_.tv_sec,
                          .tv_nsec = ext.stx_btime_.tv_nsec};
     }
@@ -129,7 +135,7 @@ auto xyco::fs::uring::File::set_permissions(std::filesystem::perms prms,
 auto xyco::fs::uring::File::flush() const
     -> runtime::Future<utils::Result<void>> {
   co_return co_await task::BlockingTask([this]() {
-    return utils::into_sys_result(::fsync(fd_))
+    return utils::into_sys_result(xyco::libc::fsync(fd_))
         .transform([]([[maybe_unused]] auto result) {});
   });
 }
@@ -154,9 +160,9 @@ auto xyco::fs::uring::OpenOptions::open(std::filesystem::path path)
     }
 
     // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
-    int flags = O_CLOEXEC | *access_mode | *creation_mode;
+    int flags = xyco::libc::K_O_CLOEXEC | *access_mode | *creation_mode;
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
-    return utils::into_sys_result(::open(path.c_str(), flags, mode_))
+    return utils::into_sys_result(xyco::libc::open(path.c_str(), flags, mode_))
         .transform([&](auto file_descriptor) {
           return File(file_descriptor, std::move(path));
         });

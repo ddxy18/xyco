@@ -1,13 +1,10 @@
-#include "xyco/sync/oneshot.h"
-
 #include <gtest/gtest.h>
-#include <unistd.h>
 
-#include <chrono>
+#include <coroutine>
 #include <thread>
-#include <utility>
 
-#include "utils.h"
+import xyco.test.utils;
+import xyco.sync;
 
 TEST(OneshotTest, success) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {

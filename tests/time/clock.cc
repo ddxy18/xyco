@@ -1,6 +1,7 @@
-#include "xyco/time/clock.h"
-
 #include <gtest/gtest.h>
+
+import xyco.test.utils;
+import xyco.time;
 
 // Uses death test here to ensure they run before other time related unit tests
 // to avoid disordering the current time point.

@@ -1,0 +1,8 @@
+export module xyco.net;
+
+export import xyco.net.epoll;
+export import xyco.net.common;
+
+export namespace xyco::net {
+using namespace epoll;
+}  // namespace xyco::net

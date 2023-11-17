@@ -1,0 +1,4 @@
+export module xyco.net.common;
+
+export import :socket;
+export import xyco.future;

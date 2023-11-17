@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "utils.h"
-#include "xyco/time/clock.h"
+#include "xyco/utils/logger.h"
+
+import xyco.test.utils;
+import xyco.time;
 
 auto main(int argc, char **argv) -> int {
   xyco::time::Clock::init<xyco::time::FrozenClock>();

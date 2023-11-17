@@ -1,0 +1,144 @@
+module;
+
+#include <atomic>
+#include <condition_variable>
+#include <coroutine>
+#include <exception>
+#include <functional>
+#include <mutex>
+#include <thread>
+#include <unordered_map>
+#include <vector>
+
+#include "xyco/utils/logger.h"
+
+export module xyco.runtime_core;
+
+export import :driver;
+export import :registry;
+
+import xyco.future;
+
+export namespace xyco::runtime {
+class RuntimeCore;
+
+class Worker {
+  friend class RuntimeCore;
+
+ public:
+  auto run_in_place(RuntimeCore *core) -> void;
+
+  auto suspend() -> void;
+
+  auto id() const -> std::thread::id;
+
+  Worker(RuntimeCore *core, bool in_place = false);
+
+  ~Worker();
+
+  Worker(const Worker &) = delete;
+
+  Worker(Worker &&) = delete;
+
+  auto operator=(const Worker &) -> Worker & = delete;
+
+  auto operator=(Worker &&) -> Worker & = delete;
+
+ private:
+  auto run_loop_once(RuntimeCore *core) -> void;
+
+  static auto init_in_thread(RuntimeCore *core, bool in_place = false) -> void;
+
+  std::thread ctx_;
+  std::atomic_bool suspend_flag_;
+
+  // (handle, future) -> co_await on a future object
+  std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
+  std::mutex handle_mutex_;
+};
+
+class RuntimeCore {
+  friend class Worker;
+
+ public:
+  //  For runtime interface
+  template <typename T>
+  auto spawn_impl(Future<T> future) -> void {
+    auto future_wrapper = spawn_with_exception_handling(std::move(future));
+    auto handle = future_wrapper.get_handle();
+    if (handle) {
+      std::scoped_lock<std::mutex> lock_guard(handle_mutex_);
+      handles_.insert(handles_.begin(), {handle, nullptr});
+    }
+  }
+
+  template <typename T>
+  static auto spawn_with_exception_handling(Future<T> future) -> Future<void> {
+    try {
+      co_await future;
+      // NOLINTNEXTLINE(bugprone-empty-catch)
+    } catch (CancelException e) {
+    } catch (const std::exception &e) {
+      ERROR("Uncaught coroutine exception: {}", e.what());
+      throw;
+    }
+  }
+
+  auto in_place_worker() -> Worker & { return in_place_worker_; }
+
+  // Registry implementation helper
+  auto register_future(FutureBase *future) -> void;
+
+  auto driver() -> Driver &;
+
+  auto wake(Events &events) -> void;
+
+  auto wake_local(Events &events) -> void;
+
+  RuntimeCore(
+      std::vector<std::function<void(Driver *)>> &&registry_initializers,
+      uint16_t worker_num);
+
+  RuntimeCore(const RuntimeCore &) = delete;
+
+  RuntimeCore(RuntimeCore &&) = delete;
+
+  auto operator=(const RuntimeCore &) -> RuntimeCore & = delete;
+
+  auto operator=(RuntimeCore &&) -> RuntimeCore & = delete;
+
+  ~RuntimeCore();
+
+ private:
+  // (handle, nullptr) -> initial_suspend of a spawned async function
+  // (handle, future) -> co_await on a future object
+  std::vector<std::pair<Handle<void>, FutureBase *>> handles_;
+  std::mutex handle_mutex_;
+  Driver driver_;
+
+  uint16_t worker_num_{};
+  std::atomic_int init_worker_num_;
+  std::mutex worker_launch_mutex_;
+  std::condition_variable worker_launch_cv_;
+
+  Worker in_place_worker_;
+  // Put last to guarantee all workers destructed before other data members.
+  std::unordered_map<std::thread::id, std::unique_ptr<Worker>> workers_;
+};
+
+// This class is mainly used for library inner interaction with `Runtime`. So
+// it's an useful interface for expert users who neeeds to extend the library,
+// like writing custom-made `Registry`. For major library callers, use `Runtime`
+// and interact with it via its `spawn` interface.
+class RuntimeCtxImpl {
+ public:
+  static auto is_in_ctx() -> bool;
+
+  static auto set_ctx(RuntimeCore *core) -> void;
+
+  static auto get_ctx() -> RuntimeCore *;
+
+ private:
+  thread_local static RuntimeCore *core_;
+};
+}  // namespace xyco::runtime

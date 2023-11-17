@@ -1,8 +1,14 @@
-#include "utils.h"
+module;
 
-#include "xyco/io/registry.h"
-#include "xyco/task/registry.h"
-#include "xyco/time/driver.h"
+#include <memory>
+
+module xyco.test.utils;
+
+import xyco.io;
+import xyco.net;
+import xyco.fs;
+import xyco.task;
+import xyco.sync;
 
 std::unique_ptr<xyco::runtime::Runtime> TestRuntimeCtx::runtime_;
 

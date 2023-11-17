@@ -1,7 +1,14 @@
-#include "xyco/time/wheel.h"
+module;
 
-#include "xyco/time/clock.h"
-#include "xyco/time/driver.h"
+#include <chrono>
+#include <memory>
+
+module xyco.time;
+
+import xyco.runtime_ctx;
+
+import :clock;
+import :registry;
 
 xyco::time::Level::Level() : current_it_(events_.begin()) {}
 

@@ -1,9 +1,10 @@
-#include "xyco/task/select.h"
-
 #include <gtest/gtest.h>
 
-#include "utils.h"
-#include "xyco/time/sleep.h"
+#include <coroutine>
+
+import xyco.test.utils;
+import xyco.task;
+import xyco.time;
 
 class SelectTest : public ::testing::Test {
  public:

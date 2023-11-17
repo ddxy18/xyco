@@ -1,6 +1,8 @@
-#include "xyco/runtime/driver.h"
+module;
 
-#include "xyco/runtime/runtime_ctx.h"
+#include <thread>
+
+module xyco.runtime_core;
 
 auto xyco::runtime::Driver::poll() -> void {
   runtime::Events events;
@@ -9,7 +11,7 @@ auto xyco::runtime::Driver::poll() -> void {
       local_registries_.find(std::this_thread::get_id())->second;
   for (auto& [key, registry] : local_registry) {
     *registry->select(events, MAX_TIMEOUT);
-    RuntimeCtx::get_ctx()->wake(events);
+    RuntimeCtxImpl::get_ctx()->wake(events);
   }
 }
 

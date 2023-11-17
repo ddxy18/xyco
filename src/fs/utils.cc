@@ -1,9 +1,13 @@
-#include "xyco/fs/utils.h"
+module;
 
 #include <coroutine>
 #include <expected>
+#include <filesystem>
 
-#include "xyco/task/blocking_task.h"
+module xyco.fs.common;
+
+import xyco.task;
+import xyco.runtime_ctx;
 
 auto xyco::fs::rename(std::filesystem::path old_path,
                       std::filesystem::path new_path)
