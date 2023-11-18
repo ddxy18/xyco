@@ -215,31 +215,33 @@ target_sources(
 target_include_directories(net_all PUBLIC include)
 target_link_libraries(net_all PRIVATE io_all task runtime_ctx)
 
-add_library(fs_epoll src/fs/utils.cc src/fs/epoll/file.cc)
+add_library(fs_common src/fs/utils.cc)
+target_sources(fs_common PUBLIC include/xyco/fs/utils.h
+                                include/xyco/fs/file_common.h)
+target_include_directories(fs_common PUBLIC include)
+target_link_libraries(fs_common PRIVATE task future)
+add_library(fs_epoll src/fs/epoll/file.cc)
 add_library(xyco::fs_epoll ALIAS fs_epoll)
-target_sources(fs_epoll PUBLIC include/xyco/fs/utils.h
-                               include/xyco/fs/epoll/file.h)
+target_sources(fs_epoll PUBLIC include/xyco/fs/epoll/file.h)
 target_include_directories(
   fs_epoll
   INTERFACE include/xyco/fs/standalone/epoll
   PUBLIC include)
-target_link_libraries(fs_epoll PRIVATE io_epoll task runtime_ctx)
-add_library(fs_uring src/fs/utils.cc src/fs/io_uring/file.cc)
+target_link_libraries(fs_epoll PRIVATE fs_common io_epoll task runtime_ctx)
+add_library(fs_uring src/fs/io_uring/file.cc)
 add_library(xyco::fs_uring ALIAS fs_uring)
-target_sources(fs_uring PUBLIC include/xyco/fs/utils.h
-                               include/xyco/fs/io_uring/file.h)
+target_sources(fs_uring PUBLIC include/xyco/fs/io_uring/file.h)
 target_include_directories(
   fs_uring
   INTERFACE include/xyco/fs/standalone/io_uring
   PUBLIC include)
-target_link_libraries(fs_uring PRIVATE io_uring task runtime_ctx)
-add_library(fs_all src/fs/utils.cc src/fs/epoll/file.cc src/fs/io_uring/file.cc)
+target_link_libraries(fs_uring PRIVATE fs_common io_uring task runtime_ctx)
+add_library(fs_all src/fs/epoll/file.cc src/fs/io_uring/file.cc)
 add_library(xyco::fs_all ALIAS fs_all)
-target_sources(
-  fs_all PUBLIC include/xyco/fs/utils.h include/xyco/fs/epoll/file.h
-                include/xyco/fs/io_uring/file.h)
+target_sources(fs_all PUBLIC include/xyco/fs/epoll/file.h
+                             include/xyco/fs/io_uring/file.h)
 target_include_directories(fs_all PUBLIC include)
-target_link_libraries(fs_all PRIVATE io_all task runtime_ctx)
+target_link_libraries(fs_all PRIVATE fs_common io_all task runtime_ctx)
 
 add_library(time src/time/driver.cc src/time/wheel.cc src/time/clock.cc)
 add_library(xyco::time ALIAS time)
