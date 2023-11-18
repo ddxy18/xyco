@@ -1,6 +1,5 @@
 #include "xyco/fs/io_uring/file.h"
 
-#include <__utility/to_underlying.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
 #include <unistd.h>
@@ -11,14 +10,8 @@
 #include "xyco/task/blocking_task.h"
 #include "xyco/utils/result.h"
 
-class StatxExtraFields {
- public:
-  uint32_t stx_mask_;
-  statx_timestamp stx_btime_;
-};
-
 auto uring_file_attr(int file_descriptor) -> xyco::runtime::Future<
-    xyco::utils::Result<std::pair<struct stat64, StatxExtraFields>>> {
+    xyco::utils::Result<std::pair<struct stat64, xyco::fs::StatxExtraFields>>> {
   struct statx stx {};
   struct stat64 stat {};
 
@@ -26,11 +19,9 @@ auto uring_file_attr(int file_descriptor) -> xyco::runtime::Future<
               return xyco::utils::into_sys_result(statx(
                   file_descriptor, "\0", AT_EMPTY_PATH | AT_STATX_SYNC_AS_STAT,
                   STATX_ALL, &stx));
-            }))
-                .transform([]([[maybe_unused]] auto n)
-                               -> std::pair<struct stat64, StatxExtraFields> {
-                  return {{}, StatxExtraFields()};
-                }));
+            })).transform([]([[maybe_unused]] auto n) {
+    return std::pair<struct stat64, xyco::fs::StatxExtraFields>({}, {});
+  }));
 
   stat.st_dev = makedev(stx.stx_dev_major, stx.stx_dev_minor);
   stat.st_ino = stx.stx_ino;
@@ -49,10 +40,11 @@ auto uring_file_attr(int file_descriptor) -> xyco::runtime::Future<
   stat.st_ctim.tv_sec = stx.stx_ctime.tv_sec;
   stat.st_ctim.tv_nsec = stx.stx_ctime.tv_nsec;
 
-  co_return std::pair{stat, StatxExtraFields{
-                                .stx_mask_ = stx.stx_mask,
-                                .stx_btime_ = stx.stx_btime,
-                            }};
+  co_return std::pair<struct stat64, xyco::fs::StatxExtraFields>(
+      stat, {
+                .stx_mask_ = stx.stx_mask,
+                .stx_btime_ = stx.stx_btime,
+            });
 }
 
 auto xyco::fs::uring::File::modified() const
@@ -83,35 +75,12 @@ auto xyco::fs::uring::File::created() const
                          .tv_nsec = ext.stx_btime_.tv_nsec};
     }
     co_return std::unexpected(utils::Error{
-        .errno_ = std::__to_underlying(utils::ErrorKind::Uncategorized),
+        .errno_ = std::to_underlying(utils::ErrorKind::Uncategorized),
         .info_ = "creation time is not available for the filesystem"});
   }
   co_return std::unexpected(utils::Error{
-      .errno_ = std::__to_underlying(utils::ErrorKind::Unsupported),
+      .errno_ = std::to_underlying(utils::ErrorKind::Unsupported),
       .info_ = "creation time is not available on this platform currently"});
-}
-
-auto xyco::fs::uring::File::create(std::filesystem::path path)
-    -> runtime::Future<utils::Result<File>> {
-  co_return co_await OpenOptions().write(true).create(true).truncate(true).open(
-      std::move(path));
-}
-
-auto xyco::fs::uring::File::open(std::filesystem::path path)
-    -> runtime::Future<utils::Result<File>> {
-  co_return co_await OpenOptions().read(true).open(std::move(path));
-}
-
-auto xyco::fs::uring::File::resize(uintmax_t size)
-    -> runtime::Future<utils::Result<void>> {
-  co_return co_await task::BlockingTask([&]() {
-    std::error_code error_code;
-    std::filesystem::resize_file(path_, size, error_code);
-    return !error_code
-               ? utils::Result<void>()
-               : std::unexpected(utils::Error{.errno_ = error_code.value(),
-                                              .info_ = error_code.message()});
-  });
 }
 
 auto xyco::fs::uring::File::size() const
@@ -143,8 +112,8 @@ auto xyco::fs::uring::File::status()
   });
 }
 
-auto xyco::fs::uring::File::set_permissions(
-    std::filesystem::perms prms, std::filesystem::perm_options opts) const
+auto xyco::fs::uring::File::set_permissions(std::filesystem::perms prms,
+                                            std::filesystem::perm_options opts)
     -> runtime::Future<utils::Result<void>> {
   co_return co_await task::BlockingTask([&]() {
     std::error_code error_code;
@@ -164,39 +133,8 @@ auto xyco::fs::uring::File::flush() const
   });
 }
 
-auto xyco::fs::uring::File::seek(off64_t offset, int whence) const
-    -> runtime::Future<utils::Result<off64_t>> {
-  co_return co_await task::BlockingTask(
-      [this, offset, whence]() -> utils::Result<off64_t> {
-        auto return_offset = ::lseek64(fd_, offset, whence);
-        if (return_offset == -1) {
-          return utils::into_sys_result(-1).transform(
-              [](auto n) { return static_cast<off64_t>(n); });
-        }
-        return return_offset;
-      });
-}
-
-// NOLINTNEXTLINE(bugprone-exception-escape)
-xyco::fs::uring::File::File(File&& file) noexcept { *this = std::move(file); }
-
-// NOLINTNEXTLINE(bugprone-exception-escape)
-auto xyco::fs::uring::File::operator=(File&& file) noexcept -> File& {
-  fd_ = file.fd_;
-  path_ = file.path_;
-  file.fd_ = -1;
-
-  return *this;
-}
-
-xyco::fs::uring::File::~File() {
-  if (fd_ != -1) {
-    ::close(fd_);
-  }
-}
-
-xyco::fs::uring::File::File(int file_descriptor, std::filesystem::path&& path)
-    : fd_(file_descriptor), path_(std::move(path)) {}
+xyco::fs::uring::File::File(int file_descriptor, std::filesystem::path &&path)
+    : FileBase(file_descriptor, std::move(path)) {}
 
 auto xyco::fs::uring::OpenOptions::open(std::filesystem::path path)
     -> runtime::Future<utils::Result<File>> {
@@ -222,89 +160,4 @@ auto xyco::fs::uring::OpenOptions::open(std::filesystem::path path)
           return File(file_descriptor, std::move(path));
         });
   });
-}
-
-auto xyco::fs::uring::OpenOptions::read(bool read) -> OpenOptions& {
-  read_ = read;
-  return *this;
-}
-
-auto xyco::fs::uring::OpenOptions::write(bool write) -> OpenOptions& {
-  write_ = write;
-  return *this;
-}
-
-auto xyco::fs::uring::OpenOptions::truncate(bool truncate) -> OpenOptions& {
-  truncate_ = truncate;
-  return *this;
-}
-
-auto xyco::fs::uring::OpenOptions::append(bool append) -> OpenOptions& {
-  append_ = append;
-  return *this;
-}
-
-auto xyco::fs::uring::OpenOptions::create(bool create) -> OpenOptions& {
-  create_ = create;
-  return *this;
-}
-
-auto xyco::fs::uring::OpenOptions::create_new(bool create_new) -> OpenOptions& {
-  create_new_ = create_new;
-  return *this;
-}
-
-auto xyco::fs::uring::OpenOptions::mode(uint32_t mode) -> OpenOptions& {
-  mode_ = mode;
-  return *this;
-}
-
-xyco::fs::uring::OpenOptions::OpenOptions() : mode_(default_mode_) {}
-
-auto xyco::fs::uring::OpenOptions::get_access_mode() const
-    -> utils::Result<int> {
-  if (read_ && !write_ && !append_) {
-    return O_RDONLY;
-  }
-  if (!read_ && write_ && !append_) {
-    return O_WRONLY;
-  }
-  if (read_ && write_ && !append_) {
-    return O_RDWR;
-  }
-  if (!read_ && append_) {
-    return O_WRONLY | O_APPEND;
-  }
-  if (read_ && append_) {
-    return O_RDWR | O_APPEND;
-  }
-  return std::unexpected(utils::Error{.errno_ = EINVAL});
-}
-
-auto xyco::fs::uring::OpenOptions::get_creation_mode() const
-    -> utils::Result<int> {
-  if (!write_ && !append_) {
-    if (truncate_ || create_ || create_new_) {
-      return std::unexpected(utils::Error{.errno_ = EINVAL});
-    }
-  }
-  if (append_) {
-    if (truncate_ && !create_new_) {
-      return std::unexpected(utils::Error{.errno_ = EINVAL});
-    }
-  }
-
-  if (!create_ && !truncate_ && !create_new_) {
-    return 0;
-  }
-  if (create_ && !truncate_ && !create_new_) {
-    return O_CREAT;
-  }
-  if (!create_ && truncate_ && !create_new_) {
-    return O_TRUNC;
-  }
-  if (create_ && truncate_ && !create_new_) {
-    return O_CREAT | O_TRUNC;
-  }
-  return O_CREAT | O_EXCL;
 }
