@@ -10,7 +10,7 @@ flag_management:
       paths:
         - "include/"
         - "!include/xyco/fs/io_uring/"
-        - "!include/xyoc/io/io_uring/"
+        - "!include/xyco/io/io_uring/"
         - "!include/xyco/net/io_uring/"
         - "src/"
         - "!src/fs/io_uring/"
@@ -20,7 +20,7 @@ flag_management:
       paths:
         - "include/"
         - "!include/xyco/fs/epoll/"
-        - "!include/xyoc/io/epoll/"
+        - "!include/xyco/io/epoll/"
         - "!include/xyco/net/epoll/"
         - "src/"
         - "!src/fs/epoll/"
