@@ -44,7 +44,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 # External dependencies ought to be declared ahead to skip linting for them
-if(ENABLE_LINTING)
+if(XYCO_ENABLE_LINTING)
   add_compile_options(-Wall -Wextra -Wdeprecated -Werror)
   set(CMAKE_CXX_CLANG_TIDY
       clang-tidy-$ENV{LLVM_VERSION}
@@ -55,7 +55,7 @@ if(ENABLE_LINTING)
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/overload.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/panic.dir/
   )
-endif(ENABLE_LINTING)
+endif(XYCO_ENABLE_LINTING)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   add_subdirectory(tests)

@@ -7,4 +7,4 @@
 #
 # To enable this hook, rename this file to "pre-commit".
 
-find . -type f \( -name \*.cc -or -name \*.h \) -not -path ./build/\* | xargs clang-format --Werror --fcolor-diagnostics -i --verbose
+find . -type f \( -name \*.cc -or -name \*.h -or -name \*.ccm \) -not -path ./build/\* | xargs clang-format --Werror --fcolor-diagnostics -i --verbose
