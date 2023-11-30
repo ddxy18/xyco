@@ -1,15 +1,21 @@
-#include "xyco/net/epoll/listener.h"
-
-#include <arpa/inet.h>
+module;
 
 #include <cerrno>
+#include <clocale>
+#include <coroutine>
 #include <expected>
+#include <gsl/pointers>
 
-#include "xyco/io/epoll/extra.h"
-#include "xyco/task/blocking_task.h"
+#include "xyco/utils/logger.h"
 #include "xyco/utils/result.h"
 
+module xyco.net.epoll;
+
 import xyco.error;
+import xyco.task;
+import xyco.io;
+import xyco.net.common;
+import xyco.libc;
 
 template <typename T>
 using Future = xyco::runtime::Future<T>;
@@ -17,8 +23,8 @@ using Future = xyco::runtime::Future<T>;
 auto xyco::net::epoll::TcpSocket::bind(SocketAddr addr)
     -> Future<utils::Result<void>> {
   auto bind_result = co_await task::BlockingTask([&]() {
-    return utils::into_sys_result(
-        ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
+    return utils::into_sys_result(xyco::libc::bind(
+        socket_.into_c_fd(), addr.into_c_addr(), sizeof(xyco::libc::sockaddr)));
   });
   if (bind_result) {
     INFO("{} bind to {}", socket_, addr);
@@ -49,14 +55,15 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
       if (extra->state_.get_field<io::epoll::IoExtra::State::Error>() ||
           extra->state_.get_field<io::epoll::IoExtra::State::Writable>()) {
         int ret = -1;
-        socklen_t len = sizeof(decltype(ret));
-        getsockopt(socket_->into_c_fd(), SOL_SOCKET, SO_ERROR, &ret, &len);
+        xyco::libc::socklen_t len = sizeof(decltype(ret));
+        xyco::libc::getsockopt(socket_->into_c_fd(), xyco::libc::K_SOL_SOCKET,
+                               xyco::libc::K_SO_ERROR, &ret, &len);
         if (ret != 0) {
           runtime::RuntimeCtx::get_ctx()
               ->driver()
               .deregister<io::epoll::IoRegistry>(event_);
           return runtime::Ready<CoOutput>{std::unexpected(utils::Error{
-              .errno_ = ret, .info_ = strerror_l(ret, uselocale(nullptr))})};
+              .errno_ = ret, .info_ = strerror_l(ret, ::uselocale(nullptr))})};
         }
         INFO("{} connect to {}", *socket_, addr_);
         runtime::RuntimeCtx::get_ctx()
@@ -80,8 +87,8 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
   };
 
   auto connect_result = co_await task::BlockingTask([&]() {
-    return utils::into_sys_result(
-        ::connect(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
+    return utils::into_sys_result(xyco::libc::connect(
+        socket_.into_c_fd(), addr.into_c_addr(), sizeof(xyco::libc::sockaddr)));
   });
   if (connect_result) {
     co_return TcpStream(std::move(socket_), true);
@@ -97,7 +104,8 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
 auto xyco::net::epoll::TcpSocket::listen(int backlog)
     -> Future<utils::Result<TcpListener>> {
   auto listen_result = co_await task::BlockingTask([&]() {
-    return utils::into_sys_result(::listen(socket_.into_c_fd(), backlog));
+    return utils::into_sys_result(
+        xyco::libc::listen(socket_.into_c_fd(), backlog));
   });
   ASYNC_TRY(listen_result.transform(
       [&]([[maybe_unused]] auto n) { return TcpListener(Socket(-1)); }));
@@ -109,31 +117,35 @@ auto xyco::net::epoll::TcpSocket::listen(int backlog)
 auto xyco::net::epoll::TcpSocket::set_reuseaddr(bool reuseaddr)
     -> utils::Result<void> {
   int optval = static_cast<int>(reuseaddr);
-  return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
-                                             SO_REUSEADDR, &optval,
-                                             sizeof(optval)))
+  return utils::into_sys_result(
+             xyco::libc::setsockopt(
+                 socket_.into_c_fd(), xyco::libc::K_SOL_SOCKET,
+                 xyco::libc::K_SO_REUSEADDR, &optval, sizeof(optval)))
       .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::epoll::TcpSocket::set_reuseport(bool reuseport)
     -> utils::Result<void> {
   int optval = static_cast<int>(reuseport);
-  return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
-                                             SO_REUSEPORT, &optval,
-                                             sizeof(optval)))
+  return utils::into_sys_result(
+             xyco::libc::setsockopt(
+                 socket_.into_c_fd(), xyco::libc::K_SOL_SOCKET,
+                 xyco::libc::K_SO_REUSEPORT, &optval, sizeof(optval)))
       .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::epoll::TcpSocket::new_v4() -> utils::Result<TcpSocket> {
-  return utils::into_sys_result(
-             ::socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0))
+  return utils::into_sys_result(xyco::libc::socket(xyco::libc::K_AF_INET,
+                                                   SOCK_STREAM | SOCK_NONBLOCK,
+                                                   0))
       .transform(
           [](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
 
 auto xyco::net::epoll::TcpSocket::new_v6() -> utils::Result<TcpSocket> {
-  return utils::into_sys_result(
-             ::socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, 0))
+  return utils::into_sys_result(xyco::libc::socket(xyco::libc::K_AF_INET6,
+                                                   SOCK_STREAM | SOCK_NONBLOCK,
+                                                   0))
       .transform(
           [](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
@@ -158,7 +170,7 @@ auto xyco::net::epoll::TcpStream::flush() -> Future<utils::Result<void>> {
 auto xyco::net::epoll::TcpStream::shutdown(io::Shutdown shutdown) const
     -> Future<utils::Result<void>> {
   ASYNC_TRY((co_await task::BlockingTask([&]() {
-              return utils::into_sys_result(::shutdown(
+              return utils::into_sys_result(xyco::libc::shutdown(
                   socket_.into_c_fd(),
                   static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
             })).transform([]([[maybe_unused]] auto result) {}));
@@ -234,10 +246,10 @@ auto xyco::net::epoll::TcpListener::accept()
             utils::Error{.errno_ = 1, .info_ = "epoll state error"})};
       }
       if (extra->state_.get_field<io::epoll::IoExtra::State::Readable>()) {
-        auto accept_result = utils::into_sys_result(
-            ::accept4(self_->socket_.into_c_fd(),
-                      static_cast<sockaddr *>(static_cast<void *>(&addr_in_)),
-                      &addrlen_, SOCK_NONBLOCK));
+        auto accept_result = utils::into_sys_result(xyco::libc::accept4(
+            self_->socket_.into_c_fd(),
+            static_cast<xyco::libc::sockaddr *>(static_cast<void *>(&addr_in_)),
+            &addrlen_, xyco::libc::K_SOCK_NONBLOCK));
         if (!accept_result) {
           auto err = accept_result.error();
           if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK) {
@@ -250,11 +262,12 @@ auto xyco::net::epoll::TcpListener::accept()
           }
           return runtime::Ready<CoOutput>{std::unexpected(err)};
         }
-        std::string ip_addr(INET_ADDRSTRLEN, 0);
-        auto sock_addr = SocketAddr::new_v4(
-            Ipv4Addr(::inet_ntop(addr_in_.sin_family, &addr_in_.sin_addr,
-                                 ip_addr.data(), ip_addr.size())),
-            addr_in_.sin_port);
+        std::string ip_addr(xyco::libc::K_INET_ADDRSTRLEN, 0);
+        auto sock_addr =
+            SocketAddr::new_v4(Ipv4Addr(xyco::libc::inet_ntop(
+                                   addr_in_.sin_family, &addr_in_.sin_addr,
+                                   ip_addr.data(), ip_addr.size())),
+                               addr_in_.sin_port);
         auto socket = Socket(*accept_result);
         INFO("accept from {} new connect={{{}, addr:{}}}", self_->socket_,
              socket, sock_addr);
@@ -283,8 +296,8 @@ auto xyco::net::epoll::TcpListener::accept()
 
    private:
     TcpListener *self_;
-    sockaddr_in addr_in_{};
-    socklen_t addrlen_{sizeof(addr_in_)};
+    xyco::libc::sockaddr_in addr_in_{};
+    xyco::libc::socklen_t addrlen_{sizeof(addr_in_)};
   };
 
   co_return co_await Future(this);

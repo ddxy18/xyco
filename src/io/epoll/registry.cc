@@ -1,16 +1,24 @@
-#include "xyco/io/epoll/registry.h"
+module;
 
 #include <sys/epoll.h>
-#include <unistd.h>
 
 #include <array>
 #include <expected>
-#include <vector>
+#include <format>
 
-#include "xyco/io/epoll/extra.h"
 #include "xyco/utils/logger.h"
 
+module xyco.io.epoll;
+
 import xyco.panic;
+import xyco.libc;
+
+auto xyco::io::epoll::IoExtra::print() const -> std::string {
+  return std::format("{}", *this);
+}
+
+xyco::io::epoll::IoExtra::IoExtra(Interest interest, int file_descriptor)
+    : state_(), interest_(interest), fd_(file_descriptor) {}
 
 auto to_sys(xyco::io::epoll::IoExtra::Interest interest) -> int {
   switch (interest) {
@@ -168,4 +176,4 @@ xyco::io::epoll::IoRegistryImpl::IoRegistryImpl(int entries)
   }
 }
 
-xyco::io::epoll::IoRegistryImpl::~IoRegistryImpl() { ::close(epfd_); }
+xyco::io::epoll::IoRegistryImpl::~IoRegistryImpl() { xyco::libc::close(epfd_); }

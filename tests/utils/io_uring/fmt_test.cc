@@ -1,6 +1,11 @@
 #include <gtest/gtest.h>
 
-#include "utils.h"
+#include <format>
+
+import xyco.test.utils;
+import xyco.runtime_core;
+import xyco.libc;
+import xyco.io;
 
 TEST(FmtTypeTest, IoExtra_Event) {
   auto event =
@@ -29,15 +34,15 @@ TEST(FmtTypeTest, IoExtra_Event) {
   ASSERT_EQ(fmt_str, "Event{extra_=IoExtra{args_=Close{}, fd_=1, return_=0}}");
 
   constexpr auto port = 8888;
-  in_addr char_addr{};
-  sockaddr_in addr{};
-  socklen_t len = 0;
-  ::inet_pton(AF_INET, "127.0.0.1", &char_addr);
-  addr.sin_family = AF_INET;
+  xyco::libc::in_addr char_addr{};
+  xyco::libc::sockaddr_in addr{};
+  xyco::libc::socklen_t len = 0;
+  xyco::libc::inet_pton(xyco::libc::K_AF_INET, "127.0.0.1", &char_addr);
+  addr.sin_family = xyco::libc::K_AF_INET;
   addr.sin_addr = char_addr;
   addr.sin_port = port;
   extra->args_ = xyco::io::IoExtra::Accept{
-      .addr_ = static_cast<sockaddr *>(static_cast<void *>(&addr)),
+      .addr_ = static_cast<xyco::libc::sockaddr *>(static_cast<void *>(&addr)),
       .addrlen_ = &len,
       .flags_ = 0};
   fmt_str = std::format("{}", event);
@@ -45,12 +50,12 @@ TEST(FmtTypeTest, IoExtra_Event) {
             "Event{extra_=IoExtra{args_=Accept{addr_={127.0.0.1:8888}, "
             "flags_=0}, fd_=1, return_=0}}");
 
-  ::inet_pton(AF_INET, "127.0.0.1", &char_addr);
-  addr.sin_family = AF_INET;
+  xyco::libc::inet_pton(xyco::libc::K_AF_INET, "127.0.0.1", &char_addr);
+  addr.sin_family = xyco::libc::K_AF_INET;
   addr.sin_addr = char_addr;
   addr.sin_port = port;
   extra->args_ = xyco::io::IoExtra::Connect{
-      .addr_ = static_cast<sockaddr *>(static_cast<void *>(&addr)),
+      .addr_ = static_cast<xyco::libc::sockaddr *>(static_cast<void *>(&addr)),
       .addrlen_ = sizeof(addr)};
   fmt_str = std::format("{}", event);
   ASSERT_EQ(

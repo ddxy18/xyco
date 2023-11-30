@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "utils.h"
-#include "xyco/fs/utils.h"
+#include <coroutine>
+#include <filesystem>
+
+import xyco.test.utils;
+import xyco.fs;
 
 class FileTest : public ::testing::Test {
  protected:

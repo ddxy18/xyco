@@ -1,0 +1,8 @@
+export module xyco.io;
+
+export import xyco.io.epoll;
+export import xyco.io.common;
+
+export namespace xyco::io {
+using namespace epoll;
+}  // namespace xyco::io

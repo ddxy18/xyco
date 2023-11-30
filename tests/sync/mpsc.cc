@@ -1,8 +1,10 @@
-#include "xyco/sync/mpsc.h"
-
 #include <gtest/gtest.h>
 
-#include "utils.h"
+#include <coroutine>
+#include <thread>
+
+import xyco.test.utils;
+import xyco.sync;
 
 TEST(MpscTest, one_sender) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {

@@ -1,8 +1,9 @@
-#include "xyco/time/timeout.h"
-
 #include <gtest/gtest.h>
 
-#include "utils.h"
+#include <coroutine>
+
+import xyco.test.utils;
+import xyco.time;
 
 TEST(TimeoutTest, no_timeout) {
   constexpr std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3);

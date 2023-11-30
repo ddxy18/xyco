@@ -1,0 +1,206 @@
+module;
+
+#include <expected>
+#include <filesystem>
+#include <format>
+
+export module xyco.fs.common:file_common;
+
+import xyco.error;
+import xyco.task;
+import xyco.future;
+import xyco.libc;
+
+export namespace xyco::fs {
+template <typename T>
+class FileBase {
+  friend struct std::formatter<T>;
+
+ public:
+  [[nodiscard]] static auto create(std::filesystem::path path)
+      -> runtime::Future<utils::Result<T>> {
+    co_return co_await typename T::OpenOptions()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(std::move(path));
+  }
+
+  [[nodiscard]] static auto open(std::filesystem::path path)
+      -> runtime::Future<utils::Result<T>> {
+    co_return co_await typename T::OpenOptions().read(true).open(
+        std::move(path));
+  }
+
+  [[nodiscard]] auto resize(uintmax_t size)
+      -> runtime::Future<utils::Result<void>> {
+    co_return co_await task::BlockingTask([&]() {
+      std::error_code error_code;
+      std::filesystem::resize_file(path_, size, error_code);
+      return !error_code
+                 ? utils::Result<void>()
+                 : std::unexpected(utils::Error{.errno_ = error_code.value(),
+                                                .info_ = error_code.message()});
+    });
+  }
+
+  [[nodiscard]] auto seek(off64_t offset, int whence)
+      -> runtime::Future<utils::Result<off64_t>> {
+    co_return co_await task::BlockingTask(
+        [this, offset, whence]() -> utils::Result<off64_t> {
+          auto return_offset = xyco::libc::lseek64(fd_, offset, whence);
+          if (return_offset == -1) {
+            return utils::into_sys_result(-1).transform(
+                [](auto n) { return static_cast<off64_t>(n); });
+          }
+          return return_offset;
+        });
+  }
+
+  FileBase(const FileBase &) = delete;
+
+  FileBase(FileBase &&file) noexcept { *this = std::move(file); }
+
+  auto operator=(const FileBase &) = delete;
+
+  auto operator=(FileBase &&file) noexcept -> FileBase & {
+    fd_ = file.fd_;
+    path_ = std::move(file.path_);
+    file.fd_ = -1;
+
+    return *this;
+  }
+
+  ~FileBase() {
+    if (fd_ != -1) {
+      xyco::libc::close(fd_);
+    }
+  }
+
+ protected:
+  FileBase(int file_descriptor, std::filesystem::path &&path)
+      : fd_(file_descriptor), path_(std::move(path)) {}
+
+  // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
+  int fd_{-1};
+  std::filesystem::path path_;
+  // NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
+};
+
+template <typename T>
+class OpenOptionsBase {
+ public:
+  auto read(bool read) -> T & {
+    read_ = read;
+    return *static_cast<T *>(this);
+  }
+
+  auto write(bool write) -> T & {
+    write_ = write;
+    return *static_cast<T *>(this);
+  }
+
+  auto truncate(bool truncate) -> T & {
+    truncate_ = truncate;
+    return *static_cast<T *>(this);
+  }
+
+  auto append(bool append) -> T & {
+    append_ = append;
+    return *static_cast<T *>(this);
+  }
+
+  auto create(bool create) -> T & {
+    create_ = create;
+    return *static_cast<T *>(this);
+  }
+
+  auto create_new(bool create_new) -> T & {
+    create_new_ = create_new;
+    return *static_cast<T *>(this);
+  }
+
+  auto mode(uint32_t mode) -> T & {
+    mode_ = mode;
+    return *static_cast<T *>(this);
+  }
+
+  OpenOptionsBase() : mode_(default_mode_) {}
+
+ protected:
+  [[nodiscard]] auto get_access_mode() const -> utils::Result<int> {
+    if (read_ && !write_ && !append_) {
+      return xyco::libc::K_O_RDONLY;
+    }
+    if (!read_ && write_ && !append_) {
+      return xyco::libc::K_O_WRONLY;
+    }
+    if (read_ && write_ && !append_) {
+      return xyco::libc::K_O_RDWR;
+    }
+    if (!read_ && append_) {
+      return xyco::libc::K_O_WRONLY | xyco::libc::K_O_APPEND;
+    }
+    if (read_ && append_) {
+      return xyco::libc::K_O_RDWR | xyco::libc::K_O_APPEND;
+    }
+    return std::unexpected(utils::Error{.errno_ = EINVAL});
+  }
+
+  [[nodiscard]] auto get_creation_mode() const -> utils::Result<int> {
+    if (!write_ && !append_) {
+      if (truncate_ || create_ || create_new_) {
+        return std::unexpected(utils::Error{.errno_ = EINVAL});
+      }
+    }
+    if (append_) {
+      if (truncate_ && !create_new_) {
+        return std::unexpected(utils::Error{.errno_ = EINVAL});
+      }
+    }
+
+    if (!create_ && !truncate_ && !create_new_) {
+      return 0;
+    }
+    if (create_ && !truncate_ && !create_new_) {
+      return xyco::libc::K_O_CREAT;
+    }
+    if (!create_ && truncate_ && !create_new_) {
+      return xyco::libc::K_O_TRUNC;
+    }
+    if (create_ && truncate_ && !create_new_) {
+      return xyco::libc::K_O_CREAT | xyco::libc::K_O_TRUNC;
+    }
+    return xyco::libc::K_O_CREAT | xyco::libc::K_O_EXCL;
+  }
+
+  static constexpr int default_mode_ = 0666;
+
+  // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
+  // generic
+  bool read_{};
+  bool write_{};
+  bool append_{};
+  bool truncate_{};
+  bool create_{};
+  bool create_new_{};
+  // system-specific
+  mode_t mode_;
+  // NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
+};
+
+class StatxExtraFields {
+ public:
+  uint32_t stx_mask_;
+  xyco::libc::statx_timestamp stx_btime_;
+};
+}  // namespace xyco::fs
+
+template <typename T>
+  requires(std::derived_from<T, xyco::fs::FileBase<T>>)
+struct std::formatter<T> : public std::formatter<bool> {
+  template <typename FormatContext>
+  auto format(const T &file, FormatContext &ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "File{{path_={}}}", file.path_.c_str());
+  }
+};

@@ -1,0 +1,8 @@
+export module xyco.task;
+
+export import :registry;
+export import :blocking;
+export import :join;
+export import :select;
+
+export import xyco.future;

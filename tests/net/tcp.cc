@@ -1,8 +1,13 @@
 #include <gtest/gtest.h>
 
-#include "utils.h"
-#include "xyco/io/read.h"
-#include "xyco/io/write.h"
+#include <coroutine>
+
+#include "xyco/utils/logger.h"
+
+import xyco.test.utils;
+import xyco.net;
+import xyco.libc;
+import xyco.io;
 
 // TODO(dongxiaoyu): add failure cases
 
@@ -184,10 +189,10 @@ TEST_F(WithServerTest, TcpListener_accept) {
     auto client = *co_await xyco::net::TcpSocket::new_v4()->connect(
         xyco::net::SocketAddr::new_v4(ip_, port_));
     auto [stream, addr] = *co_await listener_->accept();
-    const auto *raw_addr = static_cast<const sockaddr_in *>(
+    const auto *raw_addr = static_cast<const xyco::libc::sockaddr_in *>(
         static_cast<const void *>(addr.into_c_addr()));
 
-    CO_ASSERT_EQ(raw_addr->sin_addr.s_addr, inet_addr(ip_));
+    CO_ASSERT_EQ(raw_addr->sin_addr.s_addr, xyco::libc::inet_addr(ip_));
   }());
 }
 

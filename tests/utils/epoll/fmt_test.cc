@@ -1,6 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "utils.h"
+#include <format>
+
+import xyco.test.utils;
+import xyco.runtime_core;
+import xyco.io;
 
 TEST(FmtTypeTest, IoExtra_Event) {
   auto event =

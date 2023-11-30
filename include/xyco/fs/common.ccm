@@ -1,0 +1,6 @@
+export module xyco.fs.common;
+
+export import :utils;
+export import :file_common;
+
+export import xyco.future;

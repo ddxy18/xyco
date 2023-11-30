@@ -1,8 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <coroutine>
 #include <gsl/pointers>
+#include <thread>
 
-#include "utils.h"
+import xyco.test.utils;
+import xyco.runtime_ctx;
+import xyco.runtime;
 
 TEST(InRuntimeDeathTest, NoSuspend) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
@@ -86,7 +90,7 @@ TEST(NoRuntimeDeathTest, NeverRun) {
 
   EXPECT_EXIT(
       {
-        xyco::runtime::RuntimeCtx::set_ctx(nullptr);
+        xyco::runtime::RuntimeCtxImpl::set_ctx(nullptr);
 
         evaluator.update(async_update());
 

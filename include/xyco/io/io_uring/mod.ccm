@@ -1,0 +1,8 @@
+export module xyco.io;
+
+export import xyco.io.uring;
+export import xyco.io.common;
+
+export namespace xyco::io {
+using namespace uring;
+}  // namespace xyco::io

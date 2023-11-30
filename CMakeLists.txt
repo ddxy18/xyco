@@ -52,8 +52,29 @@ if(XYCO_ENABLE_LINTING)
       # explanation(https://discourse.llvm.org/t/clang-tidy-doesnt-find-standard-c-modules-despite-providing-compilation-database-and-prebuilt-modules-path/71326/2)
       # instructs in the solution (2).
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/error.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/future.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/overload.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/panic.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/runtime_core.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/runtime_ctx.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/runtime.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/task.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/time.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/sync.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/io_all.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/io_epoll.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/io_uring.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/io_common.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/net_all.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/net_epoll.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/net_uring.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/net_common.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/fs_all.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/fs_epoll.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/fs_uring.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/fs_common.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/libc.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/tests/CMakeFiles/common_utils.dir/
   )
 endif(XYCO_ENABLE_LINTING)
 
@@ -73,10 +94,14 @@ target_link_libraries(xyco_uring_main io_uring net_uring runtime)
 
 # Reusable library
 
+add_library(libc)
+target_sources(libc PUBLIC FILE_SET libc_module TYPE CXX_MODULES FILES
+                           include/xyco/utils/libc.ccm)
+
 add_library(future src/runtime/future.cc)
 add_library(xyco::future ALIAS future)
-target_sources(future PUBLIC include/xyco/runtime/future.h)
-target_include_directories(future PUBLIC include)
+target_sources(future PUBLIC FILE_SET future_module TYPE CXX_MODULES FILES
+                             include/xyco/runtime/future.ccm)
 target_link_libraries(future PUBLIC GSL ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
 
 add_library(panic src/utils/panic.cc)
@@ -95,12 +120,18 @@ add_library(xyco::overload ALIAS overload)
 target_sources(overload PUBLIC FILE_SET overload_module TYPE CXX_MODULES FILES
                                include/xyco/utils/overload.ccm)
 
-add_library(logging src/utils/logger.cc)
+if(XYCO_ENABLE_LOGGING)
+  add_library(logging)
+  target_include_directories(logging PUBLIC include)
+  target_sources(logging PUBLIC src/utils/logger.cc)
+  target_compile_definitions(logging PUBLIC XYCO_ENABLE_LOG)
+  target_link_libraries(logging PUBLIC spdlog)
+else()
+  add_library(logging INTERFACE)
+  target_include_directories(logging INTERFACE include)
+endif(XYCO_ENABLE_LOGGING)
 add_library(xyco::logging ALIAS logging)
 target_sources(logging PUBLIC include/xyco/utils/logger.h)
-target_include_directories(logging PUBLIC include)
-target_link_libraries(logging PUBLIC spdlog)
-target_compile_definitions(logging PUBLIC XYCO_ENABLE_LOG)
 
 # Runtime Core
 
@@ -109,30 +140,41 @@ add_library(xyco::error ALIAS error)
 target_sources(error PUBLIC FILE_SET error_module TYPE CXX_MODULES FILES
                             include/xyco/utils/error.ccm)
 
-add_library(runtime_ctx src/runtime/runtime_ctx.cc src/runtime/driver.cc)
+add_library(runtime_core src/runtime/driver.cc src/runtime/core.cc)
+target_sources(
+  runtime_core
+  PUBLIC FILE_SET
+         runtime_core_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/runtime/driver.ccm
+         include/xyco/runtime/registry.ccm
+         include/xyco/runtime/core.ccm)
+target_link_libraries(runtime_core PUBLIC error future logging)
+
+add_library(runtime_ctx src/runtime/runtime_ctx.cc)
 add_library(xyco::runtime_ctx ALIAS runtime_ctx)
 target_sources(
   runtime_ctx
-  PUBLIC include/xyco/runtime/runtime_ctx.h include/xyco/runtime/driver.h
-         include/xyco/runtime/registry.h
-  PRIVATE include/xyco/runtime/runtime.h)
-target_include_directories(runtime_ctx PUBLIC include)
+  PUBLIC FILE_SET
+         runtime_ctx_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/runtime/runtime_ctx.ccm
+         include/xyco/runtime/global_registry.ccm
+         include/xyco/runtime/thread_local_registry.ccm)
 target_link_libraries(
   runtime_ctx
   INTERFACE result overload panic
-  PUBLIC error future)
-if(XYCO_ENABLE_LOGGING)
-  target_link_libraries(runtime_ctx INTERFACE logging)
-endif(XYCO_ENABLE_LOGGING)
+  PUBLIC runtime_core)
 
 add_library(runtime src/runtime/runtime.cc)
 add_library(xyco::runtime ALIAS runtime)
-target_sources(
-  runtime
-  PUBLIC include/xyco/runtime/runtime.h
-  PRIVATE include/xyco/runtime/driver.h include/xyco/runtime/registry.h)
-target_include_directories(runtime PUBLIC include)
-target_link_libraries(runtime PUBLIC runtime_ctx)
+target_sources(runtime PUBLIC FILE_SET runtime_module TYPE CXX_MODULES FILES
+                              include/xyco/runtime/runtime.ccm)
+target_link_libraries(runtime PUBLIC runtime_core)
 
 # Registry
 
@@ -140,117 +182,244 @@ add_library(task src/task/registry.cc)
 add_library(xyco::task ALIAS task)
 target_sources(
   task
-  PUBLIC include/xyco/task/registry.h
-  INTERFACE include/xyco/task/blocking_task.h include/xyco/task/join.h
-            include/xyco/task/select.h)
-target_include_directories(task PUBLIC include)
-target_link_libraries(task PRIVATE runtime_ctx)
+  PUBLIC FILE_SET
+         task_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/task/registry.ccm
+         include/xyco/task/blocking_task.ccm
+         include/xyco/task/join.ccm
+         include/xyco/task/select.ccm
+         include/xyco/task/mod.ccm)
+target_link_libraries(
+  task
+  PUBLIC future
+  PRIVATE runtime_ctx)
 
-add_library(io_epoll src/io/epoll/registry.cc src/io/epoll/extra.cc)
+add_library(io_common)
+target_sources(
+  io_common
+  PUBLIC FILE_SET
+         io_common_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/io/common.ccm
+         include/xyco/io/read.ccm
+         include/xyco/io/buffer_reader.ccm
+         include/xyco/io/seek.ccm
+         include/xyco/io/utils.ccm
+         include/xyco/io/write.ccm)
+target_link_libraries(
+  io_common
+  PUBLIC future
+  PRIVATE runtime_ctx libc)
+add_library(io_epoll src/io/epoll/registry.cc)
 add_library(xyco::io_epoll ALIAS io_epoll)
 target_sources(
   io_epoll
-  PUBLIC include/xyco/io/epoll/registry.h include/xyco/io/epoll/extra.h
-  INTERFACE include/xyco/io/read.h include/xyco/io/buffer_reader.h
-            include/xyco/io/seek.h include/xyco/io/write.h)
-target_include_directories(
+  PUBLIC FILE_SET
+         io_epoll_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/io/epoll/mod.ccm
+         include/xyco/io/epoll/registry.ccm)
+target_link_libraries(
   io_epoll
-  INTERFACE include/xyco/io/standalone/epoll
-  PUBLIC include)
-target_link_libraries(io_epoll PUBLIC runtime_ctx)
-add_library(io_uring src/io/io_uring/registry.cc src/io/io_uring/extra.cc)
+  PUBLIC io_common
+  PRIVATE runtime_ctx libc)
+add_library(io_uring src/io/io_uring/registry.cc)
 add_library(xyco::io_uring ALIAS io_uring)
 target_sources(
   io_uring
-  PUBLIC include/xyco/io/io_uring/registry.h include/xyco/io/io_uring/extra.h
-  INTERFACE include/xyco/io/read.h include/xyco/io/buffer_reader.h
-            include/xyco/io/seek.h include/xyco/io/write.h)
-target_include_directories(
-  io_uring
-  INTERFACE include/xyco/io/standalone/io_uring
-  PUBLIC include)
+  PUBLIC FILE_SET
+         io_uring_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/io/io_uring/mod.ccm
+         include/xyco/io/io_uring/registry.ccm)
 target_link_libraries(
   io_uring
-  PRIVATE uring
-  PUBLIC runtime_ctx)
-add_library(io_all src/io/epoll/registry.cc src/io/epoll/extra.cc
-                   src/io/io_uring/registry.cc src/io/io_uring/extra.cc)
+  PUBLIC io_common
+  PRIVATE runtime_ctx uring libc)
+add_library(io_all src/io/epoll/registry.cc src/io/io_uring/registry.cc)
 add_library(xyco::io_all ALIAS io_all)
 target_sources(
   io_all
-  PUBLIC include/xyco/io/epoll/registry.h include/xyco/io/epoll/extra.h
-         include/xyco/io/io_uring/registry.h include/xyco/io/io_uring/extra.h
-  INTERFACE include/xyco/io/read.h include/xyco/io/buffer_reader.h
-            include/xyco/io/seek.h include/xyco/io/write.h)
-target_include_directories(io_all PUBLIC include)
+  PUBLIC FILE_SET
+         io_all_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/io/mod.ccm
+         include/xyco/io/epoll/registry.ccm
+         include/xyco/io/io_uring/registry.ccm)
 target_link_libraries(
   io_all
-  PRIVATE uring
-  PUBLIC runtime_ctx)
+  PUBLIC io_common
+  PRIVATE runtime_ctx uring libc)
 
-add_library(net_epoll src/net/socket.cc src/net/epoll/listener.cc)
+add_library(net_common src/net/socket.cc)
+target_sources(
+  net_common
+  PUBLIC FILE_SET
+         net_common_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/net/common.ccm
+         include/xyco/net/socket.ccm)
+target_link_libraries(
+  net_common
+  INTERFACE future
+  PRIVATE runtime_ctx libc)
+add_library(net_epoll src/net/epoll/listener.cc)
 add_library(xyco::net_epoll ALIAS net_epoll)
-target_sources(net_epoll PUBLIC include/xyco/net/socket.h
-                                include/xyco/net/epoll/listener.h)
-target_include_directories(
+target_sources(
   net_epoll
-  INTERFACE include/xyco/net/standalone/epoll
-  PUBLIC include)
-target_link_libraries(net_epoll PRIVATE io_epoll task runtime_ctx)
-add_library(net_uring src/net/socket.cc src/net/io_uring/listener.cc)
+  PUBLIC FILE_SET
+         net_epoll_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/net/epoll/mod.ccm
+         include/xyco/net/epoll/listener.ccm)
+target_link_libraries(
+  net_epoll
+  PUBLIC net_common
+  PRIVATE io_epoll task runtime_ctx libc)
+add_library(net_uring src/net/io_uring/listener.cc)
 add_library(xyco::net_uring ALIAS net_uring)
-target_sources(net_uring PUBLIC include/xyco/net/socket.h
-                                include/xyco/net/io_uring/listener.h)
-target_include_directories(
+target_sources(
   net_uring
-  INTERFACE include/xyco/net/standalone/io_uring
-  PUBLIC include)
-target_link_libraries(net_uring PRIVATE io_uring task runtime_ctx)
-add_library(net_all src/net/socket.cc src/net/epoll/listener.cc
-                    src/net/io_uring/listener.cc)
+  PUBLIC FILE_SET
+         net_uring_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/net/io_uring/mod.ccm
+         include/xyco/net/io_uring/listener.ccm)
+target_link_libraries(
+  net_uring
+  PUBLIC net_common
+  PRIVATE io_uring task runtime_ctx libc)
+add_library(net_all src/net/epoll/listener.cc src/net/io_uring/listener.cc)
 add_library(xyco::net_all ALIAS net_all)
 target_sources(
-  net_all PUBLIC include/xyco/net/socket.h include/xyco/net/epoll/listener.h
-                 include/xyco/net/io_uring/listener.h)
-target_include_directories(net_all PUBLIC include)
-target_link_libraries(net_all PRIVATE io_all task runtime_ctx)
+  net_all
+  PUBLIC FILE_SET
+         net_all_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/net/mod.ccm
+         include/xyco/net/epoll/listener.ccm
+         include/xyco/net/io_uring/listener.ccm)
+target_link_libraries(
+  net_all
+  PUBLIC net_common
+  PRIVATE io_all task runtime_ctx libc)
 
 add_library(fs_common src/fs/utils.cc)
-target_sources(fs_common PUBLIC include/xyco/fs/utils.h
-                                include/xyco/fs/file_common.h)
-target_include_directories(fs_common PUBLIC include)
-target_link_libraries(fs_common PRIVATE task future)
+target_sources(
+  fs_common
+  PUBLIC FILE_SET
+         fs_common_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/fs/common.ccm
+         include/xyco/fs/file_common.ccm
+         include/xyco/fs/utils.ccm)
+target_link_libraries(
+  fs_common
+  PUBLIC future
+  PRIVATE task runtime_ctx libc)
 add_library(fs_epoll src/fs/epoll/file.cc)
 add_library(xyco::fs_epoll ALIAS fs_epoll)
-target_sources(fs_epoll PUBLIC include/xyco/fs/epoll/file.h)
-target_include_directories(
+target_sources(
   fs_epoll
-  INTERFACE include/xyco/fs/standalone/epoll
-  PUBLIC include)
-target_link_libraries(fs_epoll PRIVATE fs_common io_epoll task runtime_ctx)
+  PUBLIC FILE_SET
+         fs_epoll_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/fs/epoll/mod.ccm
+         include/xyco/fs/epoll/file.ccm)
+target_link_libraries(
+  fs_epoll
+  PUBLIC fs_common
+  PRIVATE io_epoll task runtime_ctx libc)
 add_library(fs_uring src/fs/io_uring/file.cc)
 add_library(xyco::fs_uring ALIAS fs_uring)
-target_sources(fs_uring PUBLIC include/xyco/fs/io_uring/file.h)
-target_include_directories(
+target_sources(
   fs_uring
-  INTERFACE include/xyco/fs/standalone/io_uring
-  PUBLIC include)
-target_link_libraries(fs_uring PRIVATE fs_common io_uring task runtime_ctx)
+  PUBLIC FILE_SET
+         fs_uring_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/fs/io_uring/mod.ccm
+         include/xyco/fs/io_uring/file.ccm)
+target_link_libraries(
+  fs_uring
+  PUBLIC fs_common
+  PRIVATE io_uring task runtime_ctx libc)
 add_library(fs_all src/fs/epoll/file.cc src/fs/io_uring/file.cc)
 add_library(xyco::fs_all ALIAS fs_all)
-target_sources(fs_all PUBLIC include/xyco/fs/epoll/file.h
-                             include/xyco/fs/io_uring/file.h)
-target_include_directories(fs_all PUBLIC include)
-target_link_libraries(fs_all PRIVATE fs_common io_all task runtime_ctx)
+target_sources(
+  fs_all
+  PUBLIC FILE_SET
+         fs_all_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/fs/mod.ccm
+         include/xyco/fs/epoll/file.ccm
+         include/xyco/fs/io_uring/file.ccm)
+target_link_libraries(
+  fs_all
+  PUBLIC fs_common
+  PRIVATE io_all task runtime_ctx libc)
 
-add_library(time src/time/driver.cc src/time/wheel.cc src/time/clock.cc)
+add_library(time src/time/registry.cc src/time/wheel.cc src/time/clock.cc)
 add_library(xyco::time ALIAS time)
 target_sources(
   time
-  PUBLIC include/xyco/time/driver.h include/xyco/time/clock.h
-  INTERFACE include/xyco/time/timeout.h include/xyco/time/sleep.h
-  PRIVATE include/xyco/time/wheel.h)
-target_include_directories(time PUBLIC include)
-target_link_libraries(time PRIVATE runtime_ctx)
+  PUBLIC FILE_SET
+         time_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/time/mod.ccm
+         include/xyco/time/registry.ccm
+         include/xyco/time/clock.ccm
+         include/xyco/time/timeout.ccm
+         include/xyco/time/sleep.ccm
+         include/xyco/time/wheel.ccm)
+target_link_libraries(
+  time
+  PUBLIC future
+  PRIVATE runtime_ctx task)
+
+add_library(sync)
+add_library(xyco::sync ALIAS sync)
+target_sources(
+  sync
+  PUBLIC FILE_SET
+         sync_module
+         TYPE
+         CXX_MODULES
+         FILES
+         include/xyco/sync/mod.ccm
+         include/xyco/sync/mpsc.ccm
+         include/xyco/sync/oneshot.ccm)
+target_link_libraries(
+  sync
+  PUBLIC future
+  PRIVATE runtime_ctx)
 
 option(XYCO_ENABLE_LOGGING "OFF")

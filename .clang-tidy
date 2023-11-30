@@ -1,17 +1,12 @@
 ---
 # FIXME: readability-redundant-declaration is excluded due to a clang-tidy issue(https://github.com/llvm/llvm-project/issues/63939) of the c++20 module.
+# bugprone-unchecked-optional-access is excluded due to unexpected clang tidy crashes when building examples/http_server.cc.
 Checks: '-*,
 bugprone-*,
 clang-analyzer-*,
-clang-diagnostic-*,
-concurrency-*,
 cppcoreguidelines-*,
-modernize-*,
-performance-*,
-portability-*,
-readability-*,
 -cppcoreguidelines-avoid-non-const-global-variables,
--readability-redundant-declaration'
+-bugprone-unchecked-optional-access'
 
 WarningsAsErrors: '*'
 HeaderFilterRegex: '^.*xyco(/include/xyco/|/src/|/tests/).*$'

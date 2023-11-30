@@ -1,11 +1,17 @@
-#include "xyco/net/io_uring/listener.h"
+module;
 
-#include <arpa/inet.h>
-
+#include <coroutine>
+#include <expected>
+#include <gsl/pointers>
 #include <variant>
 
-#include "xyco/task/blocking_task.h"
+#include "xyco/utils/logger.h"
 #include "xyco/utils/result.h"
+
+module xyco.net.uring;
+
+import xyco.task;
+import xyco.libc;
 
 template <typename T>
 using Future = xyco::runtime::Future<T>;
@@ -13,8 +19,8 @@ using Future = xyco::runtime::Future<T>;
 auto xyco::net::uring::TcpSocket::bind(SocketAddr addr)
     -> Future<utils::Result<void>> {
   auto bind_result = co_await task::BlockingTask([&]() {
-    return utils::into_sys_result(
-        ::bind(socket_.into_c_fd(), addr.into_c_addr(), sizeof(sockaddr)));
+    return utils::into_sys_result(xyco::libc::bind(
+        socket_.into_c_fd(), addr.into_c_addr(), sizeof(xyco::libc::sockaddr)));
   });
   if (bind_result) {
     INFO("{} bind to {}", socket_, addr);
@@ -43,7 +49,8 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
       if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
         event_->future_ = this;
         extra->args_ = io::uring::IoExtra::Connect{
-            .addr_ = addr_.into_c_addr(), .addrlen_ = sizeof(sockaddr)};
+            .addr_ = addr_.into_c_addr(),
+            .addrlen_ = sizeof(xyco::libc::sockaddr)};
         extra->fd_ = socket_->into_c_fd();
         runtime::RuntimeCtx::get_ctx()
             ->driver()
@@ -73,7 +80,8 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
 auto xyco::net::uring::TcpSocket::listen(int backlog)
     -> Future<utils::Result<TcpListener>> {
   auto listen_result = co_await task::BlockingTask([&]() {
-    return utils::into_sys_result(::listen(socket_.into_c_fd(), backlog));
+    return utils::into_sys_result(
+        xyco::libc::listen(socket_.into_c_fd(), backlog));
   });
   ASYNC_TRY(listen_result.transform(
       [&]([[maybe_unused]] auto n) { return TcpListener(Socket(-1)); }));
@@ -85,29 +93,35 @@ auto xyco::net::uring::TcpSocket::listen(int backlog)
 auto xyco::net::uring::TcpSocket::set_reuseaddr(bool reuseaddr)
     -> utils::Result<void> {
   int optval = static_cast<int>(reuseaddr);
-  return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
-                                             SO_REUSEADDR, &optval,
-                                             sizeof(optval)))
+  return utils::into_sys_result(
+             xyco::libc::setsockopt(
+                 socket_.into_c_fd(), xyco::libc::K_SOL_SOCKET,
+                 xyco::libc::K_SO_REUSEADDR, &optval, sizeof(optval)))
       .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::uring::TcpSocket::set_reuseport(bool reuseport)
     -> utils::Result<void> {
   int optval = static_cast<int>(reuseport);
-  return utils::into_sys_result(::setsockopt(socket_.into_c_fd(), SOL_SOCKET,
-                                             SO_REUSEPORT, &optval,
-                                             sizeof(optval)))
+  return utils::into_sys_result(
+             xyco::libc::setsockopt(
+                 socket_.into_c_fd(), xyco::libc::K_SOL_SOCKET,
+                 xyco::libc::K_SO_REUSEPORT, &optval, sizeof(optval)))
       .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::uring::TcpSocket::new_v4() -> utils::Result<TcpSocket> {
-  return utils::into_sys_result(::socket(AF_INET, SOCK_STREAM, 0))
+  return utils::into_sys_result(xyco::libc::socket(xyco::libc::K_AF_INET,
+                                                   xyco::libc::K_SOCK_STREAM,
+                                                   0))
       .transform(
           [](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
 
 auto xyco::net::uring::TcpSocket::new_v6() -> utils::Result<TcpSocket> {
-  return utils::into_sys_result(::socket(AF_INET6, SOCK_STREAM, 0))
+  return utils::into_sys_result(xyco::libc::socket(xyco::libc::K_AF_INET6,
+                                                   xyco::libc::K_SOCK_STREAM,
+                                                   0))
       .transform(
           [](auto file_descriptor) { return TcpSocket(file_descriptor); });
 }
@@ -215,7 +229,8 @@ auto xyco::net::uring::TcpListener::accept()
       if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
         self_->event_->future_ = this;
         extra->args_ = io::uring::IoExtra::Accept{
-            .addr_ = static_cast<sockaddr *>(static_cast<void *>(&addr_)),
+            .addr_ = static_cast<xyco::libc::sockaddr *>(
+                static_cast<void *>(&addr_)),
             .addrlen_ = &addr_len_};
         extra->fd_ = self_->socket_.into_c_fd();
         runtime::RuntimeCtx::get_ctx()
@@ -230,10 +245,10 @@ auto xyco::net::uring::TcpListener::accept()
         return runtime::Ready<CoOutput>{
             std::unexpected(utils::Error{.errno_ = -extra->return_})};
       }
-      std::string ip_addr(INET_ADDRSTRLEN, 0);
+      std::string ip_addr(xyco::libc::K_INET_ADDRSTRLEN, 0);
       auto sock_addr = SocketAddr::new_v4(
-          Ipv4Addr(::inet_ntop(addr_.sin_family, &addr_.sin_addr,
-                               ip_addr.data(), ip_addr.size())),
+          Ipv4Addr(xyco::libc::inet_ntop(addr_.sin_family, &addr_.sin_addr,
+                                         ip_addr.data(), ip_addr.size())),
           addr_.sin_port);
       auto socket = Socket(extra->return_);
       INFO("accept from {} new connect={{{}, addr:{}}}", self_->socket_, socket,
@@ -261,8 +276,8 @@ auto xyco::net::uring::TcpListener::accept()
 
    private:
     TcpListener *self_;
-    sockaddr_in addr_{};
-    socklen_t addr_len_{sizeof(addr_)};
+    xyco::libc::sockaddr_in addr_{};
+    xyco::libc::socklen_t addr_len_{sizeof(addr_)};
   };
 
   co_return co_await Future(this);

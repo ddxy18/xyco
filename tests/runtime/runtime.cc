@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "utils.h"
+#include <coroutine>
+
+import xyco.test.utils;
 
 TEST(RuntimeTest, block_on_void) {
   TestRuntimeCtx::runtime()->block_on(

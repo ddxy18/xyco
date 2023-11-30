@@ -1,0 +1,26 @@
+export module xyco.runtime_ctx;
+
+export import :global_registry;
+export import :thread_local_registry;
+
+export import xyco.future;
+export import xyco.runtime_core;
+
+export namespace xyco::runtime {
+// This class is mainly used for library inner interaction with `Runtime`. So
+// it's an useful interface for expert users who neeeds to extend the library,
+// like writing custom-made `Registry`. For major library callers, use `Runtime`
+// and interact with it via its `spawn` interface.
+class RuntimeCtx {
+ public:
+  static auto get_ctx() -> RuntimeCore *;
+
+  static auto register_future(FutureBase *future) -> void;
+
+  static auto driver() -> Driver &;
+
+  static auto wake(Events &events) -> void;
+
+  static auto wake_local(Events &events) -> void;
+};
+}  // namespace xyco::runtime

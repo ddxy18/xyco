@@ -1,0 +1,69 @@
+// A module wrapper of all necessary libc interfaces except macros.
+module;
+
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+export module xyco.libc;
+
+export namespace xyco::libc {
+using statx_t = struct statx;
+using stat64_t = struct stat64;
+
+using ::accept4;
+using ::bind;
+using ::close;
+using ::connect;
+using ::fsync;
+using ::getsockopt;
+using ::htonl;
+using ::htons;
+using ::in6_addr;
+using ::in_addr;
+using ::inet_addr;
+using ::inet_ntop;
+using ::inet_pton;
+using ::listen;
+using ::lseek64;
+using ::ntohs;
+using ::off64_t;
+using ::open;
+using ::read;
+using ::setsockopt;
+using ::shutdown;
+using ::sockaddr;
+using ::sockaddr_in;
+using ::sockaddr_in6;
+using ::socket;
+using ::socklen_t;
+using ::statx;
+using ::statx_timestamp;
+using ::write;
+
+constexpr auto K_STATX_ALL = STATX_ALL;
+constexpr auto K_STATX_BTIME = STATX_BTIME;
+constexpr auto K_SOL_SOCKET = SOL_SOCKET;
+constexpr auto K_SO_REUSEPORT = SO_REUSEPORT;
+constexpr auto K_SO_REUSEADDR = SO_REUSEADDR;
+constexpr auto K_AF_INET = AF_INET;
+constexpr auto K_AF_INET6 = AF_INET6;
+constexpr auto K_SOCK_STREAM = SOCK_STREAM;
+constexpr auto K_INET_ADDRSTRLEN = INET_ADDRSTRLEN;
+constexpr auto K_INET6_ADDRSTRLEN = INET6_ADDRSTRLEN;
+constexpr auto K_SO_ERROR = SO_ERROR;
+constexpr auto K_SOCK_NONBLOCK = SOCK_NONBLOCK;
+constexpr auto K_INADDR_ANY = INADDR_ANY;
+constexpr auto K_AT_EMPTY_PATH = AT_EMPTY_PATH;
+constexpr auto K_AT_STATX_SYNC_AS_STAT = AT_STATX_SYNC_AS_STAT;
+constexpr auto K_O_CLOEXEC = O_CLOEXEC;
+constexpr auto K_O_CREAT = O_CREAT;
+constexpr auto K_O_TRUNC = O_TRUNC;
+constexpr auto K_O_EXCL = O_EXCL;
+constexpr auto K_O_APPEND = O_APPEND;
+constexpr auto K_O_RDWR = O_RDWR;
+constexpr auto K_O_WRONLY = O_WRONLY;
+constexpr auto K_O_RDONLY = O_RDONLY;
+}  // namespace xyco::libc
