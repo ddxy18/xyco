@@ -5,6 +5,23 @@
 import xyco.test.utils;
 import xyco.time;
 
+TEST(TimeoutTest, moveonly) {
+  constexpr std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3);
+
+  TestRuntimeCtx::co_run(
+      [](const std::chrono::milliseconds timeout_ms)
+          -> xyco::runtime::Future<void> {
+        auto co_inner = []() -> xyco::runtime::Future<MoveOnlyObject> {
+          co_return {};
+        };
+
+        auto result = co_await xyco::time::timeout(timeout_ms, co_inner());
+
+        CO_ASSERT_EQ(*result, MoveOnlyObject());
+      }(timeout_ms),
+      {timeout_ms + std::chrono::milliseconds(1)});
+}
+
 TEST(TimeoutTest, no_timeout) {
   constexpr std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(3);
 

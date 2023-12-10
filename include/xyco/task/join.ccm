@@ -33,16 +33,16 @@ class JoinFuture : public runtime::Future<std::tuple<T...>> {
 
     auto unwrapped_result = std::apply(
         [](auto &&...branch) {
-          auto extract_result = [](auto result) {
+          auto extract_result = [](auto &&result) {
             if (!result.has_value()) {
               std::rethrow_exception(result.error());
             }
-            return result.value();
+            return std::move(result.value());
           };
           return CoOutput(extract_result(branch.second.value())...);
         },
         branches_);
-    return runtime::Ready<CoOutput>{unwrapped_result};
+    return runtime::Ready<CoOutput>{std::move(unwrapped_result)};
   }
 
   JoinFuture(runtime::Future<T> &&...future)

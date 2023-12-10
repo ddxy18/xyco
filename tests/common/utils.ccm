@@ -13,9 +13,11 @@ import xyco.runtime;
 import xyco.time;
 
 export template <typename T1, typename T2>
-constexpr auto CO_ASSERT_EQ(T1 val1, T2 val2) {
-  auto assert_eq_wrapper = [&]() { ASSERT_EQ(val1, val2); };
-  assert_eq_wrapper();
+constexpr auto CO_ASSERT_EQ(T1 &&val1, T2 &&val2) {
+  auto assert_eq_wrapper = [](T1 &&val1, T2 &&val2) {
+    ASSERT_EQ(std::forward<T1>(val1), std::forward<T2>(val2));
+  };
+  assert_eq_wrapper(std::forward<T1>(val1), std::forward<T2>(val2));
 }
 
 export constexpr std::chrono::milliseconds wait_interval(5);
@@ -61,4 +63,30 @@ export class TestRuntimeCtx {
   static constexpr std::chrono::milliseconds clock_interval_{10};
 
   static std::unique_ptr<xyco::runtime::Runtime> runtime_;
+};
+
+export class MoveOnlyObject {
+ public:
+  MoveOnlyObject() = default;
+
+  MoveOnlyObject(const MoveOnlyObject &) = delete;
+
+  MoveOnlyObject(MoveOnlyObject &&other) noexcept { *this = std::move(other); }
+
+  auto operator=(const MoveOnlyObject &) -> MoveOnlyObject & = delete;
+
+  auto operator=(MoveOnlyObject &&other) noexcept -> MoveOnlyObject & {
+    flag_ = other.flag_;
+    other.flag_ = -1;
+    return *this;
+  }
+
+  ~MoveOnlyObject() = default;
+
+  bool operator==(const MoveOnlyObject &other) const {
+    return flag_ == other.flag_;
+  }
+
+ private:
+  int flag_{1};
 };

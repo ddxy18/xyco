@@ -40,7 +40,7 @@ auto timeout(std::chrono::duration<Rep, Ratio> duration,
       co_return std::unexpected(nullptr);
     }
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-    co_return result.value();
+    co_return std::move(result).value();
   }
 }
 }  // namespace xyco::time

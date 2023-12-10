@@ -6,6 +6,17 @@
 import xyco.test.utils;
 import xyco.sync;
 
+TEST(OneshotTest, receive_moveonly) {
+  TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
+    auto [sender, receiver] = xyco::sync::oneshot::channel<MoveOnlyObject>();
+    auto send_result = co_await sender.send({});
+    auto receive_result = co_await receiver.receive();
+
+    CO_ASSERT_EQ(send_result.has_value(), true);
+    CO_ASSERT_EQ(*receive_result, MoveOnlyObject());
+  }());
+}
+
 TEST(OneshotTest, success) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();

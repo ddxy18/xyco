@@ -20,7 +20,18 @@ class SelectTest : public ::testing::Test {
     throw std::runtime_error("fail co");
     co_return 1;
   }
+
+  static auto moveonly_co() -> xyco::runtime::Future<MoveOnlyObject> {
+    co_return {};
+  }
 };
+
+TEST_F(SelectTest, select_moveonly) {
+  auto [result] =
+      TestRuntimeCtx::runtime()->block_on(xyco::task::select(moveonly_co()));
+
+  CO_ASSERT_EQ(result, MoveOnlyObject());
+}
 
 TEST_F(SelectTest, select_null) {
   auto [result] =

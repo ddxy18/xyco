@@ -96,9 +96,9 @@ class Receiver {
         if (self_->shared_ == nullptr) {
           return runtime::Ready<FutureReturn>{std::unexpected(std::nullopt)};
         }
-        auto shared_value = self_->shared_->value_;
+        auto &shared_value = self_->shared_->value_;
         if (shared_value.has_value()) {
-          return runtime::Ready<FutureReturn>{*shared_value};
+          return runtime::Ready<FutureReturn>(*std::move(shared_value));
         }
         if (self_->shared_->state_ == Shared<Value>::sender_closed) {
           return runtime::Ready<FutureReturn>{std::unexpected(std::nullopt)};
