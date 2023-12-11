@@ -29,6 +29,7 @@ add_executable(
   runtime/select.cc
   sync/mpsc.cc
   sync/oneshot.cc
+  task/blocking_task.cc
   time/clock.cc
   time/sleep.cc
   time/timeout.cc
@@ -48,6 +49,7 @@ add_executable(
   runtime/select.cc
   sync/mpsc.cc
   sync/oneshot.cc
+  task/blocking_task.cc
   time/clock.cc
   time/sleep.cc
   time/timeout.cc

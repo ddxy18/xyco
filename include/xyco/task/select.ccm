@@ -56,7 +56,7 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
     std::shared_lock<std::shared_mutex> guard(branch_shared_->branch_mutex_);
     auto result = std::apply(
         [](auto &...branch) {
-          auto cancel = [](auto handle, auto result) {
+          auto cancel = [](auto handle, auto &&result) {
             using ST =
                 std::remove_reference_t<decltype(result.value().value())>;
 
@@ -67,13 +67,13 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
             if (!result.value()) {
               std::rethrow_exception(result.value().error());
             }
-            return std::optional<ST>(result.value().value());
+            return std::optional<ST>(std::move(result.value().value()));
           };
           return CoOutput(
               cancel(std::get<0>(branch).get_handle(), std::get<1>(branch))...);
         },
         branch_shared_->branches_);
-    return runtime::Ready<CoOutput>{result};
+    return runtime::Ready<CoOutput>{std::move(result)};
   }
 
   SelectFuture(runtime::Future<T> &&...future)
@@ -112,7 +112,7 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
     try {
       auto result = co_await std::get<0>(branch);
       guard.lock();
-      std::get<1>(branch) = result;
+      std::get<1>(branch) = std::move(result);
     } catch (runtime::CancelException e) {
       // Only thrown when one of other branches has finished, so we could ignore
       // it safely without worrying about dangling `select`.

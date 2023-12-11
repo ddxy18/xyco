@@ -148,7 +148,7 @@ class Receiver {
           -> runtime::Poll<FutureReturn> override {
         std::unique_lock<std::mutex> queue_guard(self_->shared_->queue_mutex_);
         if (!self_->shared_->queue_.empty()) {
-          auto top = self_->shared_->queue_.front();
+          auto top = std::move(self_->shared_->queue_.front());
           self_->shared_->queue_.pop();
           queue_guard.unlock();
 
@@ -162,7 +162,7 @@ class Receiver {
             }
           }
 
-          return runtime::Ready<FutureReturn>{top};
+          return runtime::Ready<FutureReturn>(std::move(top));
         }
         if (self_->shared_->state_ == Shared<Value, Size>::sender_closed) {
           return runtime::Ready<FutureReturn>{{}};
