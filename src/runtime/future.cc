@@ -2,8 +2,7 @@ module;
 
 #include <coroutine>
 #include <iostream>
-
-#include "boost/stacktrace.hpp"
+#include <variant>
 
 module xyco.future;
 
@@ -21,8 +20,12 @@ auto xyco::runtime::Future<void>::PromiseType::final_suspend() noexcept
 }
 
 auto xyco::runtime::Future<void>::PromiseType::unhandled_exception() -> void {
-  future_->exception_ptr_ = std::current_exception();
-  std::cerr << boost::stacktrace::stacktrace();
+  if (future_ != nullptr) {
+    future_->exception_ptr_ = std::current_exception();
+  } else {
+    // Notify the sync codes of unhandled exceptions in coroutines.
+    std::rethrow_exception(std::current_exception());
+  }
 }
 
 auto xyco::runtime::Future<void>::PromiseType::return_void() -> void {
@@ -52,7 +55,12 @@ auto xyco::runtime::Future<void>::poll([[maybe_unused]] Handle<void> self)
 }
 
 auto xyco::runtime::Future<void>::poll_wrapper() -> bool {
-  return !std::holds_alternative<Pending>(poll(waiting_));
+  try {
+    return !std::holds_alternative<Pending>(poll(waiting_));
+  } catch (...) {
+    exception_ptr_ = std::current_exception();
+    return true;
+  }
 }
 
 auto xyco::runtime::Future<void>::cancel() -> void {
