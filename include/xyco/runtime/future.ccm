@@ -116,7 +116,7 @@ class Awaitable {
     return future_->self_ ? future_->self_.done() : false;
   }
 
-  auto await_suspend(Handle<void> waiting_coroutine) noexcept -> bool {
+  auto await_suspend(Handle<void> waiting_coroutine) -> bool {
     future_->waiting_ = waiting_coroutine;
     Handle<PromiseBase>::from_address(waiting_coroutine.address())
         .promise()
@@ -147,7 +147,16 @@ class Awaitable {
           .set_waited(nullptr);
     }
 
-    if (future_->exception_ptr_) {
+    // rethrow-and-catch to traceback unhandled exception(`CancelException`
+    // excluded)
+    try {
+      if (future_->exception_ptr_) {
+        std::rethrow_exception(future_->exception_ptr_);
+      }
+    } catch (CancelException) {
+      std::rethrow_exception(future_->exception_ptr_);
+    } catch (...) {
+      std::cerr << boost::stacktrace::stacktrace();
       std::rethrow_exception(future_->exception_ptr_);
     }
 
@@ -200,7 +209,6 @@ class Future : public FutureBase {
 
     auto unhandled_exception() -> void {
       future_->exception_ptr_ = std::current_exception();
-      std::cerr << boost::stacktrace::stacktrace();
     }
 
     auto return_value(Output &&value) -> void {
@@ -226,11 +234,16 @@ class Future : public FutureBase {
   }
 
   auto poll_wrapper() -> bool override {
-    auto result = poll(waiting_);
-    if (std::holds_alternative<Pending>(result)) {
-      return false;
+    try {
+      auto result = poll(waiting_);
+      if (std::holds_alternative<Pending>(result)) {
+        return false;
+      }
+      return_ = std::get<Ready<Output>>(std::move(result)).inner_;
+    } catch (...) {
+      exception_ptr_ = std::current_exception();
     }
-    return_ = std::get<Ready<Output>>(std::move(result)).inner_;
+
     return true;
   }
 
