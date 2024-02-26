@@ -55,6 +55,7 @@ if(XYCO_ENABLE_LINTING)
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/future.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/overload.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/panic.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/logging.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/runtime_core.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/runtime_ctx.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/runtime.dir/
@@ -120,18 +121,20 @@ add_library(xyco::overload ALIAS overload)
 target_sources(overload PUBLIC FILE_SET overload_module TYPE CXX_MODULES FILES
                                include/xyco/utils/overload.ccm)
 
+add_library(logging)
+target_link_libraries(logging PUBLIC spdlog)
 if(XYCO_ENABLE_LOGGING)
-  add_library(logging)
-  target_include_directories(logging PUBLIC include)
-  target_sources(logging PUBLIC src/utils/logger.cc)
-  target_compile_definitions(logging PUBLIC XYCO_ENABLE_LOG)
-  target_link_libraries(logging PUBLIC spdlog)
+  target_sources(
+    logging
+    PUBLIC FILE_SET logging_module TYPE CXX_MODULES FILES
+           include/xyco/utils/logging.ccm
+    PRIVATE src/utils/logging.cc)
+  target_compile_definitions(logging PUBLIC XYCO_ENABLE_LOGGING)
 else()
-  add_library(logging INTERFACE)
-  target_include_directories(logging INTERFACE include)
+  target_sources(logging PUBLIC FILE_SET logging_module TYPE CXX_MODULES FILES
+                                include/xyco/utils/logging.ccm)
 endif(XYCO_ENABLE_LOGGING)
 add_library(xyco::logging ALIAS logging)
-target_sources(logging PUBLIC include/xyco/utils/logger.h)
 
 # Runtime Core
 

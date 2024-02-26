@@ -2,8 +2,7 @@
 #include <coroutine>
 #include <thread>
 
-#include "xyco/utils/logger.h"
-
+import xyco.logging;
 import xyco.runtime;
 import xyco.task;
 import xyco.io;
@@ -22,7 +21,7 @@ auto start_server() -> Future<void> {
       xyco::net::SocketAddr::new_v4({}, SERVER_PORT)));
   if (!bind_result) {
     auto err = bind_result.error();
-    ERROR("bind error:{}", err);
+    xyco::logging::error("bind error:{}", err);
     co_return;
   }
   auto listener = *co_await tcp_socket.listen(3);
@@ -31,7 +30,7 @@ auto start_server() -> Future<void> {
     auto [connection, addr] = *co_await listener.accept();
     std::string_view buf = "abc";
     *co_await xyco::io::WriteExt::write(connection, buf);
-    INFO("success send \"{}\" to {}\n", buf, connection);
+    xyco::logging::info("success send \"{}\" to {}", buf, connection);
   }
   co_return;
 }
@@ -53,7 +52,7 @@ auto start_client() -> Future<void> {
   auto connection = *std::move(connect_result);
   auto buf = std::string(max_buf_size, 0);
   *co_await xyco::io::ReadExt::read(connection, buf);
-  INFO("success read \"{}\" from {}\n", buf, connection);
+  xyco::logging::info("success read \"{}\" from {}", buf, connection);
 }
 
 // NOLINTNEXTLINE(bugprone-exception-escape)

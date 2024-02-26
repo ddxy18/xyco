@@ -1,11 +1,11 @@
-#ifdef XYCO_ENABLE_LOG
-
-#include "xyco/utils/logger.h"
+module;
 
 #include "spdlog/sinks/daily_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-auto LoggerCtx::get_logger() -> std::shared_ptr<spdlog::logger> {
+module xyco.logging;
+
+auto xyco::logging::LoggerCtx::get_logger() -> std::shared_ptr<spdlog::logger> {
   auto configure = []() {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(spdlog::level::level_enum::debug);
@@ -25,5 +25,3 @@ auto LoggerCtx::get_logger() -> std::shared_ptr<spdlog::logger> {
 
   return console;
 }
-
-#endif

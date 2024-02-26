@@ -1,7 +1,5 @@
 #include <gtest/gtest.h>
 
-#include "xyco/utils/logger.h"
-
 import xyco.test.utils;
 import xyco.time;
 

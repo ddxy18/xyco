@@ -3,8 +3,6 @@
 #include <sstream>
 #include <unordered_map>
 
-#include "xyco/utils/logger.h"
-
 import xyco.runtime;
 import xyco.task;
 import xyco.io;
