@@ -3,10 +3,9 @@ module;
 #include <expected>
 #include <filesystem>
 
-#include "xyco/utils/logger.h"
-
 export module xyco.fs.uring;
 
+import xyco.logging;
 import xyco.fs.common;
 import xyco.runtime_ctx;
 import xyco.io;
@@ -61,7 +60,7 @@ class File : public FileBase<File> {
         }
         extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
         if (extra->return_ >= 0) {
-          INFO("read {} bytes from {}", extra->return_, self_->fd_);
+          logging::info("read {} bytes from {}", extra->return_, self_->fd_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
         return runtime::Ready<CoOutput>{
@@ -126,7 +125,7 @@ class File : public FileBase<File> {
         }
         extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
         if (extra->return_ >= 0) {
-          INFO("write {} bytes to {}", extra->return_, self_->fd_);
+          logging::info("write {} bytes to {}", extra->return_, self_->fd_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
         return runtime::Ready<CoOutput>{

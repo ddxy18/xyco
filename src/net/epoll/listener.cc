@@ -6,11 +6,11 @@ module;
 #include <expected>
 #include <gsl/pointers>
 
-#include "xyco/utils/logger.h"
 #include "xyco/utils/result.h"
 
 module xyco.net.epoll;
 
+import xyco.logging;
 import xyco.error;
 import xyco.task;
 import xyco.io;
@@ -27,7 +27,7 @@ auto xyco::net::epoll::TcpSocket::bind(SocketAddr addr)
         socket_.into_c_fd(), addr.into_c_addr(), sizeof(xyco::libc::sockaddr)));
   });
   if (bind_result) {
-    INFO("{} bind to {}", socket_, addr);
+    logging::info("{} bind to {}", socket_, addr);
   }
   co_return bind_result.transform([]([[maybe_unused]] auto bind_result) {});
 }
@@ -65,7 +65,7 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
           return runtime::Ready<CoOutput>{std::unexpected(utils::Error{
               .errno_ = ret, .info_ = strerror_l(ret, ::uselocale(nullptr))})};
         }
-        INFO("{} connect to {}", *socket_, addr_);
+        logging::info("{} connect to {}", *socket_, addr_);
         runtime::RuntimeCtx::get_ctx()
             ->driver()
             .deregister<io::epoll::IoRegistry>(event_);
@@ -95,7 +95,7 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
   }
   auto err = connect_result.error().errno_;
   if (err != EINPROGRESS && err != EAGAIN) {
-    WARN("{} connect fail{{errno={}}}", socket_, errno);
+    logging::warn("{} connect fail{{errno={}}}", socket_, errno);
     co_return std::unexpected(utils::Error{.errno_ = err});
   }
   co_return co_await Future(addr, &socket_);
@@ -109,7 +109,7 @@ auto xyco::net::epoll::TcpSocket::listen(int backlog)
   });
   ASYNC_TRY(listen_result.transform(
       [&]([[maybe_unused]] auto n) { return TcpListener(Socket(-1)); }));
-  INFO("{} listening", socket_);
+  logging::info("{} listening", socket_);
 
   co_return TcpListener(std::move(socket_));
 }
@@ -174,7 +174,7 @@ auto xyco::net::epoll::TcpStream::shutdown(io::Shutdown shutdown) const
                   socket_.into_c_fd(),
                   static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
             })).transform([]([[maybe_unused]] auto result) {}));
-  INFO("shutdown {}", socket_);
+  logging::info("shutdown {}", socket_);
 
   co_return {};
 }
@@ -238,7 +238,7 @@ auto xyco::net::epoll::TcpListener::accept()
         runtime::RuntimeCtx::get_ctx()
             ->driver()
             .Register<io::epoll::IoRegistry>(self_->event_);
-        TRACE("register accept {}", *self_->event_);
+        logging::trace("register accept {}", *self_->event_);
         return runtime::Pending();
       }
       if (extra->state_.get_field<io::epoll::IoExtra::State::Error>()) {
@@ -254,7 +254,7 @@ auto xyco::net::epoll::TcpListener::accept()
           auto err = accept_result.error();
           if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK) {
             self_->event_->future_ = this;
-            TRACE("reregister accept {}", *self_->event_);
+            logging::trace("reregister accept {}", *self_->event_);
             runtime::RuntimeCtx::get_ctx()
                 ->driver()
                 .reregister<io::epoll::IoRegistry>(self_->event_);
@@ -269,8 +269,8 @@ auto xyco::net::epoll::TcpListener::accept()
                                    ip_addr.data(), ip_addr.size())),
                                addr_in_.sin_port);
         auto socket = Socket(*accept_result);
-        INFO("accept from {} new connect={{{}, addr:{}}}", self_->socket_,
-             socket, sock_addr);
+        logging::info("accept from {} new connect={{{}, addr:{}}}",
+                      self_->socket_, socket, sock_addr);
         return runtime::Ready<CoOutput>{
             std::pair{TcpStream(std::move(socket)), sock_addr}};
       }

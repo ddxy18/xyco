@@ -6,10 +6,9 @@ module;
 #include <expected>
 #include <format>
 
-#include "xyco/utils/logger.h"
-
 module xyco.io.epoll;
 
+import xyco.logging;
 import xyco.panic;
 import xyco.libc;
 
@@ -77,7 +76,7 @@ auto xyco::io::epoll::IoRegistryImpl::Register(
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_ADD, extra->fd_, &epoll_event));
   if (result) {
-    TRACE("epoll_ctl add:{}", epoll_event);
+    logging::trace("epoll_ctl add:{}", epoll_event);
   } else {
     std::scoped_lock<std::mutex> lock_guard(events_mutex_);
     registered_events_.erase(
@@ -100,7 +99,7 @@ auto xyco::io::epoll::IoRegistryImpl::reregister(
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_MOD, extra->fd_, &epoll_event));
   if (result) {
-    TRACE("epoll_ctl mod:{}", epoll_event);
+    logging::trace("epoll_ctl mod:{}", epoll_event);
   } else {
     std::scoped_lock<std::mutex> lock_guard(events_mutex_);
     registered_events_.erase(
@@ -119,7 +118,7 @@ auto xyco::io::epoll::IoRegistryImpl::deregister(
   auto result = utils::into_sys_result(
       ::epoll_ctl(epfd_, EPOLL_CTL_DEL, extra->fd_, &epoll_event));
   if (result) {
-    TRACE("epoll_ctl del:{}", epoll_event);
+    logging::trace("epoll_ctl del:{}", epoll_event);
   }
 
   {
@@ -162,7 +161,7 @@ auto xyco::io::epoll::IoRegistryImpl::select(runtime::Events &events,
         });
     dynamic_cast<io::epoll::IoExtra *>(ready_event->get()->extra_.get())
         ->state_ = to_state(epoll_events.at(i).events);
-    TRACE("select {}", **ready_event);
+    logging::trace("select {}", **ready_event);
     events.push_back(*ready_event);
     registered_events_.erase(ready_event);
   }

@@ -5,11 +5,11 @@ module;
 #include <gsl/pointers>
 #include <variant>
 
-#include "xyco/utils/logger.h"
 #include "xyco/utils/result.h"
 
 module xyco.net.uring;
 
+import xyco.logging;
 import xyco.task;
 import xyco.libc;
 
@@ -23,7 +23,7 @@ auto xyco::net::uring::TcpSocket::bind(SocketAddr addr)
         socket_.into_c_fd(), addr.into_c_addr(), sizeof(xyco::libc::sockaddr)));
   });
   if (bind_result) {
-    INFO("{} bind to {}", socket_, addr);
+    logging::info("{} bind to {}", socket_, addr);
   }
 
   co_return bind_result.transform([]([[maybe_unused]] auto n) {});
@@ -64,7 +64,7 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
         return runtime::Ready<CoOutput>{
             std::unexpected(utils::Error{.errno_ = -extra->return_})};
       }
-      INFO("{} connect to {}", *socket_, addr_);
+      logging::info("{} connect to {}", *socket_, addr_);
       return runtime::Ready<CoOutput>{TcpStream(std::move(*socket_))};
     }
 
@@ -85,7 +85,7 @@ auto xyco::net::uring::TcpSocket::listen(int backlog)
   });
   ASYNC_TRY(listen_result.transform(
       [&]([[maybe_unused]] auto n) { return TcpListener(Socket(-1)); }));
-  INFO("{} listening", socket_);
+  logging::info("{} listening", socket_);
 
   co_return TcpListener(std::move(socket_));
 }
@@ -175,7 +175,7 @@ auto xyco::net::uring::TcpStream::shutdown(io::Shutdown shutdown)
         return runtime::Ready<CoOutput>{
             std::unexpected(utils::Error{.errno_ = -extra->return_})};
       }
-      INFO("shutdown {}", self_->socket_);
+      logging::info("shutdown {}", self_->socket_);
       return runtime::Ready<CoOutput>{{}};
     }
 
@@ -251,8 +251,8 @@ auto xyco::net::uring::TcpListener::accept()
                                          ip_addr.data(), ip_addr.size())),
           addr_.sin_port);
       auto socket = Socket(extra->return_);
-      INFO("accept from {} new connect={{{}, addr:{}}}", self_->socket_, socket,
-           sock_addr);
+      logging::info("accept from {} new connect={{{}, addr:{}}}",
+                    self_->socket_, socket, sock_addr);
       return runtime::Ready<CoOutput>{
           std::pair{TcpStream(std::move(socket)), sock_addr}};
     }

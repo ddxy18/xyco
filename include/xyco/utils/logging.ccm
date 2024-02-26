@@ -1,0 +1,73 @@
+module;
+
+#include "spdlog/spdlog.h"
+
+export module xyco.logging;
+
+export namespace xyco::logging {
+
+#ifdef XYCO_ENABLE_LOGGING
+
+class LoggerCtx {
+ public:
+  static auto get_logger() -> std::shared_ptr<spdlog::logger>;
+};
+
+template <typename... Args>
+inline auto trace(spdlog::format_string_t<Args...> fmt, Args &&...args)
+    -> void {
+  LoggerCtx::get_logger()->trace(fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline auto debug(spdlog::format_string_t<Args...> fmt, Args &&...args)
+    -> void {
+  LoggerCtx::get_logger()->debug(fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline auto info(spdlog::format_string_t<Args...> fmt, Args &&...args) -> void {
+  LoggerCtx::get_logger()->info(fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline auto warn(spdlog::format_string_t<Args...> fmt, Args &&...args) -> void {
+  LoggerCtx::get_logger()->warn(fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+inline auto error(spdlog::format_string_t<Args...> fmt, Args &&...args)
+    -> void {
+  LoggerCtx::get_logger()->error(fmt, std::forward<Args>(args)...);
+}
+
+#else
+
+template <typename... Args>
+inline auto trace([[maybe_unused]] spdlog::format_string_t<Args...> fmt,
+                  // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+                  [[maybe_unused]] Args &&...args) -> void {}
+
+template <typename... Args>
+inline auto debug([[maybe_unused]] spdlog::format_string_t<Args...> fmt,
+                  // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+                  [[maybe_unused]] Args &&...args) -> void {}
+
+template <typename... Args>
+inline auto info([[maybe_unused]] spdlog::format_string_t<Args...> fmt,
+                 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+                 [[maybe_unused]] Args &&...args) -> void {}
+
+template <typename... Args>
+inline auto warn([[maybe_unused]] spdlog::format_string_t<Args...> fmt,
+                 // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+                 [[maybe_unused]] Args &&...args) -> void {}
+
+template <typename... Args>
+inline auto error([[maybe_unused]] spdlog::format_string_t<Args...> fmt,
+                  // NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+                  [[maybe_unused]] Args &&...args) -> void {}
+
+#endif
+
+}  // namespace xyco::logging

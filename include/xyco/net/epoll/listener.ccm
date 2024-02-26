@@ -2,10 +2,9 @@ module;
 
 #include <format>
 
-#include "xyco/utils/logger.h"
-
 export module xyco.net.epoll;
 
+import xyco.logging;
 import xyco.error;
 import xyco.runtime_ctx;
 import xyco.io;
@@ -71,7 +70,7 @@ class TcpStream {
           runtime::RuntimeCtx::get_ctx()
               ->driver()
               .Register<io::epoll::IoRegistry>(self_->event_);
-          TRACE("register read {}", self_->socket_);
+          logging::trace("register read {}", self_->socket_);
           return runtime::Pending();
         }
         if (extra->state_.get_field<io::epoll::IoExtra::State::Error>() ||
@@ -80,7 +79,7 @@ class TcpStream {
               xyco::libc::read(self_->socket_.into_c_fd(), &*begin_,
                                std::distance(begin_, end_));
           if (read_bytes != -1) {
-            INFO("read {} bytes from {}", read_bytes, *self_);
+            logging::info("read {} bytes from {}", read_bytes, *self_);
             extra->state_
                 .set_field<io::epoll::IoExtra::State::Readable, false>();
             return runtime::Ready<CoOutput>{read_bytes};
@@ -93,7 +92,7 @@ class TcpStream {
         }
         self_->event_->future_ = this;
         extra->interest_ = io::epoll::IoExtra::Interest::Read;
-        TRACE("reregister read {}", self_->socket_);
+        logging::trace("reregister read {}", self_->socket_);
         runtime::RuntimeCtx::get_ctx()
             ->driver()
             .reregister<io::epoll::IoRegistry>(self_->event_);
@@ -157,7 +156,7 @@ class TcpStream {
               utils::into_sys_result(write_bytes).transform([](auto n) {
                 return static_cast<uintptr_t>(n);
               });
-          INFO("write {} bytes to {}", write_bytes, self_->socket_);
+          logging::info("write {} bytes to {}", write_bytes, self_->socket_);
           return runtime::Ready<CoOutput>{nbytes};
         }
         self_->event_->future_ = this;

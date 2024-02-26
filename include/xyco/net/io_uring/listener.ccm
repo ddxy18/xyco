@@ -3,10 +3,9 @@ module;
 #include <expected>
 #include <format>
 
-#include "xyco/utils/logger.h"
-
 export module xyco.net.uring;
 
+import xyco.logging;
 import xyco.runtime_ctx;
 import xyco.io;
 import xyco.net.common;
@@ -72,12 +71,13 @@ class TcpStream {
           runtime::RuntimeCtx::get_ctx()
               ->driver()
               .Register<io::uring::IoRegistry>(self_->event_);
-          TRACE("register read {}", self_->socket_);
+          logging::trace("register read {}", self_->socket_);
           return runtime::Pending();
         }
         extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
         if (extra->return_ >= 0) {
-          INFO("read {} bytes from {}", extra->return_, self_->socket_);
+          logging::info("read {} bytes from {}", extra->return_,
+                        self_->socket_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
         return runtime::Ready<CoOutput>{
@@ -136,7 +136,7 @@ class TcpStream {
         }
         extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
         if (extra->return_ >= 0) {
-          INFO("write {} bytes to {}", extra->return_, self_->socket_);
+          logging::info("write {} bytes to {}", extra->return_, self_->socket_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
         return runtime::Ready<CoOutput>{

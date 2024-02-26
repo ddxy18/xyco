@@ -2,8 +2,6 @@
 #include <memory>
 #include <string>
 
-#include "xyco/utils/logger.h"
-
 import xyco.runtime;
 import xyco.task;
 import xyco.io;

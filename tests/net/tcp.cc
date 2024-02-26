@@ -2,8 +2,9 @@
 
 #include <coroutine>
 
-#include "xyco/utils/logger.h"
+#include "spdlog/spdlog.h"
 
+import xyco.logging;
 import xyco.test.utils;
 import xyco.net;
 import xyco.libc;
@@ -199,9 +200,9 @@ TEST_F(WithServerTest, TcpListener_accept) {
 TEST_F(WithServerTest, TcpStream_rw_loop) {
   constexpr int ITERATION_TIMES = 100000;
 
-#ifdef XYCO_ENABLE_LOG
-  auto original_level = LoggerCtx::get_logger()->level();
-  LoggerCtx::get_logger()->set_level(spdlog::level::off);
+#ifdef XYCO_ENABLE_LOGGING
+  auto original_level = xyco::logging::LoggerCtx::get_logger()->level();
+  xyco::logging::LoggerCtx::get_logger()->set_level(spdlog::level::off);
 #endif
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     auto client = *co_await xyco::net::TcpStream::connect(
@@ -218,8 +219,8 @@ TEST_F(WithServerTest, TcpStream_rw_loop) {
       CO_ASSERT_EQ(r_nbytes, r_buf.size());
     }
   }());
-#ifdef XYCO_ENABLE_LOG
-  LoggerCtx::get_logger()->set_level(original_level);
+#ifdef XYCO_ENABLE_LOGGING
+  xyco::logging::LoggerCtx::get_logger()->set_level(original_level);
 #endif
 }
 

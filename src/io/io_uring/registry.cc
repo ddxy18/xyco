@@ -7,10 +7,9 @@ module;
 #include <string>
 #include <variant>
 
-#include "xyco/utils/logger.h"
-
 module xyco.io.uring;
 
+import xyco.logging;
 import xyco.panic;
 
 auto xyco::io::uring::IoExtra::print() const -> std::string {
@@ -34,8 +33,8 @@ auto xyco::io::uring::IoRegistryImpl::Register(
     // read
     if (std::holds_alternative<uring::IoExtra::Read>(extra->args_)) {
       auto read_args = std::get<uring::IoExtra::Read>(extra->args_);
-      TRACE("read:fd={} user_data={}", extra->fd_,
-            static_cast<void*>(event.get()));
+      logging::trace("read:fd={} user_data={}", extra->fd_,
+                     static_cast<void*>(event.get()));
 
       io_uring_prep_read(sqe, extra->fd_, read_args.buf_, read_args.len_,
                          read_args.offset_);
@@ -43,24 +42,24 @@ auto xyco::io::uring::IoRegistryImpl::Register(
     // write
     if (std::holds_alternative<uring::IoExtra::Write>(extra->args_)) {
       auto write_args = std::get<uring::IoExtra::Write>(extra->args_);
-      TRACE("write:fd={} user_data={}", extra->fd_,
-            static_cast<void*>(event.get()));
+      logging::trace("write:fd={} user_data={}", extra->fd_,
+                     static_cast<void*>(event.get()));
 
       io_uring_prep_write(sqe, extra->fd_, write_args.buf_, write_args.len_,
                           write_args.offset_);
     }
     // close
     if (std::holds_alternative<uring::IoExtra::Close>(extra->args_)) {
-      TRACE("close:fd={} user_data={}", extra->fd_,
-            static_cast<void*>(event.get()));
+      logging::trace("close:fd={} user_data={}", extra->fd_,
+                     static_cast<void*>(event.get()));
 
       io_uring_prep_close(sqe, extra->fd_);
     }
     // accept
     if (std::holds_alternative<uring::IoExtra::Accept>(extra->args_)) {
       auto accept_args = std::get<uring::IoExtra::Accept>(extra->args_);
-      TRACE("accpet:fd={} user_data={}", extra->fd_,
-            static_cast<void*>(event.get()));
+      logging::trace("accpet:fd={} user_data={}", extra->fd_,
+                     static_cast<void*>(event.get()));
 
       io_uring_prep_accept(sqe, extra->fd_, accept_args.addr_,
                            accept_args.addrlen_, 0);
@@ -68,8 +67,8 @@ auto xyco::io::uring::IoRegistryImpl::Register(
     // connect
     if (std::holds_alternative<uring::IoExtra::Connect>(extra->args_)) {
       auto connect_args = std::get<uring::IoExtra::Connect>(extra->args_);
-      TRACE("connect:fd={} user_data={}", extra->fd_,
-            static_cast<void*>(event.get()));
+      logging::trace("connect:fd={} user_data={}", extra->fd_,
+                     static_cast<void*>(event.get()));
 
       io_uring_prep_connect(sqe, extra->fd_, connect_args.addr_,
                             connect_args.addrlen_);
@@ -77,8 +76,8 @@ auto xyco::io::uring::IoRegistryImpl::Register(
     // shutdown
     if (std::holds_alternative<uring::IoExtra::Shutdown>(extra->args_)) {
       auto shutdown_args = std::get<uring::IoExtra::Shutdown>(extra->args_);
-      TRACE("shutdown:fd={} user_data={}", extra->fd_,
-            static_cast<void*>(event.get()));
+      logging::trace("shutdown:fd={} user_data={}", extra->fd_,
+                     static_cast<void*>(event.get()));
 
       io_uring_prep_shutdown(sqe, extra->fd_,
                              std::to_underlying(shutdown_args.shutdown_));
@@ -111,9 +110,9 @@ auto xyco::io::uring::IoRegistryImpl::deregister(
   sqe = io_uring_get_sqe(&io_uring_);
   if (sqe != nullptr) {
     io_uring_prep_cancel(sqe, event.get(), 0);
-    TRACE("cancel:{} {}",
-          dynamic_cast<uring::IoExtra*>(event->extra_.get())->fd_,
-          static_cast<void*>(event.get()));
+    logging::trace("cancel:{} {}",
+                   dynamic_cast<uring::IoExtra*>(event->extra_.get())->fd_,
+                   static_cast<void*>(event.get()));
 
     io_uring_submit(&io_uring_);
 

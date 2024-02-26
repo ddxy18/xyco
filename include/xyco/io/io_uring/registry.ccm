@@ -6,10 +6,9 @@ module;
 #include <variant>
 #include <vector>
 
-#include "xyco/utils/logger.h"
-
 export module xyco.io.uring;
 
+import xyco.logging;
 import xyco.panic;
 import xyco.runtime_ctx;
 import xyco.overload;
@@ -126,8 +125,8 @@ class IoRegistryImpl : public runtime::Registry {
         auto *data =
             static_cast<runtime::Event *>(io_uring_cqe_get_data(cqe_ptr));
         auto *extra = dynamic_cast<uring::IoExtra *>(data->extra_.get());
-        TRACE("res:{},flags:{},user_data:{},fd:{}", cqe_ptr->res,
-              cqe_ptr->flags, static_cast<void *>(data), extra->fd_);
+        logging::trace("res:{},flags:{},user_data:{},fd:{}", cqe_ptr->res,
+                       cqe_ptr->flags, static_cast<void *>(data), extra->fd_);
 
         extra->return_ = cqe_ptr->res;
         auto ready_event =

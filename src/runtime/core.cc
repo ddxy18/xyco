@@ -6,9 +6,9 @@ module;
 #include <thread>
 #include <vector>
 
-#include "xyco/utils/logger.h"
-
 module xyco.runtime_core;
+
+import xyco.logging;
 
 auto xyco::runtime::Worker::run_in_place(RuntimeCore *core) -> void {
   while (!suspend_flag_) {
@@ -106,7 +106,7 @@ auto xyco::runtime::RuntimeCore::driver() -> Driver & { return driver_; }
 
 auto xyco::runtime::RuntimeCore::wake(Events &events) -> void {
   for (auto &event_ptr : events) {
-    TRACE("wake {}", *event_ptr);
+    logging::trace("wake {}", *event_ptr);
     auto *future = event_ptr->future_;
     // Unbinds `future_` first to avoid contaminating the event's next coroutine
     event_ptr->future_ = nullptr;
@@ -119,7 +119,7 @@ auto xyco::runtime::RuntimeCore::wake(Events &events) -> void {
 auto xyco::runtime::RuntimeCore::wake_local(Events &events) -> void {
   auto &worker = workers_.find(std::this_thread::get_id())->second;
   for (auto &event_ptr : events) {
-    TRACE("wake local {}", *event_ptr);
+    logging::trace("wake local {}", *event_ptr);
     auto *future = event_ptr->future_;
     event_ptr->future_ = nullptr;
     std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
