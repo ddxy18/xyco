@@ -22,10 +22,10 @@ jobs:
         run: |
           BINARY_DIR=build/enable_logging/tests
           LLVM_VERSION=$llvm_version /usr/bin/cmake --workflow --preset ci_test
-          LLVM_PROFILE_FILE="$BINARY_DIR/xyco_test_epoll.profraw" $BINARY_DIR/xyco_test_epoll --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
+          LLVM_PROFILE_FILE="$BINARY_DIR/xyco_test_epoll.profraw" SPDLOG_LEVEL=info $BINARY_DIR/xyco_test_epoll --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
           llvm-profdata-$llvm_version merge -sparse $BINARY_DIR/xyco_test_epoll.profraw -o $BINARY_DIR/xyco_test_epoll.profdata
           llvm-cov-$llvm_version show $BINARY_DIR/xyco_test_epoll -ignore-filename-regex=build -instr-profile=$BINARY_DIR/xyco_test_epoll.profdata > coverage_epoll.txt
-          LLVM_PROFILE_FILE="$BINARY_DIR/xyco_test_uring.profraw" $BINARY_DIR/xyco_test_uring --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
+          LLVM_PROFILE_FILE="$BINARY_DIR/xyco_test_uring.profraw" SPDLOG_LEVEL=info $BINARY_DIR/xyco_test_uring --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
           llvm-profdata-$llvm_version merge -sparse $BINARY_DIR/xyco_test_uring.profraw -o $BINARY_DIR/xyco_test_uring.profdata
           llvm-cov-$llvm_version show $BINARY_DIR/xyco_test_uring -ignore-filename-regex=build -instr-profile=$BINARY_DIR/xyco_test_uring.profdata > coverage_uring.txt
       - name: upload epoll coverage report
