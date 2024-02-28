@@ -49,8 +49,8 @@ class WriteExt {
 
   template <typename Writer, typename B>
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
-  static auto write_all(Writer &writer, const B &buffer)
-      -> runtime::Future<utils::Result<void>>
+  static auto write_all(Writer &writer,
+                        const B &buffer) -> runtime::Future<utils::Result<void>>
     requires(Writable<Writer, decltype(std::begin(buffer))> && Buffer<B>)
   {
     auto buf_size = std::size(buffer);

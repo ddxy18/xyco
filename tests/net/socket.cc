@@ -17,8 +17,9 @@ TEST(SocketTest, new_v4) {
 
   auto sock_addr =
       xyco::net::SocketAddr::new_v4(xyco::net::Ipv4Addr(local_host), http_port);
-  const auto *raw_addr = static_cast<const xyco::libc::sockaddr_in *>(
-      static_cast<const void *>(sock_addr.into_c_addr()));
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  const auto *raw_addr = reinterpret_cast<const xyco::libc::sockaddr_in *>(
+      sock_addr.into_c_addr());
 
   ASSERT_EQ(raw_addr->sin_addr.s_addr, 0b00000001000000000000000001111111);
   ASSERT_EQ(::ntohs(raw_addr->sin_port), http_port);
@@ -30,8 +31,9 @@ TEST(SocketTest, new_v6) {
 
   auto sock_addr =
       xyco::net::SocketAddr::new_v6(xyco::net::Ipv6Addr(local_host), http_port);
-  const auto *raw_addr = static_cast<const xyco::libc::sockaddr_in6 *>(
-      static_cast<const void *>(sock_addr.into_c_addr()));
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  const auto *raw_addr = reinterpret_cast<const xyco::libc::sockaddr_in6 *>(
+      sock_addr.into_c_addr());
 
   ASSERT_EQ(raw_addr->sin6_addr.s6_addr[15], 1);
   ASSERT_EQ(raw_addr->sin6_port, http_port);

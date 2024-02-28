@@ -51,8 +51,8 @@ class PromiseBase {
 
   PromiseBase(PromiseBase &&future_base) = delete;
 
-  auto operator=(const PromiseBase &future_base)
-      -> const PromiseBase & = delete;
+  auto operator=(const PromiseBase &future_base) -> const PromiseBase & =
+                                                        delete;
 
   auto operator=(PromiseBase &&future_base) -> const PromiseBase & = delete;
 
@@ -212,7 +212,6 @@ class Future : public FutureBase {
     }
 
     auto return_value(Output &&value) -> void {
-      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       future_->return_ = std::forward<Output>(value);
     }
 
@@ -247,7 +246,7 @@ class Future : public FutureBase {
     return true;
   }
 
-  inline auto get_handle() -> Handle<PromiseBase> override {
+  auto get_handle() -> Handle<PromiseBase> override {
     return self_ == nullptr
                ? Handle<PromiseBase>::from_address(waiting_.address())
                : Handle<PromiseBase>::from_address(self_.address());
@@ -339,7 +338,7 @@ class Future<void> : public FutureBase {
 
   [[nodiscard]] auto poll_wrapper() -> bool override;
 
-  inline auto get_handle() -> Handle<PromiseBase> override {
+  auto get_handle() -> Handle<PromiseBase> override {
     return self_ == nullptr
                ? Handle<PromiseBase>::from_address(waiting_.address())
                : Handle<PromiseBase>::from_address(self_.address());
@@ -360,7 +359,7 @@ class Future<void> : public FutureBase {
   ~Future() override;
 
  private:
-  std::optional<bool> return_{};
+  std::optional<bool> return_;
   std::exception_ptr exception_ptr_;
 
   Handle<promise_type> self_;

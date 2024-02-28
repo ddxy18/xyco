@@ -36,8 +36,9 @@ class BufferReader {
     co_return len;
   }
 
-  auto fill_buffer() -> runtime::Future<
-      utils::Result<std::pair<typename B::iterator, typename B::iterator>>> {
+  auto fill_buffer()
+      -> runtime::Future<utils::Result<
+          std::pair<typename B::iterator, typename B::iterator>>> {
     if (pos_ == cap_) {
       ASYNC_TRY((co_await ReadExt::read(*inner_reader_, buffer_))
                     .transform([&](auto nbytes) {

@@ -42,7 +42,8 @@ TEST(FmtTypeTest, IoExtra_Event) {
   addr.sin_addr = char_addr;
   addr.sin_port = port;
   extra->args_ = xyco::io::IoExtra::Accept{
-      .addr_ = static_cast<xyco::libc::sockaddr *>(static_cast<void *>(&addr)),
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+      .addr_ = reinterpret_cast<xyco::libc::sockaddr *>(&addr),
       .addrlen_ = &len,
       .flags_ = 0};
   fmt_str = std::format("{}", event);
@@ -55,7 +56,8 @@ TEST(FmtTypeTest, IoExtra_Event) {
   addr.sin_addr = char_addr;
   addr.sin_port = port;
   extra->args_ = xyco::io::IoExtra::Connect{
-      .addr_ = static_cast<xyco::libc::sockaddr *>(static_cast<void *>(&addr)),
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+      .addr_ = reinterpret_cast<xyco::libc::sockaddr *>(&addr),
       .addrlen_ = sizeof(addr)};
   fmt_str = std::format("{}", event);
   ASSERT_EQ(

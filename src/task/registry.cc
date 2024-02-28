@@ -100,8 +100,8 @@ auto xyco::task::BlockingRegistryImpl::deregister(
 }
 
 auto xyco::task::BlockingRegistryImpl::select(
-    runtime::Events& events, [[maybe_unused]] std::chrono::milliseconds timeout)
-    -> utils::Result<void> {
+    runtime::Events& events,
+    [[maybe_unused]] std::chrono::milliseconds timeout) -> utils::Result<void> {
   decltype(events_) new_events;
 
   std::scoped_lock<std::mutex> lock_guard(mutex_);

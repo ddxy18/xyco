@@ -2,6 +2,7 @@ module;
 
 #include <chrono>
 #include <memory>
+#include <mutex>
 
 export module xyco.time:registry;
 
@@ -48,8 +49,8 @@ template <>
 struct std::formatter<xyco::time::TimeExtra>
     : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const xyco::time::TimeExtra &extra, FormatContext &ctx) const
-      -> decltype(ctx.out()) {
+  auto format(const xyco::time::TimeExtra &extra,
+              FormatContext &ctx) const -> decltype(ctx.out()) {
     return std::format_to(
         ctx.out(), "TimeExtra{{expire_time_={:%F %T}}}",
         std::chrono::round<std::chrono::seconds>(extra.expire_time_));

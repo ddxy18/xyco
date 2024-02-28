@@ -21,13 +21,15 @@ TEST(FmtTypeTest, IoError) {
 
 TEST(FmtTypeTest, file_IoError) {
   auto io_error = xyco::utils::Error();
-  io_error.errno_ = std::to_underlying(xyco::utils::ErrorKind::Unsupported);
+  io_error.errno_ = static_cast<unsigned char>(
+      std::to_underlying(xyco::utils::ErrorKind::Unsupported));
 
   auto fmt_str = std::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Unsupported, info=}");
 
-  io_error.errno_ = std::to_underlying(xyco::utils::ErrorKind::Uncategorized);
+  io_error.errno_ = static_cast<unsigned char>(
+      std::to_underlying(xyco::utils::ErrorKind::Uncategorized));
   fmt_str = std::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Uncategorized, info=}");

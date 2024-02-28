@@ -237,8 +237,8 @@ class TcpListener {
 
   auto operator=(const TcpListener &tcp_listener) -> TcpListener & = delete;
 
-  auto operator=(TcpListener &&tcp_listener) noexcept
-      -> TcpListener & = default;
+  auto operator=(TcpListener &&tcp_listener) noexcept -> TcpListener & =
+                                                             default;
 
   ~TcpListener();
 

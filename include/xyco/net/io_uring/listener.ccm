@@ -80,8 +80,8 @@ class TcpStream {
                         self_->socket_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
-        return runtime::Ready<CoOutput>{
-            std::unexpected(utils::Error{.errno_ = -extra->return_})};
+        return runtime::Ready<CoOutput>{std::unexpected(
+            utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
 
       Future(Iterator begin, Iterator end, TcpStream *self)
@@ -139,8 +139,8 @@ class TcpStream {
           logging::info("write {} bytes to {}", extra->return_, self_->socket_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
-        return runtime::Ready<CoOutput>{
-            std::unexpected(utils::Error{.errno_ = -extra->return_})};
+        return runtime::Ready<CoOutput>{std::unexpected(
+            utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
 
       Future(Iterator begin, Iterator end, TcpStream *self)
@@ -212,8 +212,8 @@ class TcpListener {
 
   auto operator=(const TcpListener &tcp_listener) -> TcpListener & = delete;
 
-  auto operator=(TcpListener &&tcp_listener) noexcept
-      -> TcpListener & = default;
+  auto operator=(TcpListener &&tcp_listener) noexcept -> TcpListener & =
+                                                             default;
 
   ~TcpListener() = default;
 

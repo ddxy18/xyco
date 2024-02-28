@@ -27,8 +27,8 @@ xyco::net::Ipv6Addr::Ipv6Addr(const char* addr) : inner_() {
   xyco::libc::inet_pton(xyco::libc::K_AF_INET6, addr, &inner_);
 }
 
-auto xyco::net::SocketAddr::new_v4(Ipv4Addr ip_addr, uint16_t port)
-    -> SocketAddr {
+auto xyco::net::SocketAddr::new_v4(Ipv4Addr ip_addr,
+                                   uint16_t port) -> SocketAddr {
   auto addrv4 = SocketAddrV4{};
   addrv4.inner_.sin_port = xyco::libc::htons(port);
   addrv4.inner_.sin_addr = ip_addr.inner_;
@@ -38,8 +38,8 @@ auto xyco::net::SocketAddr::new_v4(Ipv4Addr ip_addr, uint16_t port)
   return addr;
 }
 
-auto xyco::net::SocketAddr::new_v6(Ipv6Addr ip_addr, uint16_t port)
-    -> SocketAddr {
+auto xyco::net::SocketAddr::new_v6(Ipv6Addr ip_addr,
+                                   uint16_t port) -> SocketAddr {
   auto addrv6 = SocketAddrV6{};
   addrv6.inner_.sin6_addr = ip_addr.inner_;
   addrv6.inner_.sin6_port = port;

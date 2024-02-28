@@ -15,7 +15,7 @@ class IoExtra : public runtime::Extra {
     friend struct std::formatter<xyco::io::epoll::IoExtra>;
 
    public:
-    enum {
+    enum : std::uint8_t {
       Registered = 0b1,
       Pending = 0b10,
       Readable = 0b100,
@@ -40,7 +40,7 @@ class IoExtra : public runtime::Extra {
    private:
     uint8_t field_;
   };
-  enum class Interest { Read, Write, All };
+  enum class Interest : std::uint8_t { Read, Write, All };
 
   [[nodiscard]] auto print() const -> std::string override;
 
@@ -97,8 +97,8 @@ template <>
 struct std::formatter<xyco::io::epoll::IoExtra>
     : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const xyco::io::epoll::IoExtra &extra, FormatContext &ctx) const
-      -> decltype(ctx.out()) {
+  auto format(const xyco::io::epoll::IoExtra &extra,
+              FormatContext &ctx) const -> decltype(ctx.out()) {
     std::string state = "[";
     if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Registered) !=
         0) {
