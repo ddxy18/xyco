@@ -49,7 +49,10 @@ class BufferReader {
   }
 
   BufferReader(Reader* reader)
-      : inner_reader_(reader), buffer_(DEFAULT_BUFFER_SIZE, 0), pos_(0), cap_(0) {}
+      : inner_reader_(reader),
+        buffer_(DEFAULT_BUFFER_SIZE, 0),
+        pos_(0),
+        cap_(0) {}
 
  private:
   gsl::not_null<Reader*> inner_reader_;

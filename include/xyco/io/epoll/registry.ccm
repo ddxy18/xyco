@@ -127,7 +127,10 @@ struct std::formatter<xyco::io::epoll::IoExtra> : public std::formatter<std::str
         break;
     }
 
-    return std::format_to(ctx.out(), "IoExtra{{state_={}, interest_={}, fd_={}}}", state, interest,
+    return std::format_to(ctx.out(),
+                          "IoExtra{{state_={}, interest_={}, fd_={}}}",
+                          state,
+                          interest,
                           extra.fd_);
   }
 };

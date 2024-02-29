@@ -10,7 +10,8 @@ import xyco.net;
 class Server {
  public:
   Server(std::unique_ptr<xyco::runtime::Runtime> runtime, uint16_t port)
-      : runtime_(std::move(runtime)), port_(port) {}
+      : runtime_(std::move(runtime)),
+        port_(port) {}
 
   auto run() -> void { runtime_->block_on(init_server()); }
 

@@ -99,14 +99,16 @@ struct std::formatter<xyco::net::SocketAddr> : public std::formatter<bool> {
       ip_addr = xyco::libc::inet_ntop(
           sock_addr->sa_family,
           // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-          &reinterpret_cast<const xyco::libc::sockaddr_in*>(sock_addr)->sin_addr, ip_addr.data(),
+          &reinterpret_cast<const xyco::libc::sockaddr_in*>(sock_addr)->sin_addr,
+          ip_addr.data(),
           ip_addr.size());
       port = std::get<0>(addr.addr_).get_port();
     } else {
       ip_addr = xyco::libc::inet_ntop(
           sock_addr->sa_family,
           // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-          &reinterpret_cast<const xyco::libc::sockaddr_in6*>(sock_addr)->sin6_addr, ip_addr.data(),
+          &reinterpret_cast<const xyco::libc::sockaddr_in6*>(sock_addr)->sin6_addr,
+          ip_addr.data(),
           ip_addr.size());
       port = std::get<1>(addr.addr_).get_port();
     }

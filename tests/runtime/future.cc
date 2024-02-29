@@ -21,7 +21,8 @@ TEST(InRuntimeDeathTest, NoSuspend) {
 class SuspendOnceFuture : public xyco::runtime::Future<int> {
  public:
   SuspendOnceFuture(xyco::runtime::Future<int> *&handle)
-      : xyco::runtime::Future<int>(nullptr), handle_(handle) {}
+      : xyco::runtime::Future<int>(nullptr),
+        handle_(handle) {}
 
   [[nodiscard]] auto poll([[maybe_unused]] xyco::runtime::Handle<void> self)
       -> xyco::runtime::Poll<int> override {
@@ -95,7 +96,8 @@ TEST(NoRuntimeDeathTest, NeverRun) {
 
         std::quick_exit(evaluator.co_result);
       },
-      testing::ExitedWithCode(0), "");
+      testing::ExitedWithCode(0),
+      "");
 }
 
 auto throw_uncaught_exception() -> xyco::runtime::Future<void> {
@@ -173,5 +175,6 @@ TEST(RuntimeDeathTest, drop_parameter) {
 
         DropAsserter::assert_drop();
       },
-      testing::ExitedWithCode(0), "");
+      testing::ExitedWithCode(0),
+      "");
 }

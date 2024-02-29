@@ -42,9 +42,10 @@ auto xyco::task::BlockingPool::run(BlockingRegistryImpl& blocking_registry) -> v
 }
 
 auto xyco::task::BlockingPool::spawn(task::Task task) -> void {
-  auto worker = std::min_element(
-      workers_.begin(), workers_.end(),
-      [](auto& worker1, auto& worker2) { return worker1.tasks_.size() < worker2.tasks_.size(); });
+  auto worker =
+      std::min_element(workers_.begin(), workers_.end(), [](auto& worker1, auto& worker2) {
+        return worker1.tasks_.size() < worker2.tasks_.size();
+      });
   {
     std::scoped_lock<std::mutex> lock_guard(worker->mutex_);
     worker->tasks_.push(std::move(task));
@@ -94,7 +95,9 @@ auto xyco::task::BlockingRegistryImpl::select(runtime::Events& events,
   decltype(events_) new_events;
 
   std::scoped_lock<std::mutex> lock_guard(mutex_);
-  std::copy_if(std::begin(events_), std::end(events_), std::back_inserter(new_events),
+  std::copy_if(std::begin(events_),
+               std::end(events_),
+               std::back_inserter(new_events),
                [](auto event) {
                  return dynamic_cast<BlockingExtra*>(event->extra_.get())->after_extra_ == nullptr;
                });

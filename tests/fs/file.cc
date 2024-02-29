@@ -287,7 +287,8 @@ TEST_F(FileTest, copy_file) {
     *co_await file.resize(4);
 
     auto new_file_path = std::string(file_path).append("_copy");
-    *co_await (xyco::fs::copy_file(file_path, new_file_path,
+    *co_await (xyco::fs::copy_file(file_path,
+                                   new_file_path,
                                    std::filesystem::copy_options::overwrite_existing));
 
     auto new_file_size = *co_await (co_await xyco::fs::File::open(new_file_path))->size();
@@ -303,8 +304,10 @@ TEST_F(FileTest, copy_nonexist_file) {
     auto file_path = std::string(fs_root_).append(path);
 
     auto new_file_path = std::string(file_path).append("_copy");
-    auto copy_result = co_await (xyco::fs::copy_file(
-        file_path, new_file_path, std::filesystem::copy_options::overwrite_existing));
+    auto copy_result =
+        co_await (xyco::fs::copy_file(file_path,
+                                      new_file_path,
+                                      std::filesystem::copy_options::overwrite_existing));
 
     CO_ASSERT_EQ(copy_result.has_value(), false);
   }());

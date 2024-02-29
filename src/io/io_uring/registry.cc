@@ -96,7 +96,8 @@ auto xyco::io::uring::IoRegistryImpl::deregister(std::shared_ptr<runtime::Event>
   sqe = io_uring_get_sqe(&io_uring_);
   if (sqe != nullptr) {
     io_uring_prep_cancel(sqe, event.get(), 0);
-    logging::trace("cancel:{} {}", dynamic_cast<uring::IoExtra*>(event->extra_.get())->fd_,
+    logging::trace("cancel:{} {}",
+                   dynamic_cast<uring::IoExtra*>(event->extra_.get())->fd_,
                    static_cast<void*>(event.get()));
 
     io_uring_submit(&io_uring_);

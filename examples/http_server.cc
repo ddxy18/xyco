@@ -80,7 +80,8 @@ class StatusLine {
 class Server {
  public:
   Server(std::unique_ptr<xyco::runtime::Runtime> runtime, uint16_t port)
-      : runtime_(std::move(runtime)), port_(port) {}
+      : runtime_(std::move(runtime)),
+        port_(port) {}
 
   auto run() -> void { runtime_->block_on(init_server()); }
 
@@ -123,7 +124,8 @@ class Server {
     int content_length = 0;
     if (request.headers_.find("Content-Length") != request.headers_.end()) {
       auto content_length_str = request.headers_.find("Content-Length")->second;
-      std::from_chars(content_length_str.begin().base(), content_length_str.end().base(),
+      std::from_chars(content_length_str.begin().base(),
+                      content_length_str.end().base(),
                       content_length);
     }
     request.body_.resize(content_length);
@@ -158,14 +160,16 @@ class Server {
       if (!open_file_result) {
         std::string body = "<P>Your browser sent a bad request.\r\n";
         *co_await xyco::io::WriteExt::write_all(
-            server_stream, "Content-Length: " + std::to_string(body.size()) + "\r\n");
+            server_stream,
+            "Content-Length: " + std::to_string(body.size()) + "\r\n");
         *co_await xyco::io::WriteExt::write_all(server_stream, "\r\n");
         *co_await xyco::io::WriteExt::write_all(server_stream, body);
         co_return;
       }
       auto file = *std::move(open_file_result);
       *co_await xyco::io::WriteExt::write_all(
-          server_stream, "Content-Length: " + std::to_string(*co_await file.size()) + "\r\n");
+          server_stream,
+          "Content-Length: " + std::to_string(*co_await file.size()) + "\r\n");
       *co_await xyco::io::WriteExt::write_all(server_stream, "\r\n");
       auto reader = xyco::io::BufferReader<xyco::fs::File, std::string>(&file);
       std::string line = "a";
@@ -180,7 +184,8 @@ class Server {
 
       std::string body = "<P>Unsupported method.\r\n";
       *co_await xyco::io::WriteExt::write_all(
-          server_stream, "Content-Length: " + std::to_string(body.size()) + "\r\n");
+          server_stream,
+          "Content-Length: " + std::to_string(body.size()) + "\r\n");
       *co_await xyco::io::WriteExt::write_all(server_stream, "\r\n");
       *co_await xyco::io::WriteExt::write_all(server_stream, body);
     }

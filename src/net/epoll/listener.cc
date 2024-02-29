@@ -41,10 +41,10 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr) -> Future<utils::Resu
         : runtime::Future<CoOutput>(nullptr),
           socket_(socket),
           addr_(addr),
-          event_(std::make_shared<runtime::Event>(
-              runtime::Event{.future_ = this,
-                             .extra_ = std::make_unique<io::epoll::IoExtra>(
-                                 io::epoll::IoExtra::Interest::Write, socket_->into_c_fd())})) {}
+          event_(std::make_shared<runtime::Event>(runtime::Event{
+              .future_ = this,
+              .extra_ = std::make_unique<io::epoll::IoExtra>(io::epoll::IoExtra::Interest::Write,
+                                                             socket_->into_c_fd())})) {}
 
     auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
       auto *extra = dynamic_cast<io::epoll::IoExtra *>(event_->extra_.get());
@@ -52,8 +52,11 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr) -> Future<utils::Resu
           extra->state_.get_field<io::epoll::IoExtra::State::Writable>()) {
         int ret = -1;
         xyco::libc::socklen_t len = sizeof(decltype(ret));
-        xyco::libc::getsockopt(socket_->into_c_fd(), xyco::libc::K_SOL_SOCKET,
-                               xyco::libc::K_SO_ERROR, &ret, &len);
+        xyco::libc::getsockopt(socket_->into_c_fd(),
+                               xyco::libc::K_SOL_SOCKET,
+                               xyco::libc::K_SO_ERROR,
+                               &ret,
+                               &len);
         if (ret != 0) {
           runtime::RuntimeCtx::get_ctx()->driver().deregister<io::epoll::IoRegistry>(event_);
           return runtime::Ready<CoOutput>{std::unexpected(
@@ -61,9 +64,10 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr) -> Future<utils::Resu
         }
         logging::info("{} connect to {}", *socket_, addr_);
         runtime::RuntimeCtx::get_ctx()->driver().deregister<io::epoll::IoRegistry>(event_);
-        return runtime::Ready<CoOutput>{TcpStream(
-            std::move(*socket_), extra->state_.get_field<io::epoll::IoExtra::State::Writable>(),
-            extra->state_.get_field<io::epoll::IoExtra::State::Readable>())};
+        return runtime::Ready<CoOutput>{
+            TcpStream(std::move(*socket_),
+                      extra->state_.get_field<io::epoll::IoExtra::State::Writable>(),
+                      extra->state_.get_field<io::epoll::IoExtra::State::Readable>())};
       }
       event_->future_ = this;
       runtime::RuntimeCtx::get_ctx()->driver().Register<io::epoll::IoRegistry>(event_);
@@ -103,17 +107,21 @@ auto xyco::net::epoll::TcpSocket::listen(int backlog) -> Future<utils::Result<Tc
 
 auto xyco::net::epoll::TcpSocket::set_reuseaddr(bool reuseaddr) -> utils::Result<void> {
   int optval = static_cast<int>(reuseaddr);
-  return utils::into_sys_result(
-             xyco::libc::setsockopt(socket_.into_c_fd(), xyco::libc::K_SOL_SOCKET,
-                                    xyco::libc::K_SO_REUSEADDR, &optval, sizeof(optval)))
+  return utils::into_sys_result(xyco::libc::setsockopt(socket_.into_c_fd(),
+                                                       xyco::libc::K_SOL_SOCKET,
+                                                       xyco::libc::K_SO_REUSEADDR,
+                                                       &optval,
+                                                       sizeof(optval)))
       .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::epoll::TcpSocket::set_reuseport(bool reuseport) -> utils::Result<void> {
   int optval = static_cast<int>(reuseport);
-  return utils::into_sys_result(
-             xyco::libc::setsockopt(socket_.into_c_fd(), xyco::libc::K_SOL_SOCKET,
-                                    xyco::libc::K_SO_REUSEPORT, &optval, sizeof(optval)))
+  return utils::into_sys_result(xyco::libc::setsockopt(socket_.into_c_fd(),
+                                                       xyco::libc::K_SOL_SOCKET,
+                                                       xyco::libc::K_SO_REUSEPORT,
+                                                       &optval,
+                                                       sizeof(optval)))
       .transform([]([[maybe_unused]] auto result) {});
 }
 
@@ -144,11 +152,11 @@ auto xyco::net::epoll::TcpStream::flush() -> Future<utils::Result<void>> { co_re
 
 auto xyco::net::epoll::TcpStream::shutdown(io::Shutdown shutdown) const
     -> Future<utils::Result<void>> {
-  ASYNC_TRY(
-      (co_await task::BlockingTask([&]() {
-        return utils::into_sys_result(xyco::libc::shutdown(
-            socket_.into_c_fd(), static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
-      })).transform([]([[maybe_unused]] auto result) {}));
+  ASYNC_TRY((co_await task::BlockingTask([&]() {
+              return utils::into_sys_result(xyco::libc::shutdown(
+                  socket_.into_c_fd(),
+                  static_cast<std::underlying_type_t<io::Shutdown>>(shutdown)));
+            })).transform([]([[maybe_unused]] auto result) {}));
   logging::info("shutdown {}", socket_);
 
   co_return {};
@@ -164,9 +172,9 @@ xyco::net::epoll::TcpStream::~TcpStream() {
 
 xyco::net::epoll::TcpStream::TcpStream(Socket &&socket, bool writable, bool readable)
     : socket_(std::move(socket)),
-      event_(std::make_shared<runtime::Event>(
-          runtime::Event{.extra_ = std::make_unique<io::epoll::IoExtra>(
-                             io::epoll::IoExtra::Interest::All, socket_.into_c_fd())})) {
+      event_(std::make_shared<runtime::Event>(runtime::Event{
+          .extra_ = std::make_unique<io::epoll::IoExtra>(io::epoll::IoExtra::Interest::All,
+                                                         socket_.into_c_fd())})) {
   auto &state = dynamic_cast<io::epoll::IoExtra *>(event_->extra_.get())->state_;
   if (writable) {
     state.set_field<io::epoll::IoExtra::State::Writable>();
@@ -216,7 +224,8 @@ auto xyco::net::epoll::TcpListener::accept()
         auto accept_result = utils::into_sys_result(
             xyco::libc::accept4(self_->socket_.into_c_fd(),
                                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-                                reinterpret_cast<xyco::libc::sockaddr *>(&addr_in_), &addrlen_,
+                                reinterpret_cast<xyco::libc::sockaddr *>(&addr_in_),
+                                &addrlen_,
                                 xyco::libc::K_SOCK_NONBLOCK));
         if (!accept_result) {
           auto err = accept_result.error();
@@ -230,12 +239,15 @@ auto xyco::net::epoll::TcpListener::accept()
           return runtime::Ready<CoOutput>{std::unexpected(err)};
         }
         std::string ip_addr(xyco::libc::K_INET_ADDRSTRLEN, 0);
-        auto sock_addr = SocketAddr::new_v4(
-            Ipv4Addr(xyco::libc::inet_ntop(addr_in_.sin_family, &addr_in_.sin_addr, ip_addr.data(),
-                                           ip_addr.size())),
-            addr_in_.sin_port);
+        auto sock_addr = SocketAddr::new_v4(Ipv4Addr(xyco::libc::inet_ntop(addr_in_.sin_family,
+                                                                           &addr_in_.sin_addr,
+                                                                           ip_addr.data(),
+                                                                           ip_addr.size())),
+                                            addr_in_.sin_port);
         auto socket = Socket(*accept_result);
-        logging::info("accept from {} new connect={{{}, addr:{}}}", self_->socket_, socket,
+        logging::info("accept from {} new connect={{{}, addr:{}}}",
+                      self_->socket_,
+                      socket,
                       sock_addr);
         return runtime::Ready<CoOutput>{std::pair{TcpStream(std::move(socket)), sock_addr}};
       }
@@ -277,6 +289,6 @@ xyco::net::epoll::TcpListener::~TcpListener() {
 
 xyco::net::epoll::TcpListener::TcpListener(Socket &&socket)
     : socket_(std::move(socket)),
-      event_(std::make_shared<runtime::Event>(
-          runtime::Event{.extra_ = std::make_unique<io::epoll::IoExtra>(
-                             io::epoll::IoExtra::Interest::Read, socket_.into_c_fd())})) {}
+      event_(std::make_shared<runtime::Event>(runtime::Event{
+          .extra_ = std::make_unique<io::epoll::IoExtra>(io::epoll::IoExtra::Interest::Read,
+                                                         socket_.into_c_fd())})) {}

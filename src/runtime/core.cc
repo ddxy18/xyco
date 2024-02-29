@@ -125,7 +125,8 @@ auto xyco::runtime::RuntimeCore::wake_local(Events &events) -> void {
 }
 
 xyco::runtime::RuntimeCore::RuntimeCore(
-    std::vector<std::function<void(Driver *)>> &&registry_initializers, uint16_t worker_num)
+    std::vector<std::function<void(Driver *)>> &&registry_initializers,
+    uint16_t worker_num)
     : driver_(std::move(registry_initializers)),
       worker_num_(worker_num),
       in_place_worker_(this, true) {

@@ -83,17 +83,21 @@ auto xyco::net::uring::TcpSocket::listen(int backlog) -> Future<utils::Result<Tc
 
 auto xyco::net::uring::TcpSocket::set_reuseaddr(bool reuseaddr) -> utils::Result<void> {
   int optval = static_cast<int>(reuseaddr);
-  return utils::into_sys_result(
-             xyco::libc::setsockopt(socket_.into_c_fd(), xyco::libc::K_SOL_SOCKET,
-                                    xyco::libc::K_SO_REUSEADDR, &optval, sizeof(optval)))
+  return utils::into_sys_result(xyco::libc::setsockopt(socket_.into_c_fd(),
+                                                       xyco::libc::K_SOL_SOCKET,
+                                                       xyco::libc::K_SO_REUSEADDR,
+                                                       &optval,
+                                                       sizeof(optval)))
       .transform([]([[maybe_unused]] auto result) {});
 }
 
 auto xyco::net::uring::TcpSocket::set_reuseport(bool reuseport) -> utils::Result<void> {
   int optval = static_cast<int>(reuseport);
-  return utils::into_sys_result(
-             xyco::libc::setsockopt(socket_.into_c_fd(), xyco::libc::K_SOL_SOCKET,
-                                    xyco::libc::K_SO_REUSEPORT, &optval, sizeof(optval)))
+  return utils::into_sys_result(xyco::libc::setsockopt(socket_.into_c_fd(),
+                                                       xyco::libc::K_SOL_SOCKET,
+                                                       xyco::libc::K_SO_REUSEPORT,
+                                                       &optval,
+                                                       sizeof(optval)))
       .transform([]([[maybe_unused]] auto result) {});
 }
 
@@ -129,7 +133,9 @@ auto xyco::net::uring::TcpStream::shutdown(io::Shutdown shutdown) -> Future<util
   class Future : public runtime::Future<CoOutput> {
    public:
     explicit Future(io::Shutdown shutdown, TcpStream *tcp_stream)
-        : runtime::Future<CoOutput>(nullptr), self_(tcp_stream), shutdown_(shutdown) {}
+        : runtime::Future<CoOutput>(nullptr),
+          self_(tcp_stream),
+          shutdown_(shutdown) {}
 
     auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
       auto *extra = dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
@@ -213,12 +219,15 @@ auto xyco::net::uring::TcpListener::accept()
             std::unexpected(utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
       std::string ip_addr(xyco::libc::K_INET_ADDRSTRLEN, 0);
-      auto sock_addr =
-          SocketAddr::new_v4(Ipv4Addr(xyco::libc::inet_ntop(addr_.sin_family, &addr_.sin_addr,
-                                                            ip_addr.data(), ip_addr.size())),
-                             addr_.sin_port);
+      auto sock_addr = SocketAddr::new_v4(Ipv4Addr(xyco::libc::inet_ntop(addr_.sin_family,
+                                                                         &addr_.sin_addr,
+                                                                         ip_addr.data(),
+                                                                         ip_addr.size())),
+                                          addr_.sin_port);
       auto socket = Socket(extra->return_);
-      logging::info("accept from {} new connect={{{}, addr:{}}}", self_->socket_, socket,
+      logging::info("accept from {} new connect={{{}, addr:{}}}",
+                    self_->socket_,
+                    socket,
                     sock_addr);
       return runtime::Ready<CoOutput>{std::pair{TcpStream(std::move(socket)), sock_addr}};
     }

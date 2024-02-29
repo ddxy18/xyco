@@ -18,7 +18,8 @@ TEST(ClockDeathTest, system_clock) {
 
         std::quick_exit(0);
       },
-      testing::ExitedWithCode(0), "");
+      testing::ExitedWithCode(0),
+      "");
 }
 
 TEST(ClockDeathTest, steady_clock) {
@@ -36,7 +37,8 @@ TEST(ClockDeathTest, steady_clock) {
 
         std::quick_exit(0);
       },
-      testing::ExitedWithCode(0), "");
+      testing::ExitedWithCode(0),
+      "");
 }
 
 TEST(ClockDeathTest, frozen_clock) {
@@ -52,5 +54,6 @@ TEST(ClockDeathTest, frozen_clock) {
 
         std::quick_exit(0);
       },
-      testing::ExitedWithCode(0), "");
+      testing::ExitedWithCode(0),
+      "");
 }

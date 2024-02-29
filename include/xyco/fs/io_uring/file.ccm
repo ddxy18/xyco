@@ -46,7 +46,8 @@ class File : public FileBase<File> {
         if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
           event_->future_ = this;
           extra->args_ = io::uring::IoExtra::Read{
-              .buf_ = &*begin_, .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
+              .buf_ = &*begin_,
+              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
           runtime::RuntimeCtx::get_ctx()->driver().Register<io::uring::IoRegistry>(event_);
           return runtime::Pending();
         }
@@ -105,7 +106,8 @@ class File : public FileBase<File> {
         if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
           event_->future_ = this;
           extra->args_ = io::uring::IoExtra::Write{
-              .buf_ = &*begin_, .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
+              .buf_ = &*begin_,
+              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
           runtime::RuntimeCtx::get_ctx()->driver().Register<io::uring::IoRegistry>(event_);
 
           return runtime::Pending();

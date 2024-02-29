@@ -69,7 +69,8 @@ class FileBase {
 
  protected:
   FileBase(int file_descriptor, std::filesystem::path &&path)
-      : fd_(file_descriptor), path_(std::move(path)) {}
+      : fd_(file_descriptor),
+        path_(std::move(path)) {}
 
   // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
   int fd_{-1};

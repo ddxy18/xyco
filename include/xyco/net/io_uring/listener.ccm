@@ -64,7 +64,8 @@ class TcpStream {
         if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
           self_->event_->future_ = this;
           extra->args_ = io::uring::IoExtra::Read{
-              .buf_ = &*begin_, .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
+              .buf_ = &*begin_,
+              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
           runtime::RuntimeCtx::get_ctx()->driver().Register<io::uring::IoRegistry>(self_->event_);
           logging::trace("register read {}", self_->socket_);
           return runtime::Pending();
@@ -79,7 +80,10 @@ class TcpStream {
       }
 
       Future(Iterator begin, Iterator end, TcpStream *self)
-          : runtime::Future<CoOutput>(nullptr), self_(self), begin_(begin), end_(end) {}
+          : runtime::Future<CoOutput>(nullptr),
+            self_(self),
+            begin_(begin),
+            end_(end) {}
 
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
@@ -115,7 +119,8 @@ class TcpStream {
         if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
           self_->event_->future_ = this;
           extra->args_ = io::uring::IoExtra::Write{
-              .buf_ = &*begin_, .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
+              .buf_ = &*begin_,
+              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
           runtime::RuntimeCtx::get_ctx()->driver().Register<io::uring::IoRegistry>(self_->event_);
 
           return runtime::Pending();
@@ -130,7 +135,10 @@ class TcpStream {
       }
 
       Future(Iterator begin, Iterator end, TcpStream *self)
-          : runtime::Future<CoOutput>(nullptr), self_(self), begin_(begin), end_(end) {}
+          : runtime::Future<CoOutput>(nullptr),
+            self_(self),
+            begin_(begin),
+            end_(end) {}
 
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;

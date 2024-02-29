@@ -16,7 +16,9 @@ import xyco.libc;
 auto xyco::io::epoll::IoExtra::print() const -> std::string { return std::format("{}", *this); }
 
 xyco::io::epoll::IoExtra::IoExtra(Interest interest, int file_descriptor)
-    : state_(), interest_(interest), fd_(file_descriptor) {}
+    : state_(),
+      interest_(interest),
+      fd_(file_descriptor) {}
 
 auto to_sys(xyco::io::epoll::IoExtra::Interest interest) -> int {
   switch (interest) {
@@ -53,7 +55,9 @@ template <>
 struct std::formatter<epoll_event> : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const epoll_event &event, FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "epoll_event{{events={:x},data={}}}", event.events,
+    return std::format_to(ctx.out(),
+                          "epoll_event{{events={:x},data={}}}",
+                          event.events,
                           *static_cast<xyco::runtime::Event *>(event.data.ptr));
   }
 };
@@ -132,7 +136,9 @@ auto xyco::io::epoll::IoRegistryImpl::select(runtime::Events &events,
   std::scoped_lock<std::mutex> select_lock_guard(select_mutex_);
 
   auto select_result = utils::into_sys_result(
-      ::epoll_wait(epfd_, epoll_events.data(), MAX_EVENTS,
+      ::epoll_wait(epfd_,
+                   epoll_events.data(),
+                   MAX_EVENTS,
                    static_cast<int>(std::min(timeout, MAX_TIMEOUT).count())));
   if (!select_result) {
     auto err = select_result.error();
@@ -144,7 +150,8 @@ auto xyco::io::epoll::IoRegistryImpl::select(runtime::Events &events,
   auto ready_len = *select_result;
   for (auto i = 0; i < ready_len; i++) {
     std::scoped_lock<std::mutex> lock_guard(events_mutex_);
-    auto ready_event = std::find_if(registered_events_.begin(), registered_events_.end(),
+    auto ready_event = std::find_if(registered_events_.begin(),
+                                    registered_events_.end(),
                                     [&](auto &registered_event) {
                                       return epoll_events.at(i).data.ptr == registered_event.get();
                                     });

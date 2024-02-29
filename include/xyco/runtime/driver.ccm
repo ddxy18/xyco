@@ -49,8 +49,9 @@ class Driver {
 
   std::vector<std::function<void(Driver*)>> registry_initializers_;
 
-  std::unordered_map<std::thread::id, std::unordered_map<decltype(typeid(int).hash_code()),
-                                                         std::shared_ptr<Registry>>>
+  std::unordered_map<
+      std::thread::id,
+      std::unordered_map<decltype(typeid(int).hash_code()), std::shared_ptr<Registry>>>
       local_registries_;
 };
 }  // namespace xyco::runtime

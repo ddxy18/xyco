@@ -21,8 +21,9 @@ TEST(FmtTypeTest, IoError) {
 }
 
 TEST(FmtTypeTest, file_IoError) {
-  auto io_error = xyco::utils::Error{
-      .errno_ = std::to_underlying(xyco::utils::ErrorKind::Unsupported), .info_ = ""};
+  auto io_error =
+      xyco::utils::Error{.errno_ = std::to_underlying(xyco::utils::ErrorKind::Unsupported),
+                         .info_ = ""};
 
   auto fmt_str = std::format("{}", io_error);
 

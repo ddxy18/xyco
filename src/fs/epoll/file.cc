@@ -21,9 +21,11 @@ auto get_file_attr(int file_descriptor) -> xyco::runtime::Future<
 
   ASYNC_TRY((co_await xyco::task::BlockingTask([&]() {
               return xyco::utils::into_sys_result(xyco::libc::statx(
-                  file_descriptor, "\0",
+                  file_descriptor,
+                  "\0",
                   xyco::libc::K_AT_EMPTY_PATH | xyco::libc::K_AT_STATX_SYNC_AS_STAT,
-                  xyco::libc::K_STATX_ALL, &stx));
+                  xyco::libc::K_STATX_ALL,
+                  &stx));
             })).transform([]([[maybe_unused]] auto n) {
     return std::pair<xyco::libc::stat64_t, xyco::fs::StatxExtraFields>({}, {});
   }));
@@ -46,10 +48,11 @@ auto get_file_attr(int file_descriptor) -> xyco::runtime::Future<
   stat.st_ctim.tv_nsec = stx.stx_ctime.tv_nsec;
 
   co_return std::pair<xyco::libc::stat64_t, xyco::fs::StatxExtraFields>(
-      stat, {
-                .stx_mask_ = stx.stx_mask,
-                .stx_btime_ = stx.stx_btime,
-            });
+      stat,
+      {
+          .stx_mask_ = stx.stx_mask,
+          .stx_btime_ = stx.stx_btime,
+      });
 }
 
 auto xyco::fs::epoll::File::modified() const -> runtime::Future<utils::Result<timespec>> {

@@ -53,7 +53,9 @@ class Sender {
     class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Sender<Value, Size> *self, Value value)
-          : runtime::Future<FutureReturn>(nullptr), self_(self), value_(std::move(value)) {}
+          : runtime::Future<FutureReturn>(nullptr),
+            self_(self),
+            value_(std::move(value)) {}
 
       auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {
@@ -131,7 +133,8 @@ class Receiver {
     class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Receiver<Value, Size> *self)
-          : runtime::Future<FutureReturn>(nullptr), self_(self) {}
+          : runtime::Future<FutureReturn>(nullptr),
+            self_(self) {}
 
       auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {

@@ -88,7 +88,8 @@ class Receiver {
     class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Receiver<Value> *self)
-          : runtime::Future<FutureReturn>(nullptr), self_(self) {}
+          : runtime::Future<FutureReturn>(nullptr),
+            self_(self) {}
 
       auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {

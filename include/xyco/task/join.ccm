@@ -68,7 +68,8 @@ class JoinFuture : public runtime::Future<std::tuple<T...>> {
           // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
           [](auto &...branch) {
             auto branch_state_array = std::array<bool, sizeof...(T)>{branch.second.has_value()...};
-            return std::all_of(branch_state_array.begin(), branch_state_array.end(),
+            return std::all_of(branch_state_array.begin(),
+                               branch_state_array.end(),
                                [](auto completed) { return completed; });
           },
           branches_);
