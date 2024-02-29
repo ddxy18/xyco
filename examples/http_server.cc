@@ -138,8 +138,8 @@ class Server {
     runtime_->spawn(execute_request(request, std::move(server_stream)));
   }
 
-  static auto execute_request(Request request, xyco::net::TcpStream server_stream)
-      -> xyco::runtime::Future<void> {
+  static auto execute_request(Request request,
+                              xyco::net::TcpStream server_stream) -> xyco::runtime::Future<void> {
     constexpr int SUCCESS_CODE = 200;
     constexpr int NOT_FOUND_CODE = 404;
     constexpr int SERVER_ERROR_CODE = 500;

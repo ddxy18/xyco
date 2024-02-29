@@ -8,8 +8,8 @@ import xyco.future;
 import xyco.error;
 
 export namespace xyco::fs {
-auto rename(std::filesystem::path old_path, std::filesystem::path new_path)
-    -> runtime::Future<utils::Result<void>>;
+auto rename(std::filesystem::path old_path,
+            std::filesystem::path new_path) -> runtime::Future<utils::Result<void>>;
 
 auto remove(std::filesystem::path path) -> runtime::Future<utils::Result<bool>>;
 

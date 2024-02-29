@@ -12,8 +12,8 @@ import :sleep;
 
 export namespace xyco::time {
 template <typename T, typename Rep, typename Ratio>
-auto timeout(std::chrono::duration<Rep, Ratio> duration, runtime::Future<T> future)
-    -> runtime::Future<std::expected<T, std::nullptr_t>> {
+auto timeout(std::chrono::duration<Rep, Ratio> duration,
+             runtime::Future<T> future) -> runtime::Future<std::expected<T, std::nullptr_t>> {
   auto wrap_sleep =
       [](std::chrono::duration<Rep, Ratio> duration) -> runtime::Future<std::nullptr_t> {
     co_await sleep(duration);

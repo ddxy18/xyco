@@ -9,8 +9,8 @@ module xyco.fs.common;
 import xyco.task;
 import xyco.runtime_ctx;
 
-auto xyco::fs::rename(std::filesystem::path old_path, std::filesystem::path new_path)
-    -> runtime::Future<utils::Result<void>> {
+auto xyco::fs::rename(std::filesystem::path old_path,
+                      std::filesystem::path new_path) -> runtime::Future<utils::Result<void>> {
   co_return co_await task::BlockingTask([&]() {
     std::error_code error_code;
     std::filesystem::rename(old_path, new_path, error_code);

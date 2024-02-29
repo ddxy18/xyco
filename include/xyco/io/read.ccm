@@ -22,7 +22,7 @@ concept BufferReadable = requires(Reader reader, Buffer buffer) {
   {
     reader.fill_buffer()
   } -> std::same_as<runtime::Future<
-      utils::Result<std::pair<decltype(std::begin(buffer)), decltype(std::begin(buffer))>>>>;
+        utils::Result<std::pair<decltype(std::begin(buffer)), decltype(std::begin(buffer))>>>>;
   { reader.consume(0) } -> std::same_as<void>;
 };
 

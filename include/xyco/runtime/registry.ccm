@@ -44,8 +44,8 @@ class Registry {
 
   [[nodiscard]] virtual auto deregister(std::shared_ptr<Event> event) -> utils::Result<void> = 0;
 
-  [[nodiscard]] virtual auto select(Events &events, std::chrono::milliseconds timeout)
-      -> utils::Result<void> = 0;
+  [[nodiscard]] virtual auto select(Events &events,
+                                    std::chrono::milliseconds timeout) -> utils::Result<void> = 0;
 
   Registry() = default;
 

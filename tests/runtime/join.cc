@@ -62,6 +62,7 @@ TEST_F(JoinTest, join_three) {
 }
 
 TEST_F(JoinTest, join_partially_failed) {
-  EXPECT_THROW({ TestRuntimeCtx::runtime()->block_on(xyco::task::join(null_co(), failed_co())); },
-               std::runtime_error);
+  EXPECT_THROW(
+      { TestRuntimeCtx::runtime()->block_on(xyco::task::join(null_co(), failed_co())); },
+      std::runtime_error);
 }

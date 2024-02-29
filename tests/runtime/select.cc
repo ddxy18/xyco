@@ -65,8 +65,9 @@ TEST_F(SelectTest, select_three) {
 }
 
 TEST_F(SelectTest, select_throw_exception) {
-  EXPECT_THROW({ TestRuntimeCtx::runtime()->block_on(xyco::task::select(failed_co())); },
-               std::runtime_error);
+  EXPECT_THROW(
+      { TestRuntimeCtx::runtime()->block_on(xyco::task::select(failed_co())); },
+      std::runtime_error);
 }
 
 TEST_F(SelectTest, select_delay) {

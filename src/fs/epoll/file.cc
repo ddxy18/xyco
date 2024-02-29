@@ -14,8 +14,9 @@ module xyco.fs.epoll;
 import xyco.task;
 import xyco.libc;
 
-auto get_file_attr(int file_descriptor) -> xyco::runtime::Future<
-    xyco::utils::Result<std::pair<xyco::libc::stat64_t, xyco::fs::StatxExtraFields>>> {
+auto get_file_attr(int file_descriptor)
+    -> xyco::runtime::Future<
+        xyco::utils::Result<std::pair<xyco::libc::stat64_t, xyco::fs::StatxExtraFields>>> {
   xyco::libc::statx_t stx{};
   xyco::libc::stat64_t stat{};
 

@@ -32,8 +32,8 @@ class TimeRegistryImpl : public runtime::Registry {
   [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
 
-  [[nodiscard]] auto select(runtime::Events &events, std::chrono::milliseconds timeout)
-      -> utils::Result<void> override;
+  [[nodiscard]] auto select(runtime::Events &events,
+                            std::chrono::milliseconds timeout) -> utils::Result<void> override;
 
  private:
   Wheel wheel_;

@@ -62,8 +62,8 @@ class IoRegistryImpl : public runtime::Registry {
   [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
 
-  [[nodiscard]] auto select(runtime::Events &events, std::chrono::milliseconds timeout)
-      -> utils::Result<void> override;
+  [[nodiscard]] auto select(runtime::Events &events,
+                            std::chrono::milliseconds timeout) -> utils::Result<void> override;
 
   IoRegistryImpl(int entries);
 
@@ -94,8 +94,8 @@ using IoRegistry = runtime::GlobalRegistry<IoRegistryImpl>;
 template <>
 struct std::formatter<xyco::io::epoll::IoExtra> : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const xyco::io::epoll::IoExtra &extra, FormatContext &ctx) const
-      -> decltype(ctx.out()) {
+  auto format(const xyco::io::epoll::IoExtra &extra,
+              FormatContext &ctx) const -> decltype(ctx.out()) {
     std::string state = "[";
     if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Registered) != 0) {
       state += "Registered,";
