@@ -84,8 +84,7 @@ class BlockingRegistryImpl : public runtime::Registry {
   [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
 
-  [[nodiscard]] auto select(runtime::Events& events,
-                            std::chrono::milliseconds timeout)
+  [[nodiscard]] auto select(runtime::Events& events, std::chrono::milliseconds timeout)
       -> utils::Result<void> override;
 
  private:
@@ -98,11 +97,10 @@ using BlockingRegistry = runtime::GlobalRegistry<BlockingRegistryImpl>;
 }  // namespace xyco::task
 
 template <>
-struct std::formatter<xyco::task::BlockingExtra>
-    : public std::formatter<std::string> {
+struct std::formatter<xyco::task::BlockingExtra> : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format([[maybe_unused]] const xyco::task::BlockingExtra& extra,
-              FormatContext& ctx) const -> decltype(ctx.out()) {
+  auto format([[maybe_unused]] const xyco::task::BlockingExtra& extra, FormatContext& ctx) const
+      -> decltype(ctx.out()) {
     return std::format_to(ctx.out(), "BlockingExtra{{}}");
   }
 };

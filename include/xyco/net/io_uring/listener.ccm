@@ -58,37 +58,28 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll([[maybe_unused]] runtime::Handle<void> self)
-          -> runtime::Poll<CoOutput> override {
-        auto *extra =
-            dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
+      auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+        auto *extra = dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
 
         if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
           self_->event_->future_ = this;
           extra->args_ = io::uring::IoExtra::Read{
-              .buf_ = &*begin_,
-              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
-          runtime::RuntimeCtx::get_ctx()
-              ->driver()
-              .Register<io::uring::IoRegistry>(self_->event_);
+              .buf_ = &*begin_, .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
+          runtime::RuntimeCtx::get_ctx()->driver().Register<io::uring::IoRegistry>(self_->event_);
           logging::trace("register read {}", self_->socket_);
           return runtime::Pending();
         }
         extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
         if (extra->return_ >= 0) {
-          logging::info("read {} bytes from {}", extra->return_,
-                        self_->socket_);
+          logging::info("read {} bytes from {}", extra->return_, self_->socket_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
-        return runtime::Ready<CoOutput>{std::unexpected(
-            utils::Error{.errno_ = -extra->return_, .info_ = ""})};
+        return runtime::Ready<CoOutput>{
+            std::unexpected(utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
 
       Future(Iterator begin, Iterator end, TcpStream *self)
-          : runtime::Future<CoOutput>(nullptr),
-            self_(self),
-            begin_(begin),
-            end_(end) {}
+          : runtime::Future<CoOutput>(nullptr), self_(self), begin_(begin), end_(end) {}
 
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
@@ -119,18 +110,13 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll([[maybe_unused]] runtime::Handle<void> self)
-          -> runtime::Poll<CoOutput> override {
-        auto *extra =
-            dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
+      auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+        auto *extra = dynamic_cast<io::uring::IoExtra *>(self_->event_->extra_.get());
         if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
           self_->event_->future_ = this;
           extra->args_ = io::uring::IoExtra::Write{
-              .buf_ = &*begin_,
-              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
-          runtime::RuntimeCtx::get_ctx()
-              ->driver()
-              .Register<io::uring::IoRegistry>(self_->event_);
+              .buf_ = &*begin_, .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
+          runtime::RuntimeCtx::get_ctx()->driver().Register<io::uring::IoRegistry>(self_->event_);
 
           return runtime::Pending();
         }
@@ -139,15 +125,12 @@ class TcpStream {
           logging::info("write {} bytes to {}", extra->return_, self_->socket_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
-        return runtime::Ready<CoOutput>{std::unexpected(
-            utils::Error{.errno_ = -extra->return_, .info_ = ""})};
+        return runtime::Ready<CoOutput>{
+            std::unexpected(utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
 
       Future(Iterator begin, Iterator end, TcpStream *self)
-          : runtime::Future<CoOutput>(nullptr),
-            self_(self),
-            begin_(begin),
-            end_(end) {}
+          : runtime::Future<CoOutput>(nullptr), self_(self), begin_(begin), end_(end) {}
 
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
       Future(const Future &future) = delete;
@@ -174,8 +157,7 @@ class TcpStream {
 
   auto flush() -> Future<utils::Result<void>>;
 
-  [[nodiscard]] auto shutdown(io::Shutdown shutdown)
-      -> Future<utils::Result<void>>;
+  [[nodiscard]] auto shutdown(io::Shutdown shutdown) -> Future<utils::Result<void>>;
 
   TcpStream(const TcpStream &tcp_stream) = delete;
 
@@ -212,8 +194,7 @@ class TcpListener {
 
   auto operator=(const TcpListener &tcp_listener) -> TcpListener & = delete;
 
-  auto operator=(TcpListener &&tcp_listener) noexcept -> TcpListener & =
-                                                             default;
+  auto operator=(TcpListener &&tcp_listener) noexcept -> TcpListener & = default;
 
   ~TcpListener() = default;
 
@@ -226,34 +207,28 @@ class TcpListener {
 }  // namespace xyco::net::uring
 
 template <>
-struct std::formatter<xyco::net::uring::TcpSocket>
-    : public std::formatter<bool> {
+struct std::formatter<xyco::net::uring::TcpSocket> : public std::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::uring::TcpSocket &tcp_socket,
-              FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "TcpSocket{{socket_={}}}",
-                          tcp_socket.socket_);
+  auto format(const xyco::net::uring::TcpSocket &tcp_socket, FormatContext &ctx) const
+      -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "TcpSocket{{socket_={}}}", tcp_socket.socket_);
   }
 };
 
 template <>
-struct std::formatter<xyco::net::uring::TcpStream>
-    : public std::formatter<bool> {
+struct std::formatter<xyco::net::uring::TcpStream> : public std::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::uring::TcpStream &tcp_stream,
-              FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "TcpStream{{socket_={}}}",
-                          tcp_stream.socket_);
+  auto format(const xyco::net::uring::TcpStream &tcp_stream, FormatContext &ctx) const
+      -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "TcpStream{{socket_={}}}", tcp_stream.socket_);
   }
 };
 
 template <>
-struct std::formatter<xyco::net::uring::TcpListener>
-    : public std::formatter<bool> {
+struct std::formatter<xyco::net::uring::TcpListener> : public std::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::uring::TcpListener &tcp_listener,
-              FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "TcpListener{{socket_={}}}",
-                          tcp_listener.socket_);
+  auto format(const xyco::net::uring::TcpListener &tcp_listener, FormatContext &ctx) const
+      -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(), "TcpListener{{socket_={}}}", tcp_listener.socket_);
   }
 };

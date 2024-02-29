@@ -27,8 +27,7 @@ class Server {
     }
   }
 
-  static auto echo(xyco::net::TcpStream server_stream)
-      -> xyco::runtime::Future<void> {
+  static auto echo(xyco::net::TcpStream server_stream) -> xyco::runtime::Future<void> {
     constexpr int buffer_size = 1024;
 
     std::string read_buf(buffer_size, 0);

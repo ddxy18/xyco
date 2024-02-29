@@ -21,15 +21,11 @@ class BufferReader {
       -> runtime::Future<utils::Result<uintptr_t>> {
     auto len = std::distance(begin, end);
     if (len <= static_cast<B::difference_type>(cap_ - pos_)) {
-      std::copy(std::begin(buffer_) + pos_, std::begin(buffer_) + pos_ + len,
-                begin);
+      std::copy(std::begin(buffer_) + pos_, std::begin(buffer_) + pos_ + len, begin);
       consume(len);
       co_return len;
     }
-    ASYNC_TRY(
-        (co_await fill_buffer()).transform([]([[maybe_unused]] auto pair) {
-          return 0;
-        }));
+    ASYNC_TRY((co_await fill_buffer()).transform([]([[maybe_unused]] auto pair) { return 0; }));
     len = std::min(len, static_cast<decltype(len)>(cap_ - pos_));
     std::copy(std::begin(buffer_), std::begin(buffer_) + len, begin);
     consume(len);
@@ -37,16 +33,13 @@ class BufferReader {
   }
 
   auto fill_buffer()
-      -> runtime::Future<utils::Result<
-          std::pair<typename B::iterator, typename B::iterator>>> {
+      -> runtime::Future<utils::Result<std::pair<typename B::iterator, typename B::iterator>>> {
     if (pos_ == cap_) {
-      ASYNC_TRY((co_await ReadExt::read(*inner_reader_, buffer_))
-                    .transform([&](auto nbytes) {
-                      cap_ = nbytes;
-                      pos_ = 0;
-                      return std::pair(std::begin(buffer_),
-                                       std::begin(buffer_) + cap_);
-                    }));
+      ASYNC_TRY((co_await ReadExt::read(*inner_reader_, buffer_)).transform([&](auto nbytes) {
+        cap_ = nbytes;
+        pos_ = 0;
+        return std::pair(std::begin(buffer_), std::begin(buffer_) + cap_);
+      }));
     }
     co_return std::pair{std::begin(buffer_) + pos_, std::begin(buffer_) + cap_};
   }
@@ -56,10 +49,7 @@ class BufferReader {
   }
 
   BufferReader(Reader* reader)
-      : inner_reader_(reader),
-        buffer_(DEFAULT_BUFFER_SIZE, 0),
-        pos_(0),
-        cap_(0) {}
+      : inner_reader_(reader), buffer_(DEFAULT_BUFFER_SIZE, 0), pos_(0), cap_(0) {}
 
  private:
   gsl::not_null<Reader*> inner_reader_;

@@ -22,16 +22,13 @@ TEST(FmtTypeTest, IoError) {
 
 TEST(FmtTypeTest, file_IoError) {
   auto io_error = xyco::utils::Error{
-      .errno_ = std::to_underlying(xyco::utils::ErrorKind::Unsupported),
-      .info_ = ""};
+      .errno_ = std::to_underlying(xyco::utils::ErrorKind::Unsupported), .info_ = ""};
 
   auto fmt_str = std::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Unsupported, info=}");
 
-  io_error = {
-      .errno_ = std::to_underlying(xyco::utils::ErrorKind::Uncategorized),
-      .info_ = ""};
+  io_error = {.errno_ = std::to_underlying(xyco::utils::ErrorKind::Uncategorized), .info_ = ""};
   fmt_str = std::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Uncategorized, info=}");
@@ -44,13 +41,11 @@ TEST(FmtTypeTest, TimeExtra_Event) {
 
   auto fmt_str = std::format("{}", event);
 
-  ASSERT_EQ(fmt_str,
-            "Event{extra_=TimeExtra{expire_time_=1970-01-01 00:00:00}}");
+  ASSERT_EQ(fmt_str, "Event{extra_=TimeExtra{expire_time_=1970-01-01 00:00:00}}");
 }
 
 TEST(FmtTypeTest, AsyncFutureExtra_Event) {
-  auto event = xyco::runtime::Event{
-      .extra_ = std::make_unique<xyco::task::BlockingExtra>([]() {})};
+  auto event = xyco::runtime::Event{.extra_ = std::make_unique<xyco::task::BlockingExtra>([]() {})};
 
   auto fmt_str = std::format("{}", event);
 

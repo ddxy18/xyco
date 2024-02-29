@@ -36,8 +36,7 @@ class Driver {
 
   template <typename R, typename... Args>
   auto add_registry(Args... args) -> void {
-    local_registries_[std::this_thread::get_id()][typeid(R).hash_code()] =
-        R::get_instance(args...);
+    local_registries_[std::this_thread::get_id()][typeid(R).hash_code()] = R::get_instance(args...);
   }
 
   auto add_thread() -> void;
@@ -46,14 +45,12 @@ class Driver {
       : registry_initializers_(std::move(registry_initializers)) {}
 
  private:
-  constexpr static std::chrono::milliseconds MAX_TIMEOUT =
-      std::chrono::milliseconds(2);
+  constexpr static std::chrono::milliseconds MAX_TIMEOUT = std::chrono::milliseconds(2);
 
   std::vector<std::function<void(Driver*)>> registry_initializers_;
 
-  std::unordered_map<std::thread::id,
-                     std::unordered_map<decltype(typeid(int).hash_code()),
-                                        std::shared_ptr<Registry>>>
+  std::unordered_map<std::thread::id, std::unordered_map<decltype(typeid(int).hash_code()),
+                                                         std::shared_ptr<Registry>>>
       local_registries_;
 };
 }  // namespace xyco::runtime

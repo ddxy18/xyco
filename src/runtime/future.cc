@@ -6,13 +6,11 @@ module;
 
 module xyco.future;
 
-auto xyco::runtime::Future<void>::PromiseType::get_return_object()
-    -> Future<void> {
+auto xyco::runtime::Future<void>::PromiseType::get_return_object() -> Future<void> {
   return Future(Handle<promise_type>::from_promise(*this));
 }
 
-auto xyco::runtime::Future<void>::PromiseType::final_suspend() noexcept
-    -> FinalAwaitable {
+auto xyco::runtime::Future<void>::PromiseType::final_suspend() noexcept -> FinalAwaitable {
   // 'future_ == nullptr' means:
   // future dropped but coroutine frame still exists(now only happen in
   // Runtime::spawn)
@@ -34,23 +32,17 @@ auto xyco::runtime::Future<void>::PromiseType::return_void() -> void {
   }
 }
 
-auto xyco::runtime::Future<void>::PromiseType::future() -> FutureBase * {
-  return future_;
-}
+auto xyco::runtime::Future<void>::PromiseType::future() -> FutureBase * { return future_; }
 
-auto xyco::runtime::Future<void>::PromiseType::set_waited(
-    Handle<PromiseBase> future) -> void {
+auto xyco::runtime::Future<void>::PromiseType::set_waited(Handle<PromiseBase> future) -> void {
   if (future_ != nullptr) {
     future_->waited_ = future;
   }
 }
 
-auto xyco::runtime::Future<void>::operator co_await() -> Awaitable<void> {
-  return Awaitable(this);
-}
+auto xyco::runtime::Future<void>::operator co_await() -> Awaitable<void> { return Awaitable(this); }
 
-auto xyco::runtime::Future<void>::poll([[maybe_unused]] Handle<void> self)
-    -> Poll<void> {
+auto xyco::runtime::Future<void>::poll([[maybe_unused]] Handle<void> self) -> Poll<void> {
   return Pending();
 }
 
@@ -76,12 +68,9 @@ xyco::runtime::Future<void>::Future(Handle<promise_type> self) : self_(self) {
   }
 }
 
-xyco::runtime::Future<void>::Future(Future<void> &&future) noexcept {
-  *this = std::move(future);
-}
+xyco::runtime::Future<void>::Future(Future<void> &&future) noexcept { *this = std::move(future); }
 
-auto xyco::runtime::Future<void>::operator=(Future<void> &&future) noexcept
-    -> Future<void> & {
+auto xyco::runtime::Future<void>::operator=(Future<void> &&future) noexcept -> Future<void> & {
   self_ = future.self_;
   future.self_ = nullptr;
   waiting_ = future.waiting_;

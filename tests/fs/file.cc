@@ -62,9 +62,7 @@ TEST_F(FileTest, create_enable_write_disable_mode) {
     const char *path = "test_create_enable_write_disable_mode";
 
     auto file_path = (std::string(fs_root_).append(path));
-    auto open_result =
-        co_await xyco::fs::OpenOptions().read(true).create(true).open(
-            file_path);
+    auto open_result = co_await xyco::fs::OpenOptions().read(true).create(true).open(file_path);
 
     CO_ASSERT_EQ(open_result.has_value(), false);
   }());
@@ -75,9 +73,7 @@ TEST_F(FileTest, append_enable_truncate_enable_mode) {
     const char *path = "test_append_enable_truncate_enable_mode";
 
     auto file_path = (std::string(fs_root_).append(path));
-    auto open_result =
-        co_await xyco::fs::OpenOptions().append(true).truncate(true).open(
-            file_path);
+    auto open_result = co_await xyco::fs::OpenOptions().append(true).truncate(true).open(file_path);
 
     CO_ASSERT_EQ(open_result.has_value(), false);
   }());
@@ -94,9 +90,7 @@ TEST_F(FileTest, create_file) {
 
     std::string content = "abc";
     *co_await create_result->write(content.begin(), content.end());
-    auto open_result =
-        co_await xyco::fs::OpenOptions().write(true).create(true).open(
-            file_path);
+    auto open_result = co_await xyco::fs::OpenOptions().write(true).create(true).open(file_path);
 
     auto size = *co_await open_result->size();
     CO_ASSERT_EQ(size, content.size());
@@ -109,8 +103,7 @@ TEST_F(FileTest, create_new_file) {
 
     auto file_path = (std::string(fs_root_).append(path));
     auto open_result =
-        co_await xyco::fs::OpenOptions().write(true).create_new(true).open(
-            file_path);
+        co_await xyco::fs::OpenOptions().write(true).create_new(true).open(file_path);
 
     CO_ASSERT_EQ(open_result.has_value(), true);
   }());
@@ -125,8 +118,7 @@ TEST_F(FileTest, truncate_file) {
     std::string content = "abc";
     *co_await create_result->write(content.begin(), content.end());
     auto truncate_result =
-        co_await xyco::fs::OpenOptions().write(true).truncate(true).open(
-            file_path);
+        co_await xyco::fs::OpenOptions().write(true).truncate(true).open(file_path);
 
     auto size = *co_await truncate_result->size();
     CO_ASSERT_EQ(size, 0);
@@ -141,9 +133,7 @@ TEST_F(FileTest, append_file) {
     auto create_result = co_await xyco::fs::File::create(file_path);
     std::string content = "abc";
     *co_await create_result->write(content.begin(), content.end());
-    auto append_result =
-        co_await xyco::fs::OpenOptions().read(true).append(true).open(
-            file_path);
+    auto append_result = co_await xyco::fs::OpenOptions().read(true).append(true).open(file_path);
     *co_await append_result->write(content.begin(), content.end());
 
     auto size = *co_await append_result->size();
@@ -162,8 +152,7 @@ TEST_F(FileTest, file_permisssion) {
          .truncate(true)
          .mode(OWNER_READ_FLAG)
          .open(file_path);
-    auto open_result =
-        co_await xyco::fs::OpenOptions().write(true).open(file_path);
+    auto open_result = co_await xyco::fs::OpenOptions().write(true).open(file_path);
 
     CO_ASSERT_EQ(open_result.error().errno_, EACCES);
   }());
@@ -232,11 +221,10 @@ TEST_F(FileTest, set_file_permission) {
 
     auto permissions = (co_await file.status())->permissions();
 
-    CO_ASSERT_EQ(permissions, std::filesystem::perms::others_read |
-                                  std::filesystem::perms::group_read |
-                                  std::filesystem::perms::group_write |
-                                  std::filesystem::perms::owner_read |
-                                  std::filesystem::perms::owner_write);
+    CO_ASSERT_EQ(permissions,
+                 std::filesystem::perms::others_read | std::filesystem::perms::group_read |
+                     std::filesystem::perms::group_write | std::filesystem::perms::owner_read |
+                     std::filesystem::perms::owner_write);
   }());
 }
 
@@ -299,12 +287,10 @@ TEST_F(FileTest, copy_file) {
     *co_await file.resize(4);
 
     auto new_file_path = std::string(file_path).append("_copy");
-    *co_await (
-        xyco::fs::copy_file(file_path, new_file_path,
-                            std::filesystem::copy_options::overwrite_existing));
+    *co_await (xyco::fs::copy_file(file_path, new_file_path,
+                                   std::filesystem::copy_options::overwrite_existing));
 
-    auto new_file_size =
-        *co_await (co_await xyco::fs::File::open(new_file_path))->size();
+    auto new_file_size = *co_await (co_await xyco::fs::File::open(new_file_path))->size();
 
     CO_ASSERT_EQ(new_file_size, 4);
   }());
@@ -317,9 +303,8 @@ TEST_F(FileTest, copy_nonexist_file) {
     auto file_path = std::string(fs_root_).append(path);
 
     auto new_file_path = std::string(file_path).append("_copy");
-    auto copy_result = co_await (
-        xyco::fs::copy_file(file_path, new_file_path,
-                            std::filesystem::copy_options::overwrite_existing));
+    auto copy_result = co_await (xyco::fs::copy_file(
+        file_path, new_file_path, std::filesystem::copy_options::overwrite_existing));
 
     CO_ASSERT_EQ(copy_result.has_value(), false);
   }());
@@ -343,9 +328,8 @@ TEST_F(FileTest, operate_removed_file) {
     auto status_result = co_await file.status();
     CO_ASSERT_EQ(status_result.has_value(), false);
 
-    auto set_permissions_result =
-        co_await file.set_permissions(std::filesystem::perms::group_write,
-                                      std::filesystem::perm_options::add);
+    auto set_permissions_result = co_await file.set_permissions(std::filesystem::perms::group_write,
+                                                                std::filesystem::perm_options::add);
     CO_ASSERT_EQ(set_permissions_result.has_value(), false);
   }());
 }
@@ -355,22 +339,17 @@ TEST_F(FileTest, rw_file) {
     const char *path = "test_rw_file";
 
     auto file_path = (std::string(fs_root_).append(path));
-    auto file = *co_await xyco::fs::OpenOptions()
-                     .read(true)
-                     .write(true)
-                     .create_new(true)
-                     .open(file_path);
+    auto file =
+        *co_await xyco::fs::OpenOptions().read(true).write(true).create_new(true).open(file_path);
 
     auto write_content = std::string("abcd");
-    auto write_result =
-        (co_await file.write(write_content.begin(), write_content.end()));
+    auto write_result = (co_await file.write(write_content.begin(), write_content.end()));
 
     CO_ASSERT_EQ(*write_result, write_content.size());
 
     *co_await file.seek(0, SEEK_DATA);
     auto read_content = std::string(write_content.size(), 0);
-    auto read_result =
-        (co_await file.read(read_content.begin(), read_content.end()));
+    auto read_result = (co_await file.read(read_content.begin(), read_content.end()));
 
     CO_ASSERT_EQ(read_content, write_content);
   }());
@@ -384,8 +363,7 @@ TEST_F(FileTest, seek_invalid) {
     auto file = *co_await xyco::fs::File::create(file_path);
 
     auto write_content = std::string("abcd");
-    auto write_result =
-        (co_await file.write(write_content.begin(), write_content.end()));
+    auto write_result = (co_await file.write(write_content.begin(), write_content.end()));
 
     auto seek_result = (co_await file.seek(4, SEEK_DATA));
 

@@ -19,9 +19,7 @@ auto xyco::runtime::Worker::run_in_place(RuntimeCore *core) -> void {
 
 auto xyco::runtime::Worker::suspend() -> void { suspend_flag_ = true; }
 
-auto xyco::runtime::Worker::id() const -> std::thread::id {
-  return ctx_.get_id();
-}
+auto xyco::runtime::Worker::id() const -> std::thread::id { return ctx_.get_id(); }
 
 xyco::runtime::Worker::Worker(RuntimeCore *core, bool in_place) {
   if (in_place) {
@@ -40,8 +38,7 @@ xyco::runtime::Worker::~Worker() {
   }
 }
 
-auto xyco::runtime::Worker::init_in_thread(RuntimeCore *core,
-                                           bool in_place) -> void {
+auto xyco::runtime::Worker::init_in_thread(RuntimeCore *core, bool in_place) -> void {
   RuntimeCtxImpl::set_ctx(core);
 
   if (in_place) {
@@ -51,8 +48,7 @@ auto xyco::runtime::Worker::init_in_thread(RuntimeCore *core,
     // thread safe container in `Driver`. The container is read only after all
     // initializing completes. So wait until all workers complete initializing
     // to avoid concurrent write and read.
-    std::unique_lock<std::mutex> worker_init_lock_guard(
-        core->worker_launch_mutex_);
+    std::unique_lock<std::mutex> worker_init_lock_guard(core->worker_launch_mutex_);
     core->driver_.add_thread();
 
     if (++core->init_worker_num_ == core->worker_num_) {
@@ -123,20 +119,17 @@ auto xyco::runtime::RuntimeCore::wake_local(Events &events) -> void {
     auto *future = event_ptr->future_;
     event_ptr->future_ = nullptr;
     std::scoped_lock<std::mutex> lock_guard(worker->handle_mutex_);
-    worker->handles_.emplace(worker->handles_.begin(), future->get_handle(),
-                             future);
+    worker->handles_.emplace(worker->handles_.begin(), future->get_handle(), future);
   }
   events.clear();
 }
 
 xyco::runtime::RuntimeCore::RuntimeCore(
-    std::vector<std::function<void(Driver *)>> &&registry_initializers,
-    uint16_t worker_num)
+    std::vector<std::function<void(Driver *)>> &&registry_initializers, uint16_t worker_num)
     : driver_(std::move(registry_initializers)),
       worker_num_(worker_num),
       in_place_worker_(this, true) {
-  for ([[maybe_unused]] auto idx :
-       std::views::iota(0, static_cast<int>(worker_num_))) {
+  for ([[maybe_unused]] auto idx : std::views::iota(0, static_cast<int>(worker_num_))) {
     auto worker = std::make_unique<Worker>(this);
     workers_.emplace(worker->id(), std::move(worker));
   }
@@ -150,12 +143,8 @@ xyco::runtime::RuntimeCore::~RuntimeCore() {
 
 thread_local xyco::runtime::RuntimeCore *xyco::runtime::RuntimeCtxImpl::core_;
 
-auto xyco::runtime::RuntimeCtxImpl::is_in_ctx() -> bool {
-  return core_ != nullptr;
-}
+auto xyco::runtime::RuntimeCtxImpl::is_in_ctx() -> bool { return core_ != nullptr; }
 
-auto xyco::runtime::RuntimeCtxImpl::set_ctx(RuntimeCore *core) -> void {
-  core_ = core;
-}
+auto xyco::runtime::RuntimeCtxImpl::set_ctx(RuntimeCore *core) -> void { core_ = core; }
 
 auto xyco::runtime::RuntimeCtxImpl::get_ctx() -> RuntimeCore * { return core_; }

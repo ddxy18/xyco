@@ -12,22 +12,18 @@ import :registry;
 
 xyco::time::Level::Level() : current_it_(events_.begin()) {}
 
-auto xyco::time::Wheel::insert_event(std::shared_ptr<runtime::Event> event)
-    -> void {
-  auto total_steps =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          dynamic_cast<TimeExtra *>(event->extra_.get())->expire_time_ - now_)
-          .count();
+auto xyco::time::Wheel::insert_event(std::shared_ptr<runtime::Event> event) -> void {
+  auto total_steps = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         dynamic_cast<TimeExtra *>(event->extra_.get())->expire_time_ - now_)
+                         .count();
 
   auto level = 0;
   auto steps = 0LL;
   while (total_steps > 0) {
     steps = total_steps % Level::slot_num_;
     auto another_cycle =
-        steps >= std::distance(levels_.at(level).current_it_,
-                               levels_.at(level).events_.end());
-    total_steps =
-        total_steps / Level::slot_num_ + static_cast<int>(another_cycle);
+        steps >= std::distance(levels_.at(level).current_it_, levels_.at(level).events_.end());
+    total_steps = total_steps / Level::slot_num_ + static_cast<int>(another_cycle);
     level++;
   }
   level = std::max(--level, 0);
@@ -44,9 +40,7 @@ auto xyco::time::Wheel::expire(runtime::Events &events) -> void {
   auto now = Clock::now();
   if (now > now_) {
     auto steps =
-        std::chrono::duration_cast<std::chrono::milliseconds>(now - now_)
-            .count() /
-        interval_ms_;
+        std::chrono::duration_cast<std::chrono::milliseconds>(now - now_).count() / interval_ms_;
     now_ = now;
     walk(static_cast<int>(steps), events);
   }
@@ -59,9 +53,8 @@ auto xyco::time::Wheel::walk(int steps, runtime::Events &events) -> void {
   auto level_steps = std::array<int, Level::slot_num_>();
   while (steps > 0) {
     level_steps.at(level) = steps % Level::slot_num_;
-    auto another_cycle =
-        level_steps.at(level) >= std::distance(levels_.at(level).current_it_,
-                                               levels_.at(level).events_.end());
+    auto another_cycle = level_steps.at(level) >= std::distance(levels_.at(level).current_it_,
+                                                                levels_.at(level).events_.end());
     steps = steps / Level::slot_num_ + static_cast<int>(another_cycle);
     level++;
   }

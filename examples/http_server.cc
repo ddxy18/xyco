@@ -49,21 +49,10 @@ class RequestLine {
   }
 
   [[nodiscard]] auto to_string() const -> std::string {
-    return std::to_string(std::to_underlying(method_)) + " " + url_ + " " +
-           version_;
+    return std::to_string(std::to_underlying(method_)) + " " + url_ + " " + version_;
   }
 
-  enum class Method : std::uint8_t {
-    Get,
-    Head,
-    Post,
-    Put,
-    Delete,
-    Connect,
-    Options,
-    Trace,
-    Patch
-  };
+  enum class Method : std::uint8_t { Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch };
 
   Method method_;
   std::string url_;
@@ -108,14 +97,10 @@ class Server {
     }
   }
 
-  auto receive_request(xyco::net::TcpStream server_stream)
-      -> xyco::runtime::Future<void> {
-    auto reader = xyco::io::BufferReader<xyco::net::TcpStream, std::string>(
-        &server_stream);
+  auto receive_request(xyco::net::TcpStream server_stream) -> xyco::runtime::Future<void> {
+    auto reader = xyco::io::BufferReader<xyco::net::TcpStream, std::string>(&server_stream);
     Request request;
-    auto line =
-        *co_await xyco::io::BufferReadExt::read_line<decltype(reader),
-                                                     std::string>(reader);
+    auto line = *co_await xyco::io::BufferReadExt::read_line<decltype(reader), std::string>(reader);
     if (line.empty()) {
       *co_await server_stream.shutdown(xyco::io::Shutdown::All);
       co_return;
@@ -123,14 +108,12 @@ class Server {
     request.request_line_ = RequestLine(line.substr(0, line.length() - 2));
 
     while (true) {
-      line = *co_await xyco::io::BufferReadExt::read_line<decltype(reader),
-                                                          std::string>(reader);
+      line = *co_await xyco::io::BufferReadExt::read_line<decltype(reader), std::string>(reader);
       if (line == "\r\n") {
         break;
       }
-      request.headers_.emplace(
-          line.substr(0, line.find(':')),
-          line.substr(line.find(':') + 2, line.length() - 2));
+      request.headers_.emplace(line.substr(0, line.find(':')),
+                               line.substr(line.find(':') + 2, line.length() - 2));
     }
     std::string headers;
     for (auto &header : request.headers_) {
@@ -140,21 +123,20 @@ class Server {
     int content_length = 0;
     if (request.headers_.find("Content-Length") != request.headers_.end()) {
       auto content_length_str = request.headers_.find("Content-Length")->second;
-      std::from_chars(content_length_str.begin().base(),
-                      content_length_str.end().base(), content_length);
+      std::from_chars(content_length_str.begin().base(), content_length_str.end().base(),
+                      content_length);
     }
     request.body_.resize(content_length);
     auto begin = request.body_.begin();
     auto end = request.body_.end();
     while (begin != end) {
-      begin += static_cast<decltype(begin)::difference_type>(
-          *co_await server_stream.read(begin, end));
+      begin +=
+          static_cast<decltype(begin)::difference_type>(*co_await server_stream.read(begin, end));
     }
     runtime_->spawn(execute_request(request, std::move(server_stream)));
   }
 
-  static auto execute_request(Request request,
-                              xyco::net::TcpStream server_stream)
+  static auto execute_request(Request request, xyco::net::TcpStream server_stream)
       -> xyco::runtime::Future<void> {
     constexpr int SUCCESS_CODE = 200;
     constexpr int NOT_FOUND_CODE = 404;
@@ -163,8 +145,7 @@ class Server {
     StatusLine status_line;
     status_line.version_ = request.request_line_.version_;
     if (request.request_line_.method_ == RequestLine::Method::Get) {
-      auto open_file_result =
-          (co_await xyco::fs::File::open(request.request_line_.url_));
+      auto open_file_result = (co_await xyco::fs::File::open(request.request_line_.url_));
       if (!open_file_result) {
         status_line.code_ = NOT_FOUND_CODE;
         status_line.reason_ = "ERROR";
@@ -172,41 +153,34 @@ class Server {
         status_line.code_ = SUCCESS_CODE;
         status_line.reason_ = "OK";
       }
-      *co_await xyco::io::WriteExt::write_all(server_stream,
-                                              status_line.to_string());
+      *co_await xyco::io::WriteExt::write_all(server_stream, status_line.to_string());
 
       if (!open_file_result) {
         std::string body = "<P>Your browser sent a bad request.\r\n";
         *co_await xyco::io::WriteExt::write_all(
-            server_stream,
-            "Content-Length: " + std::to_string(body.size()) + "\r\n");
+            server_stream, "Content-Length: " + std::to_string(body.size()) + "\r\n");
         *co_await xyco::io::WriteExt::write_all(server_stream, "\r\n");
         *co_await xyco::io::WriteExt::write_all(server_stream, body);
         co_return;
       }
       auto file = *std::move(open_file_result);
       *co_await xyco::io::WriteExt::write_all(
-          server_stream,
-          "Content-Length: " + std::to_string(*co_await file.size()) + "\r\n");
+          server_stream, "Content-Length: " + std::to_string(*co_await file.size()) + "\r\n");
       *co_await xyco::io::WriteExt::write_all(server_stream, "\r\n");
       auto reader = xyco::io::BufferReader<xyco::fs::File, std::string>(&file);
       std::string line = "a";
       while (!line.empty()) {
-        line =
-            *co_await xyco::io::BufferReadExt::read_line<decltype(reader),
-                                                         std::string>(reader);
+        line = *co_await xyco::io::BufferReadExt::read_line<decltype(reader), std::string>(reader);
         *co_await xyco::io::WriteExt::write_all(server_stream, line);
       }
     } else {
       status_line.code_ = SERVER_ERROR_CODE;
       status_line.reason_ = "Internal Server Error";
-      *co_await xyco::io::WriteExt::write_all(server_stream,
-                                              status_line.to_string());
+      *co_await xyco::io::WriteExt::write_all(server_stream, status_line.to_string());
 
       std::string body = "<P>Unsupported method.\r\n";
       *co_await xyco::io::WriteExt::write_all(
-          server_stream,
-          "Content-Length: " + std::to_string(body.size()) + "\r\n");
+          server_stream, "Content-Length: " + std::to_string(body.size()) + "\r\n");
       *co_await xyco::io::WriteExt::write_all(server_stream, "\r\n");
       *co_await xyco::io::WriteExt::write_all(server_stream, body);
     }

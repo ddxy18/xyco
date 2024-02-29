@@ -62,8 +62,7 @@ class IoRegistryImpl : public runtime::Registry {
   [[nodiscard]] auto deregister(std::shared_ptr<runtime::Event> event)
       -> utils::Result<void> override;
 
-  [[nodiscard]] auto select(runtime::Events &events,
-                            std::chrono::milliseconds timeout)
+  [[nodiscard]] auto select(runtime::Events &events, std::chrono::milliseconds timeout)
       -> utils::Result<void> override;
 
   IoRegistryImpl(int entries);
@@ -79,8 +78,7 @@ class IoRegistryImpl : public runtime::Registry {
   ~IoRegistryImpl() override;
 
  private:
-  constexpr static std::chrono::milliseconds MAX_TIMEOUT =
-      std::chrono::milliseconds(1);
+  constexpr static std::chrono::milliseconds MAX_TIMEOUT = std::chrono::milliseconds(1);
   constexpr static int MAX_EVENTS = 10000;
 
   int epfd_;
@@ -94,25 +92,21 @@ using IoRegistry = runtime::GlobalRegistry<IoRegistryImpl>;
 }  // namespace xyco::io::epoll
 
 template <>
-struct std::formatter<xyco::io::epoll::IoExtra>
-    : public std::formatter<std::string> {
+struct std::formatter<xyco::io::epoll::IoExtra> : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const xyco::io::epoll::IoExtra &extra,
-              FormatContext &ctx) const -> decltype(ctx.out()) {
+  auto format(const xyco::io::epoll::IoExtra &extra, FormatContext &ctx) const
+      -> decltype(ctx.out()) {
     std::string state = "[";
-    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Registered) !=
-        0) {
+    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Registered) != 0) {
       state += "Registered,";
     }
     if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Pending) != 0) {
       state += "Pending,";
     }
-    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Readable) !=
-        0) {
+    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Readable) != 0) {
       state += "Readable,";
     }
-    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Writable) !=
-        0) {
+    if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Writable) != 0) {
       state += "Writable,";
     }
     if ((extra.state_.field_ & xyco::io::epoll::IoExtra::State::Error) != 0) {
@@ -133,8 +127,7 @@ struct std::formatter<xyco::io::epoll::IoExtra>
         break;
     }
 
-    return std::format_to(ctx.out(),
-                          "IoExtra{{state_={}, interest_={}, fd_={}}}", state,
-                          interest, extra.fd_);
+    return std::format_to(ctx.out(), "IoExtra{{state_={}, interest_={}, fd_={}}}", state, interest,
+                          extra.fd_);
   }
 };

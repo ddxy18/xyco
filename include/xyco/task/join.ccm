@@ -16,15 +16,12 @@ class JoinFuture : public runtime::Future<std::tuple<T...>> {
   using CoOutput = std::tuple<T...>;
 
  public:
-  auto poll([[maybe_unused]] runtime::Handle<void> self)
-      -> runtime::Poll<CoOutput> override {
+  auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
       std::apply(
           [this](auto &...branch) {
-            (runtime::RuntimeCtx::get_ctx()->spawn_impl(
-                 this->run_single_branch<T>(branch)),
-             ...);
+            (runtime::RuntimeCtx::get_ctx()->spawn_impl(this->run_single_branch<T>(branch)), ...);
           },
           branches_);
 
@@ -53,8 +50,7 @@ class JoinFuture : public runtime::Future<std::tuple<T...>> {
   template <typename ST>
   auto run_single_branch(
       // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
-      std::pair<runtime::Future<ST>,
-                std::optional<std::expected<ST, std::exception_ptr>>> &branch)
+      std::pair<runtime::Future<ST>, std::optional<std::expected<ST, std::exception_ptr>>> &branch)
       -> runtime::Future<void> {
     try {
       branch.second = co_await branch.first;
@@ -71,10 +67,8 @@ class JoinFuture : public runtime::Future<std::tuple<T...>> {
       auto all_completed = std::apply(
           // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
           [](auto &...branch) {
-            auto branch_state_array =
-                std::array<bool, sizeof...(T)>{branch.second.has_value()...};
-            return std::all_of(branch_state_array.begin(),
-                               branch_state_array.end(),
+            auto branch_state_array = std::array<bool, sizeof...(T)>{branch.second.has_value()...};
+            return std::all_of(branch_state_array.begin(), branch_state_array.end(),
                                [](auto completed) { return completed; });
           },
           branches_);
@@ -88,8 +82,7 @@ class JoinFuture : public runtime::Future<std::tuple<T...>> {
   bool ready_{};
   std::mutex branch_mutex_;
   bool registered_{};
-  std::tuple<std::pair<runtime::Future<T>,
-                       std::optional<std::expected<T, std::exception_ptr>>>...>
+  std::tuple<std::pair<runtime::Future<T>, std::optional<std::expected<T, std::exception_ptr>>>...>
       branches_;
 };
 

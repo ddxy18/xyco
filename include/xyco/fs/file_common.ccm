@@ -19,42 +19,32 @@ class FileBase {
  public:
   [[nodiscard]] static auto create(std::filesystem::path path)
       -> runtime::Future<utils::Result<T>> {
-    co_return co_await typename T::OpenOptions()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(std::move(path));
-  }
-
-  [[nodiscard]] static auto open(std::filesystem::path path)
-      -> runtime::Future<utils::Result<T>> {
-    co_return co_await typename T::OpenOptions().read(true).open(
+    co_return co_await typename T::OpenOptions().write(true).create(true).truncate(true).open(
         std::move(path));
   }
 
-  [[nodiscard]] auto resize(uintmax_t size)
-      -> runtime::Future<utils::Result<void>> {
+  [[nodiscard]] static auto open(std::filesystem::path path) -> runtime::Future<utils::Result<T>> {
+    co_return co_await typename T::OpenOptions().read(true).open(std::move(path));
+  }
+
+  [[nodiscard]] auto resize(uintmax_t size) -> runtime::Future<utils::Result<void>> {
     co_return co_await task::BlockingTask([&]() {
       std::error_code error_code;
       std::filesystem::resize_file(path_, size, error_code);
-      return !error_code
-                 ? utils::Result<void>()
-                 : std::unexpected(utils::Error{.errno_ = error_code.value(),
-                                                .info_ = error_code.message()});
+      return !error_code ? utils::Result<void>()
+                         : std::unexpected(utils::Error{.errno_ = error_code.value(),
+                                                        .info_ = error_code.message()});
     });
   }
 
-  [[nodiscard]] auto seek(off64_t offset, int whence)
-      -> runtime::Future<utils::Result<off64_t>> {
-    co_return co_await task::BlockingTask(
-        [this, offset, whence]() -> utils::Result<off64_t> {
-          auto return_offset = xyco::libc::lseek64(fd_, offset, whence);
-          if (return_offset == -1) {
-            return utils::into_sys_result(-1).transform(
-                [](auto n) { return static_cast<off64_t>(n); });
-          }
-          return return_offset;
-        });
+  [[nodiscard]] auto seek(off64_t offset, int whence) -> runtime::Future<utils::Result<off64_t>> {
+    co_return co_await task::BlockingTask([this, offset, whence]() -> utils::Result<off64_t> {
+      auto return_offset = xyco::libc::lseek64(fd_, offset, whence);
+      if (return_offset == -1) {
+        return utils::into_sys_result(-1).transform([](auto n) { return static_cast<off64_t>(n); });
+      }
+      return return_offset;
+    });
   }
 
   FileBase(const FileBase &) = delete;

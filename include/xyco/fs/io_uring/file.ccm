@@ -23,39 +23,31 @@ class File : public FileBase<File> {
 
   auto status() -> runtime::Future<utils::Result<std::filesystem::file_status>>;
 
-  [[nodiscard]] auto set_permissions(std::filesystem::perms prms,
-                                     std::filesystem::perm_options opts =
-                                         std::filesystem::perm_options::replace)
+  [[nodiscard]] auto set_permissions(
+      std::filesystem::perms prms,
+      std::filesystem::perm_options opts = std::filesystem::perm_options::replace)
       -> runtime::Future<utils::Result<void>>;
 
-  [[nodiscard]] auto modified() const
-      -> runtime::Future<utils::Result<timespec>>;
+  [[nodiscard]] auto modified() const -> runtime::Future<utils::Result<timespec>>;
 
-  [[nodiscard]] auto accessed() const
-      -> runtime::Future<utils::Result<timespec>>;
+  [[nodiscard]] auto accessed() const -> runtime::Future<utils::Result<timespec>>;
 
-  [[nodiscard]] auto created() const
-      -> runtime::Future<utils::Result<timespec>>;
+  [[nodiscard]] auto created() const -> runtime::Future<utils::Result<timespec>>;
 
   template <typename Iterator>
-  auto read(Iterator begin,
-            Iterator end) -> runtime::Future<utils::Result<uintptr_t>> {
+  auto read(Iterator begin, Iterator end) -> runtime::Future<utils::Result<uintptr_t>> {
     using CoOutput = utils::Result<uintptr_t>;
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll([[maybe_unused]] runtime::Handle<void> self)
-          -> runtime::Poll<CoOutput> override {
+      auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
         auto *extra = dynamic_cast<io::uring::IoExtra *>(event_->extra_.get());
 
         if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
           event_->future_ = this;
           extra->args_ = io::uring::IoExtra::Read{
-              .buf_ = &*begin_,
-              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
-          runtime::RuntimeCtx::get_ctx()
-              ->driver()
-              .Register<io::uring::IoRegistry>(event_);
+              .buf_ = &*begin_, .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
+          runtime::RuntimeCtx::get_ctx()->driver().Register<io::uring::IoRegistry>(event_);
           return runtime::Pending();
         }
         extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
@@ -63,15 +55,15 @@ class File : public FileBase<File> {
           logging::info("read {} bytes from {}", extra->return_, self_->fd_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
-        return runtime::Ready<CoOutput>{std::unexpected(
-            utils::Error{.errno_ = -extra->return_, .info_ = ""})};
+        return runtime::Ready<CoOutput>{
+            std::unexpected(utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
 
       Future(Iterator begin, Iterator end, File *self)
           : runtime::Future<CoOutput>(nullptr),
             self_(self),
-            event_(std::make_shared<runtime::Event>(runtime::Event{
-                .extra_ = std::make_unique<io::uring::IoExtra>()})),
+            event_(std::make_shared<runtime::Event>(
+                runtime::Event{.extra_ = std::make_unique<io::uring::IoExtra>()})),
             begin_(begin),
             end_(end) {
         auto *extra = dynamic_cast<io::uring::IoExtra *>(event_->extra_.get());
@@ -103,23 +95,18 @@ class File : public FileBase<File> {
   }
 
   template <typename Iterator>
-  auto write(Iterator begin,
-             Iterator end) -> runtime::Future<utils::Result<uintptr_t>> {
+  auto write(Iterator begin, Iterator end) -> runtime::Future<utils::Result<uintptr_t>> {
     using CoOutput = utils::Result<uintptr_t>;
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll([[maybe_unused]] runtime::Handle<void> self)
-          -> runtime::Poll<CoOutput> override {
+      auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
         auto *extra = dynamic_cast<io::uring::IoExtra *>(event_->extra_.get());
         if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
           event_->future_ = this;
           extra->args_ = io::uring::IoExtra::Write{
-              .buf_ = &*begin_,
-              .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
-          runtime::RuntimeCtx::get_ctx()
-              ->driver()
-              .Register<io::uring::IoRegistry>(event_);
+              .buf_ = &*begin_, .len_ = static_cast<unsigned int>(std::distance(begin_, end_))};
+          runtime::RuntimeCtx::get_ctx()->driver().Register<io::uring::IoRegistry>(event_);
 
           return runtime::Pending();
         }
@@ -128,15 +115,15 @@ class File : public FileBase<File> {
           logging::info("write {} bytes to {}", extra->return_, self_->fd_);
           return runtime::Ready<CoOutput>{extra->return_};
         }
-        return runtime::Ready<CoOutput>{std::unexpected(
-            utils::Error{.errno_ = -extra->return_, .info_ = ""})};
+        return runtime::Ready<CoOutput>{
+            std::unexpected(utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
 
       Future(Iterator begin, Iterator end, File *self)
           : runtime::Future<CoOutput>(nullptr),
             self_(self),
-            event_(std::make_shared<runtime::Event>(runtime::Event{
-                .extra_ = std::make_unique<io::uring::IoExtra>()})),
+            event_(std::make_shared<runtime::Event>(
+                runtime::Event{.extra_ = std::make_unique<io::uring::IoExtra>()})),
             begin_(begin),
             end_(end) {
         auto *extra = dynamic_cast<io::uring::IoExtra *>(event_->extra_.get());
