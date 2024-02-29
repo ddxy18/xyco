@@ -96,7 +96,7 @@ auto xyco::net::epoll::TcpSocket::connect(SocketAddr addr)
   auto err = connect_result.error().errno_;
   if (err != EINPROGRESS && err != EAGAIN) {
     logging::warn("{} connect fail{{errno={}}}", socket_, errno);
-    co_return std::unexpected(utils::Error{.errno_ = err});
+    co_return std::unexpected(utils::Error{.errno_ = err, .info_ = ""});
   }
   co_return co_await Future(addr, &socket_);
 }
@@ -248,8 +248,9 @@ auto xyco::net::epoll::TcpListener::accept()
       if (extra->state_.get_field<io::epoll::IoExtra::State::Readable>()) {
         auto accept_result = utils::into_sys_result(xyco::libc::accept4(
             self_->socket_.into_c_fd(),
-            static_cast<xyco::libc::sockaddr *>(static_cast<void *>(&addr_in_)),
-            &addrlen_, xyco::libc::K_SOCK_NONBLOCK));
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            reinterpret_cast<xyco::libc::sockaddr *>(&addr_in_), &addrlen_,
+            xyco::libc::K_SOCK_NONBLOCK));
         if (!accept_result) {
           auto err = accept_result.error();
           if (err.errno_ == EAGAIN || err.errno_ == EWOULDBLOCK) {

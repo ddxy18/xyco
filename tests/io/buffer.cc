@@ -67,7 +67,7 @@ TEST_F(BufferTest, concept) {
   xyco::io::ReadExt::read(*server_, span_buffer);
   std::initializer_list<char> initializer_list_buffer;
   xyco::io::WriteExt::write(*server_, initializer_list_buffer);
-  // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+  // NOLINTNEXTLINE(modernize-avoid-c-arrays)
   char c_array_buffer[1];
   xyco::io::ReadExt::read(*server_, c_array_buffer);
 
@@ -186,12 +186,12 @@ TEST_F(BufferTest, c_array_buffer) {
   TestRuntimeCtx::runtime()->block_on(
       [](xyco::net::TcpStream *client,
          xyco::net::TcpStream *server) -> xyco::runtime::Future<void> {
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+        // NOLINTNEXTLINE(modernize-avoid-c-arrays)
         char write_bytes[] = "ab";
         *co_await xyco::io::WriteExt::write_all(*client, write_bytes);
         *co_await client->shutdown(xyco::io::Shutdown::All);
 
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+        // NOLINTNEXTLINE(modernize-avoid-c-arrays)
         char readed[4];
         *co_await xyco::io::ReadExt::read(*server, readed);
         CO_ASSERT_EQ(std::string(std::span(readed).data()),

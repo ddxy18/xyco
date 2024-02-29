@@ -3,6 +3,7 @@ module;
 #include <chrono>
 #include <format>
 #include <memory>
+#include <mutex>
 
 module xyco.time;
 
@@ -39,8 +40,8 @@ auto xyco::time::TimeRegistryImpl::deregister(
 }
 
 auto xyco::time::TimeRegistryImpl::select(
-    runtime::Events &events, [[maybe_unused]] std::chrono::milliseconds timeout)
-    -> utils::Result<void> {
+    runtime::Events &events,
+    [[maybe_unused]] std::chrono::milliseconds timeout) -> utils::Result<void> {
   std::scoped_lock<std::mutex> lock_guard(select_mutex_);
   wheel_.expire(events);
 

@@ -93,8 +93,8 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
     *this = std::move(future);
   }
 
-  auto operator=(const SelectFuture<T...> &future)
-      -> SelectFuture<T...> & = delete;
+  auto operator=(const SelectFuture<T...> &future) -> SelectFuture<T...> & =
+                                                          delete;
 
   auto operator=(SelectFuture<T...> &&future) noexcept -> SelectFuture<T...> & {
     ready_ = future.ready_;
@@ -110,6 +110,7 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
     std::unique_lock<std::shared_mutex> guard{branches->branch_mutex_,
                                               std::defer_lock};
     try {
+      // NOLINTNEXTLINE(cppcoreguidelines-no-suspend-with-lock)
       auto result = co_await std::get<0>(branch);
       guard.lock();
       std::get<1>(branch) = std::move(result);

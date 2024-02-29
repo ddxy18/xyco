@@ -9,7 +9,6 @@ import xyco.io;
 import xyco.net;
 import xyco.fs;
 
-// NOLINTNEXTLINE(bugprone-exception-escape)
 class RequestLine {
  public:
   RequestLine(const std::string &line) {
@@ -54,7 +53,7 @@ class RequestLine {
            version_;
   }
 
-  enum class Method {
+  enum class Method : std::uint8_t {
     Get,
     Head,
     Post,
@@ -71,7 +70,6 @@ class RequestLine {
   std::string version_;
 };
 
-// NOLINTNEXTLINE(bugprone-exception-escape)
 class Request {
  public:
   RequestLine request_line_{""};
@@ -79,7 +77,6 @@ class Request {
   std::string body_;
 };
 
-// NOLINTNEXTLINE(bugprone-exception-escape)
 class StatusLine {
  public:
   [[nodiscard]] auto to_string() const -> std::string {
@@ -119,7 +116,7 @@ class Server {
     auto line =
         *co_await xyco::io::BufferReadExt::read_line<decltype(reader),
                                                      std::string>(reader);
-    if (line.length() == 0) {
+    if (line.empty()) {
       *co_await server_stream.shutdown(xyco::io::Shutdown::All);
       co_return;
     }

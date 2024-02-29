@@ -149,7 +149,8 @@ class DropAsserter {
 
   static auto assert_drop() { std::quick_exit(dropped_ ? 0 : -1); }
 
-  static auto drop(DropAsserter drop_asserter) -> xyco::runtime::Future<void> {
+  static auto drop([[maybe_unused]] DropAsserter drop_asserter)
+      -> xyco::runtime::Future<void> {
     co_return;
   }
 

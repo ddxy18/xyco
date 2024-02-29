@@ -39,8 +39,8 @@ class File : public FileBase<File> {
       -> runtime::Future<utils::Result<timespec>>;
 
   template <typename Iterator>
-  auto read(Iterator begin, Iterator end)
-      -> runtime::Future<utils::Result<uintptr_t>> {
+  auto read(Iterator begin,
+            Iterator end) -> runtime::Future<utils::Result<uintptr_t>> {
     co_return co_await task::BlockingTask([&]() {
       return utils::into_sys_result(
           xyco::libc::read(fd_, &*begin, std::distance(begin, end)));
@@ -48,8 +48,8 @@ class File : public FileBase<File> {
   }
 
   template <typename Iterator>
-  auto write(Iterator begin, Iterator end)
-      -> runtime::Future<utils::Result<uintptr_t>> {
+  auto write(Iterator begin,
+             Iterator end) -> runtime::Future<utils::Result<uintptr_t>> {
     co_return co_await task::BlockingTask([&]() {
       return utils::into_sys_result(
           xyco::libc::write(fd_, &*begin, std::distance(begin, end)));

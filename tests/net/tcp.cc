@@ -190,8 +190,9 @@ TEST_F(WithServerTest, TcpListener_accept) {
     auto client = *co_await xyco::net::TcpSocket::new_v4()->connect(
         xyco::net::SocketAddr::new_v4(ip_, port_));
     auto [stream, addr] = *co_await listener_->accept();
-    const auto *raw_addr = static_cast<const xyco::libc::sockaddr_in *>(
-        static_cast<const void *>(addr.into_c_addr()));
+    const auto *raw_addr =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        reinterpret_cast<const xyco::libc::sockaddr_in *>(addr.into_c_addr());
 
     CO_ASSERT_EQ(raw_addr->sin_addr.s_addr, xyco::libc::inet_addr(ip_));
   }());

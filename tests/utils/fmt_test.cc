@@ -2,6 +2,7 @@
 
 #include <coroutine>
 #include <format>
+#include <utility>
 
 import xyco.test.utils;
 import xyco.runtime_core;
@@ -20,14 +21,17 @@ TEST(FmtTypeTest, IoError) {
 }
 
 TEST(FmtTypeTest, file_IoError) {
-  auto io_error = xyco::utils::Error();
-  io_error.errno_ = std::to_underlying(xyco::utils::ErrorKind::Unsupported);
+  auto io_error = xyco::utils::Error{
+      .errno_ = std::to_underlying(xyco::utils::ErrorKind::Unsupported),
+      .info_ = ""};
 
   auto fmt_str = std::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Unsupported, info=}");
 
-  io_error.errno_ = std::to_underlying(xyco::utils::ErrorKind::Uncategorized);
+  io_error = {
+      .errno_ = std::to_underlying(xyco::utils::ErrorKind::Uncategorized),
+      .info_ = ""};
   fmt_str = std::format("{}", io_error);
 
   ASSERT_EQ(fmt_str, "IoError{error_kind=Uncategorized, info=}");

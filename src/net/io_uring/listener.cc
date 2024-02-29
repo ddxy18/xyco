@@ -61,8 +61,8 @@ auto xyco::net::uring::TcpSocket::connect(SocketAddr addr)
 
       extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
       if (extra->return_ < 0) {
-        return runtime::Ready<CoOutput>{
-            std::unexpected(utils::Error{.errno_ = -extra->return_})};
+        return runtime::Ready<CoOutput>{std::unexpected(
+            utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
       logging::info("{} connect to {}", *socket_, addr_);
       return runtime::Ready<CoOutput>{TcpStream(std::move(*socket_))};
@@ -172,8 +172,8 @@ auto xyco::net::uring::TcpStream::shutdown(io::Shutdown shutdown)
 
       extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
       if (extra->return_ < 0) {
-        return runtime::Ready<CoOutput>{
-            std::unexpected(utils::Error{.errno_ = -extra->return_})};
+        return runtime::Ready<CoOutput>{std::unexpected(
+            utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
       logging::info("shutdown {}", self_->socket_);
       return runtime::Ready<CoOutput>{{}};
@@ -229,8 +229,8 @@ auto xyco::net::uring::TcpListener::accept()
       if (!extra->state_.get_field<io::uring::IoExtra::State::Completed>()) {
         self_->event_->future_ = this;
         extra->args_ = io::uring::IoExtra::Accept{
-            .addr_ = static_cast<xyco::libc::sockaddr *>(
-                static_cast<void *>(&addr_)),
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+            .addr_ = reinterpret_cast<xyco::libc::sockaddr *>(&addr_),
             .addrlen_ = &addr_len_};
         extra->fd_ = self_->socket_.into_c_fd();
         runtime::RuntimeCtx::get_ctx()
@@ -242,8 +242,8 @@ auto xyco::net::uring::TcpListener::accept()
 
       extra->state_.set_field<io::uring::IoExtra::State::Completed, false>();
       if (extra->return_ < 0) {
-        return runtime::Ready<CoOutput>{
-            std::unexpected(utils::Error{.errno_ = -extra->return_})};
+        return runtime::Ready<CoOutput>{std::unexpected(
+            utils::Error{.errno_ = -extra->return_, .info_ = ""})};
       }
       std::string ip_addr(xyco::libc::K_INET_ADDRSTRLEN, 0);
       auto sock_addr = SocketAddr::new_v4(

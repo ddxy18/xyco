@@ -20,22 +20,22 @@ class IoExtra : public runtime::Extra {
  public:
   class Read {
    public:
-    void *buf_;
-    unsigned int len_;
-    uint64_t offset_;
+    void *buf_{};
+    unsigned int len_{};
+    uint64_t offset_{};
   };
   class Write {
    public:
-    const void *buf_;
-    unsigned int len_;
-    uint64_t offset_;
+    const void *buf_{};
+    unsigned int len_{};
+    uint64_t offset_{};
   };
   class Close {};
   class Accept {
    public:
     sockaddr *addr_;
     socklen_t *addrlen_;
-    int flags_;
+    int flags_{};
   };
   class Connect {
    public:
@@ -51,7 +51,7 @@ class IoExtra : public runtime::Extra {
     friend class IoExtra;
 
    public:
-    enum { Registered = 0b1, Completed = 0b10 };
+    enum : std::uint8_t { Registered = 0b1, Completed = 0b10 };
 
     template <size_t F, bool flag = true>
     auto set_field() {
@@ -169,8 +169,8 @@ template <>
 struct std::formatter<xyco::io::uring::IoExtra>
     : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const xyco::io::uring::IoExtra &extra, FormatContext &ctx) const
-      -> decltype(ctx.out()) {
+  auto format(const xyco::io::uring::IoExtra &extra,
+              FormatContext &ctx) const -> decltype(ctx.out()) {
     return std::format_to(
         ctx.out(), "IoExtra{{args_={}, fd_={}, return_={}}}",
         std::visit(overloaded{[](auto arg) { return std::format("{}", arg); }},
@@ -217,8 +217,8 @@ struct std::formatter<xyco::io::uring::IoExtra::Accept>
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Accept &args,
               FormatContext &ctx) const -> decltype(ctx.out()) {
-    auto *addr =
-        static_cast<xyco::libc::sockaddr_in *>(static_cast<void *>(args.addr_));
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    auto *addr = reinterpret_cast<xyco::libc::sockaddr_in *>(args.addr_);
     std::string ip_addr(xyco::libc::K_INET_ADDRSTRLEN, 0);
     ip_addr = xyco::libc::inet_ntop(addr->sin_family, &addr->sin_addr,
                                     ip_addr.data(), ip_addr.size());
@@ -233,8 +233,9 @@ struct std::formatter<xyco::io::uring::IoExtra::Connect>
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Connect &args,
               FormatContext &ctx) const -> decltype(ctx.out()) {
-    const auto *addr = static_cast<const xyco::libc::sockaddr_in *>(
-        static_cast<const void *>(args.addr_));
+    const auto *addr =
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        reinterpret_cast<const xyco::libc::sockaddr_in *>(args.addr_);
     std::string ip_addr(xyco::libc::K_INET_ADDRSTRLEN, 0);
     ip_addr = xyco::libc::inet_ntop(addr->sin_family, &addr->sin_addr,
                                     ip_addr.data(), ip_addr.size());

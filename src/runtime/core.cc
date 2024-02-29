@@ -40,8 +40,8 @@ xyco::runtime::Worker::~Worker() {
   }
 }
 
-auto xyco::runtime::Worker::init_in_thread(RuntimeCore *core, bool in_place)
-    -> void {
+auto xyco::runtime::Worker::init_in_thread(RuntimeCore *core,
+                                           bool in_place) -> void {
   RuntimeCtxImpl::set_ctx(core);
 
   if (in_place) {

@@ -144,18 +144,18 @@ class OpenOptionsBase {
     if (read_ && append_) {
       return xyco::libc::K_O_RDWR | xyco::libc::K_O_APPEND;
     }
-    return std::unexpected(utils::Error{.errno_ = EINVAL});
+    return std::unexpected(utils::Error{.errno_ = EINVAL, .info_ = ""});
   }
 
   [[nodiscard]] auto get_creation_mode() const -> utils::Result<int> {
     if (!write_ && !append_) {
       if (truncate_ || create_ || create_new_) {
-        return std::unexpected(utils::Error{.errno_ = EINVAL});
+        return std::unexpected(utils::Error{.errno_ = EINVAL, .info_ = ""});
       }
     }
     if (append_) {
       if (truncate_ && !create_new_) {
-        return std::unexpected(utils::Error{.errno_ = EINVAL});
+        return std::unexpected(utils::Error{.errno_ = EINVAL, .info_ = ""});
       }
     }
 
