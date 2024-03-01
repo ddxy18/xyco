@@ -50,8 +50,7 @@ class Runtime {
     core_.in_place_worker().run_in_place(&core_);
   }
 
-  Runtime(std::vector<std::function<void(Driver *)>> &&registry_initializers,
-          uint16_t worker_num);
+  Runtime(std::vector<std::function<void(Driver *)>> &&registry_initializers, uint16_t worker_num);
 
   Runtime(const Runtime &) = delete;
 
@@ -80,8 +79,7 @@ class Builder {
     return *this;
   }
 
-  [[nodiscard]] auto build()
-      -> std::expected<std::unique_ptr<Runtime>, std::nullptr_t>;
+  [[nodiscard]] auto build() -> std::expected<std::unique_ptr<Runtime>, std::nullptr_t>;
 
  private:
   uint16_t worker_num_{};

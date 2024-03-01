@@ -14,14 +14,12 @@ class LoggerCtx {
 };
 
 template <typename... Args>
-inline auto trace(spdlog::format_string_t<Args...> fmt,
-                  Args &&...args) -> void {
+inline auto trace(spdlog::format_string_t<Args...> fmt, Args &&...args) -> void {
   LoggerCtx::get_logger()->trace(fmt, std::forward<Args>(args)...);
 }
 
 template <typename... Args>
-inline auto debug(spdlog::format_string_t<Args...> fmt,
-                  Args &&...args) -> void {
+inline auto debug(spdlog::format_string_t<Args...> fmt, Args &&...args) -> void {
   LoggerCtx::get_logger()->debug(fmt, std::forward<Args>(args)...);
 }
 
@@ -36,8 +34,7 @@ inline auto warn(spdlog::format_string_t<Args...> fmt, Args &&...args) -> void {
 }
 
 template <typename... Args>
-inline auto error(spdlog::format_string_t<Args...> fmt,
-                  Args &&...args) -> void {
+inline auto error(spdlog::format_string_t<Args...> fmt, Args &&...args) -> void {
   LoggerCtx::get_logger()->error(fmt, std::forward<Args>(args)...);
 }
 

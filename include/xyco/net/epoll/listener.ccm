@@ -59,43 +59,34 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll([[maybe_unused]] runtime::Handle<void> self)
-          -> runtime::Poll<CoOutput> override {
-        auto *extra =
-            dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
+      auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+        auto *extra = dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
 
         if (!extra->state_.get_field<io::epoll::IoExtra::State::Registered>()) {
           self_->event_->future_ = this;
           extra->interest_ = io::epoll::IoExtra::Interest::Read;
-          runtime::RuntimeCtx::get_ctx()
-              ->driver()
-              .Register<io::epoll::IoRegistry>(self_->event_);
+          runtime::RuntimeCtx::get_ctx()->driver().Register<io::epoll::IoRegistry>(self_->event_);
           logging::trace("register read {}", self_->socket_);
           return runtime::Pending();
         }
         if (extra->state_.get_field<io::epoll::IoExtra::State::Error>() ||
             extra->state_.get_field<io::epoll::IoExtra::State::Readable>()) {
           auto read_bytes =
-              xyco::libc::read(self_->socket_.into_c_fd(), &*begin_,
-                               std::distance(begin_, end_));
+              xyco::libc::read(self_->socket_.into_c_fd(), &*begin_, std::distance(begin_, end_));
           if (read_bytes != -1) {
             logging::info("read {} bytes from {}", read_bytes, *self_);
-            extra->state_
-                .set_field<io::epoll::IoExtra::State::Readable, false>();
+            extra->state_.set_field<io::epoll::IoExtra::State::Readable, false>();
             return runtime::Ready<CoOutput>{read_bytes};
           }
           if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            return runtime::Ready<CoOutput>{
-                utils::into_sys_result(-1).transform(
-                    []([[maybe_unused]] auto value) { return -1; })};
+            return runtime::Ready<CoOutput>{utils::into_sys_result(-1).transform(
+                []([[maybe_unused]] auto value) { return -1; })};
           }
         }
         self_->event_->future_ = this;
         extra->interest_ = io::epoll::IoExtra::Interest::Read;
         logging::trace("reregister read {}", self_->socket_);
-        runtime::RuntimeCtx::get_ctx()
-            ->driver()
-            .reregister<io::epoll::IoRegistry>(self_->event_);
+        runtime::RuntimeCtx::get_ctx()->driver().reregister<io::epoll::IoRegistry>(self_->event_);
         return runtime::Pending();
       }
 
@@ -134,36 +125,28 @@ class TcpStream {
 
     class Future : public runtime::Future<CoOutput> {
      public:
-      auto poll([[maybe_unused]] runtime::Handle<void> self)
-          -> runtime::Poll<CoOutput> override {
-        auto *extra =
-            dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
+      auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
+        auto *extra = dynamic_cast<io::epoll::IoExtra *>(self_->event_->extra_.get());
 
         if (!extra->state_.get_field<io::epoll::IoExtra::State::Registered>()) {
           self_->event_->future_ = this;
           extra->interest_ = io::epoll::IoExtra::Interest::Write;
-          runtime::RuntimeCtx::get_ctx()
-              ->driver()
-              .Register<io::epoll::IoRegistry>(self_->event_);
+          runtime::RuntimeCtx::get_ctx()->driver().Register<io::epoll::IoRegistry>(self_->event_);
           return runtime::Pending();
         }
         if (extra->state_.get_field<io::epoll::IoExtra::State::Error>() ||
             extra->state_.get_field<io::epoll::IoExtra::State::Writable>()) {
           auto write_bytes =
-              xyco::libc::write(self_->socket_.into_c_fd(), &*begin_,
-                                std::distance(begin_, end_));
-          auto nbytes =
-              utils::into_sys_result(write_bytes).transform([](auto n) {
-                return static_cast<uintptr_t>(n);
-              });
+              xyco::libc::write(self_->socket_.into_c_fd(), &*begin_, std::distance(begin_, end_));
+          auto nbytes = utils::into_sys_result(write_bytes).transform([](auto n) {
+            return static_cast<uintptr_t>(n);
+          });
           logging::info("write {} bytes to {}", write_bytes, self_->socket_);
           return runtime::Ready<CoOutput>{nbytes};
         }
         self_->event_->future_ = this;
         extra->interest_ = io::epoll::IoExtra::Interest::Write;
-        runtime::RuntimeCtx::get_ctx()
-            ->driver()
-            .reregister<io::epoll::IoRegistry>(self_->event_);
+        runtime::RuntimeCtx::get_ctx()->driver().reregister<io::epoll::IoRegistry>(self_->event_);
         return runtime::Pending();
       }
 
@@ -198,8 +181,7 @@ class TcpStream {
 
   auto flush() -> Future<utils::Result<void>>;
 
-  [[nodiscard]] auto shutdown(io::Shutdown shutdown) const
-      -> Future<utils::Result<void>>;
+  [[nodiscard]] auto shutdown(io::Shutdown shutdown) const -> Future<utils::Result<void>>;
 
   TcpStream(const TcpStream &tcp_stream) = delete;
 
@@ -212,8 +194,7 @@ class TcpStream {
   ~TcpStream();
 
  private:
-  explicit TcpStream(Socket &&socket, bool writable = false,
-                     bool readable = false);
+  explicit TcpStream(Socket &&socket, bool writable = false, bool readable = false);
 
   Socket socket_;
   std::shared_ptr<runtime::Event> event_;
@@ -237,8 +218,7 @@ class TcpListener {
 
   auto operator=(const TcpListener &tcp_listener) -> TcpListener & = delete;
 
-  auto operator=(TcpListener &&tcp_listener) noexcept -> TcpListener & =
-                                                             default;
+  auto operator=(TcpListener &&tcp_listener) noexcept -> TcpListener & = default;
 
   ~TcpListener();
 
@@ -251,34 +231,28 @@ class TcpListener {
 }  // namespace xyco::net::epoll
 
 template <>
-struct std::formatter<xyco::net::epoll::TcpSocket>
-    : public std::formatter<bool> {
+struct std::formatter<xyco::net::epoll::TcpSocket> : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::net::epoll::TcpSocket &tcp_socket,
               FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "TcpSocket{{socket_={}}}",
-                          tcp_socket.socket_);
+    return std::format_to(ctx.out(), "TcpSocket{{socket_={}}}", tcp_socket.socket_);
   }
 };
 
 template <>
-struct std::formatter<xyco::net::epoll::TcpStream>
-    : public std::formatter<bool> {
+struct std::formatter<xyco::net::epoll::TcpStream> : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::net::epoll::TcpStream &tcp_stream,
               FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "TcpStream{{socket_={}}}",
-                          tcp_stream.socket_);
+    return std::format_to(ctx.out(), "TcpStream{{socket_={}}}", tcp_stream.socket_);
   }
 };
 
 template <>
-struct std::formatter<xyco::net::epoll::TcpListener>
-    : public std::formatter<bool> {
+struct std::formatter<xyco::net::epoll::TcpListener> : public std::formatter<bool> {
   template <typename FormatContext>
   auto format(const xyco::net::epoll::TcpListener &tcp_listener,
               FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "TcpListener{{socket_={}}}",
-                          tcp_listener.socket_);
+    return std::format_to(ctx.out(), "TcpListener{{socket_={}}}", tcp_listener.socket_);
   }
 };

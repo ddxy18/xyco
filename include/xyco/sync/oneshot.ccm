@@ -40,8 +40,7 @@ class Sender {
 
  public:
   auto send(Value value) -> runtime::Future<std::expected<void, Value>> {
-    if (shared_ == nullptr ||
-        shared_->state_ == Shared<Value>::receiver_closed) {
+    if (shared_ == nullptr || shared_->state_ == Shared<Value>::receiver_closed) {
       co_return std::unexpected(std::move(value));
     }
 
@@ -89,7 +88,8 @@ class Receiver {
     class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Receiver<Value> *self)
-          : runtime::Future<FutureReturn>(nullptr), self_(self) {}
+          : runtime::Future<FutureReturn>(nullptr),
+            self_(self) {}
 
       auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {
@@ -122,8 +122,7 @@ class Receiver {
 
   auto operator=(const Receiver<Value> &sender) -> Receiver<Value> & = delete;
 
-  auto operator=(Receiver<Value> &&sender) noexcept -> Receiver<Value> & =
-                                                           default;
+  auto operator=(Receiver<Value> &&sender) noexcept -> Receiver<Value> & = default;
 
   ~Receiver() { close(); }
 
@@ -135,8 +134,7 @@ class Receiver {
     }
   }
 
-  Receiver(std::shared_ptr<Shared<Value>> shared)
-      : shared_(std::move(shared)) {}
+  Receiver(std::shared_ptr<Shared<Value>> shared) : shared_(std::move(shared)) {}
 
   std::shared_ptr<Shared<Value>> shared_;
 };

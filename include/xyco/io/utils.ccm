@@ -24,8 +24,7 @@ enum class Shutdown : std::uint8_t { Read, Write, All };
 template <>
 struct std::formatter<xyco::io::Shutdown> : public std::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const xyco::io::Shutdown& shutdown,
-              FormatContext& ctx) const -> decltype(ctx.out()) {
+  auto format(const xyco::io::Shutdown& shutdown, FormatContext& ctx) const -> decltype(ctx.out()) {
     std::string shutdown_type;
     switch (shutdown) {
       case xyco::io::Shutdown::Read:

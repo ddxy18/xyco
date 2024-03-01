@@ -90,8 +90,7 @@ class Socket {
 template <>
 struct std::formatter<xyco::net::SocketAddr> : public std::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::SocketAddr& addr,
-              FormatContext& ctx) const -> decltype(ctx.out()) {
+  auto format(const xyco::net::SocketAddr& addr, FormatContext& ctx) const -> decltype(ctx.out()) {
     const auto* sock_addr = addr.into_c_addr();
     std::string ip_addr(xyco::libc::K_INET6_ADDRSTRLEN, 0);
     uint16_t port = -1;
@@ -100,30 +99,28 @@ struct std::formatter<xyco::net::SocketAddr> : public std::formatter<bool> {
       ip_addr = xyco::libc::inet_ntop(
           sock_addr->sa_family,
           // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-          &reinterpret_cast<const xyco::libc::sockaddr_in*>(sock_addr)
-               ->sin_addr,
-          ip_addr.data(), ip_addr.size());
+          &reinterpret_cast<const xyco::libc::sockaddr_in*>(sock_addr)->sin_addr,
+          ip_addr.data(),
+          ip_addr.size());
       port = std::get<0>(addr.addr_).get_port();
     } else {
       ip_addr = xyco::libc::inet_ntop(
           sock_addr->sa_family,
           // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-          &reinterpret_cast<const xyco::libc::sockaddr_in6*>(sock_addr)
-               ->sin6_addr,
-          ip_addr.data(), ip_addr.size());
+          &reinterpret_cast<const xyco::libc::sockaddr_in6*>(sock_addr)->sin6_addr,
+          ip_addr.data(),
+          ip_addr.size());
       port = std::get<1>(addr.addr_).get_port();
     }
 
-    return std::format_to(ctx.out(), "SocketAddr{{ip={},port={}}}", ip_addr,
-                          port);
+    return std::format_to(ctx.out(), "SocketAddr{{ip={},port={}}}", ip_addr, port);
   }
 };
 
 template <>
 struct std::formatter<xyco::net::Socket> : public std::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::net::Socket& socket,
-              FormatContext& ctx) const -> decltype(ctx.out()) {
+  auto format(const xyco::net::Socket& socket, FormatContext& ctx) const -> decltype(ctx.out()) {
     return std::format_to(ctx.out(), "Socket{{fd_={}}}", socket.fd_);
   }
 };

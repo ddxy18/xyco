@@ -12,8 +12,7 @@ import xyco.runtime_ctx;
 
 export namespace xyco::task {
 template <typename T>
-using Branch = std::tuple<runtime::Future<T>,
-                          std::optional<std::expected<T, std::exception_ptr>>>;
+using Branch = std::tuple<runtime::Future<T>, std::optional<std::expected<T, std::exception_ptr>>>;
 
 template <typename... T>
 class SelectFuture;
@@ -23,8 +22,7 @@ class BranchShared {
  public:
   BranchShared(SelectFuture<T...> *self, runtime::Future<T> &&...future)
       : self_(self),
-        branches_({std::make_tuple(std::move(future), std::optional<T>())...}) {
-  }
+        branches_({std::make_tuple(std::move(future), std::optional<T>())...}) {}
 
   bool registered_{};
   SelectFuture<T...> *self_;
@@ -38,14 +36,12 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
   using CoOutput = std::tuple<std::optional<T>...>;
 
  public:
-  auto poll([[maybe_unused]] runtime::Handle<void> self)
-      -> runtime::Poll<CoOutput> override {
+  auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<CoOutput> override {
     if (!ready_) {
       ready_ = true;
       std::apply(
           [this](auto &...branch) {
-            (runtime::RuntimeCtx::get_ctx()->spawn_impl(
-                 run_single_branch(branch, branch_shared_)),
+            (runtime::RuntimeCtx::get_ctx()->spawn_impl(run_single_branch(branch, branch_shared_)),
              ...);
           },
           branch_shared_->branches_);
@@ -57,8 +53,7 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
     auto result = std::apply(
         [](auto &...branch) {
           auto cancel = [](auto handle, auto &&result) {
-            using ST =
-                std::remove_reference_t<decltype(result.value().value())>;
+            using ST = std::remove_reference_t<decltype(result.value().value())>;
 
             if (!result) {
               handle.promise().future()->cancel();
@@ -69,8 +64,7 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
             }
             return std::optional<ST>(std::move(result.value().value()));
           };
-          return CoOutput(
-              cancel(std::get<0>(branch).get_handle(), std::get<1>(branch))...);
+          return CoOutput(cancel(std::get<0>(branch).get_handle(), std::get<1>(branch))...);
         },
         branch_shared_->branches_);
     return runtime::Ready<CoOutput>{std::move(result)};
@@ -78,8 +72,7 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
 
   SelectFuture(runtime::Future<T> &&...future)
       : runtime::Future<CoOutput>(nullptr),
-        branch_shared_(
-            std::make_shared<BranchShared<T...>>(this, std::move(future)...)) {}
+        branch_shared_(std::make_shared<BranchShared<T...>>(this, std::move(future)...)) {}
 
   ~SelectFuture() override {
     if (branch_shared_) {
@@ -89,12 +82,9 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
 
   SelectFuture(const SelectFuture<T...> &future) = delete;
 
-  SelectFuture(SelectFuture<T...> &&future) noexcept {
-    *this = std::move(future);
-  }
+  SelectFuture(SelectFuture<T...> &&future) noexcept { *this = std::move(future); }
 
-  auto operator=(const SelectFuture<T...> &future) -> SelectFuture<T...> & =
-                                                          delete;
+  auto operator=(const SelectFuture<T...> &future) -> SelectFuture<T...> & = delete;
 
   auto operator=(SelectFuture<T...> &&future) noexcept -> SelectFuture<T...> & {
     ready_ = future.ready_;
@@ -104,11 +94,9 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
  private:
   template <typename ST>
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
-  static auto run_single_branch(Branch<ST> &branch,
-                                std::shared_ptr<BranchShared<T...>> branches)
+  static auto run_single_branch(Branch<ST> &branch, std::shared_ptr<BranchShared<T...>> branches)
       -> runtime::Future<void> {
-    std::unique_lock<std::shared_mutex> guard{branches->branch_mutex_,
-                                              std::defer_lock};
+    std::unique_lock<std::shared_mutex> guard{branches->branch_mutex_, std::defer_lock};
     try {
       // NOLINTNEXTLINE(cppcoreguidelines-no-suspend-with-lock)
       auto result = co_await std::get<0>(branch);
@@ -153,8 +141,7 @@ class SelectFuture : public runtime::Future<std::tuple<std::optional<T>...>> {
 // If any one of the futures throws an uncaught exception before `select`
 // returns, it finally throws the first exception in a left to right sequence.
 template <typename... T>
-auto select(runtime::Future<T>... future)
-    -> runtime::Future<std::tuple<std::optional<T>...>> {
+auto select(runtime::Future<T>... future) -> runtime::Future<std::tuple<std::optional<T>...>> {
   if (sizeof...(T) == 0) {
     co_return {};
   }

@@ -28,10 +28,11 @@ class Server {
 
     std::string read_buf(buffer_size, 0);
     // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
-    auto nbytes = co_await asio::async_read_until(
-        socket, asio::dynamic_buffer(read_buf), '\n', asio::use_awaitable);
-    co_await asio::async_write(socket, asio::buffer(read_buf, nbytes),
-                               asio::use_awaitable);
+    auto nbytes = co_await asio::async_read_until(socket,
+                                                  asio::dynamic_buffer(read_buf),
+                                                  '\n',
+                                                  asio::use_awaitable);
+    co_await asio::async_write(socket, asio::buffer(read_buf, nbytes), asio::use_awaitable);
   }
 
   gsl::not_null<asio::io_context*> context_;

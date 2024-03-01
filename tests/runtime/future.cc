@@ -21,7 +21,8 @@ TEST(InRuntimeDeathTest, NoSuspend) {
 class SuspendOnceFuture : public xyco::runtime::Future<int> {
  public:
   SuspendOnceFuture(xyco::runtime::Future<int> *&handle)
-      : xyco::runtime::Future<int>(nullptr), handle_(handle) {}
+      : xyco::runtime::Future<int>(nullptr),
+        handle_(handle) {}
 
   [[nodiscard]] auto poll([[maybe_unused]] xyco::runtime::Handle<void> self)
       -> xyco::runtime::Poll<int> override {
@@ -42,8 +43,7 @@ class SuspendOnceFuture : public xyco::runtime::Future<int> {
 class UpdateEvaluator {
  public:
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters,cppcoreguidelines-rvalue-reference-param-not-moved)
-  auto update(xyco::runtime::Future<int> &&async_update)
-      -> xyco::runtime::Future<void> {
+  auto update(xyco::runtime::Future<int> &&async_update) -> xyco::runtime::Future<void> {
     co_result = co_await async_update;
   };
 
@@ -96,7 +96,8 @@ TEST(NoRuntimeDeathTest, NeverRun) {
 
         std::quick_exit(evaluator.co_result);
       },
-      testing::ExitedWithCode(0), "");
+      testing::ExitedWithCode(0),
+      "");
 }
 
 auto throw_uncaught_exception() -> xyco::runtime::Future<void> {
@@ -117,9 +118,7 @@ TEST(RuntimeDeathTest, throw_in_block_on) {
 TEST(RuntimeDeathTest, throw_in_spawn) {
   EXPECT_DEATH(
       {
-        auto runtime = *xyco::runtime::Builder::new_multi_thread()
-                            .worker_threads(1)
-                            .build();
+        auto runtime = *xyco::runtime::Builder::new_multi_thread().worker_threads(1).build();
 
         runtime->spawn(throw_uncaught_exception());
 
@@ -134,9 +133,7 @@ class DropAsserter {
 
   DropAsserter(const DropAsserter &drop_asserter) = delete;
 
-  DropAsserter(DropAsserter &&drop_asserter) noexcept {
-    *this = std::move(drop_asserter);
-  }
+  DropAsserter(DropAsserter &&drop_asserter) noexcept { *this = std::move(drop_asserter); }
 
   auto operator=(const DropAsserter &drop_asserter) -> DropAsserter & = delete;
 
@@ -149,8 +146,7 @@ class DropAsserter {
 
   static auto assert_drop() { std::quick_exit(dropped_ ? 0 : -1); }
 
-  static auto drop([[maybe_unused]] DropAsserter drop_asserter)
-      -> xyco::runtime::Future<void> {
+  static auto drop([[maybe_unused]] DropAsserter drop_asserter) -> xyco::runtime::Future<void> {
     co_return;
   }
 
@@ -179,5 +175,6 @@ TEST(RuntimeDeathTest, drop_parameter) {
 
         DropAsserter::assert_drop();
       },
-      testing::ExitedWithCode(0), "");
+      testing::ExitedWithCode(0),
+      "");
 }

@@ -27,8 +27,7 @@ export class TestRuntimeCtx {
   // run until co finished
   template <typename T>
   static auto co_run(xyco::runtime::Future<T> coroutine,
-                     std::vector<std::chrono::milliseconds> time_steps = {})
-      -> void {
+                     std::vector<std::chrono::milliseconds> time_steps = {}) -> void {
     // co_outer's lifetime is managed by the caller to avoid being destroyed
     // automatically before resumed.
 
@@ -83,9 +82,7 @@ export class MoveOnlyObject {
 
   ~MoveOnlyObject() = default;
 
-  bool operator==(const MoveOnlyObject &other) const {
-    return flag_ == other.flag_;
-  }
+  bool operator==(const MoveOnlyObject &other) const { return flag_ == other.flag_; }
 
  private:
   int flag_{1};

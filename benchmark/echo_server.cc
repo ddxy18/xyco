@@ -10,7 +10,8 @@ import xyco.net;
 class Server {
  public:
   Server(std::unique_ptr<xyco::runtime::Runtime> runtime, uint16_t port)
-      : runtime_(std::move(runtime)), port_(port) {}
+      : runtime_(std::move(runtime)),
+        port_(port) {}
 
   auto run() -> void { runtime_->block_on(init_server()); }
 
@@ -27,8 +28,7 @@ class Server {
     }
   }
 
-  static auto echo(xyco::net::TcpStream server_stream)
-      -> xyco::runtime::Future<void> {
+  static auto echo(xyco::net::TcpStream server_stream) -> xyco::runtime::Future<void> {
     constexpr int buffer_size = 1024;
 
     std::string read_buf(buffer_size, 0);

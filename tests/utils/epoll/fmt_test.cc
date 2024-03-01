@@ -7,9 +7,8 @@ import xyco.runtime_core;
 import xyco.io;
 
 TEST(FmtTypeTest, IoExtra_Event) {
-  auto event =
-      xyco::runtime::Event{.extra_ = std::make_unique<xyco::io::IoExtra>(
-                               xyco::io::IoExtra::Interest::All, 4)};
+  auto event = xyco::runtime::Event{
+      .extra_ = std::make_unique<xyco::io::IoExtra>(xyco::io::IoExtra::Interest::All, 4)};
   auto *extra = dynamic_cast<xyco::io::IoExtra *>(event.extra_.get());
 
   extra->state_.set_field<xyco::io::IoExtra::State::Registered>();

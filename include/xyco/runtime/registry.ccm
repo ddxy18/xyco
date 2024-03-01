@@ -38,18 +38,14 @@ class Event {
 
 class Registry {
  public:
-  [[nodiscard]] virtual auto Register(std::shared_ptr<Event> event)
-      -> utils::Result<void> = 0;
+  [[nodiscard]] virtual auto Register(std::shared_ptr<Event> event) -> utils::Result<void> = 0;
 
-  [[nodiscard]] virtual auto reregister(std::shared_ptr<Event> event)
-      -> utils::Result<void> = 0;
+  [[nodiscard]] virtual auto reregister(std::shared_ptr<Event> event) -> utils::Result<void> = 0;
 
-  [[nodiscard]] virtual auto deregister(std::shared_ptr<Event> event)
-      -> utils::Result<void> = 0;
+  [[nodiscard]] virtual auto deregister(std::shared_ptr<Event> event) -> utils::Result<void> = 0;
 
   [[nodiscard]] virtual auto select(Events &events,
-                                    std::chrono::milliseconds timeout)
-      -> utils::Result<void> = 0;
+                                    std::chrono::milliseconds timeout) -> utils::Result<void> = 0;
 
   Registry() = default;
 
@@ -68,9 +64,9 @@ class Registry {
 template <>
 struct std::formatter<xyco::runtime::Event> : public std::formatter<bool> {
   template <typename FormatContext>
-  auto format(const xyco::runtime::Event &event,
-              FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "Event{{extra_={}}}",
+  auto format(const xyco::runtime::Event &event, FormatContext &ctx) const -> decltype(ctx.out()) {
+    return std::format_to(ctx.out(),
+                          "Event{{extra_={}}}",
                           event.extra_ ? event.extra_->print() : "nullptr");
   }
 };

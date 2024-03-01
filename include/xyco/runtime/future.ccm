@@ -51,8 +51,7 @@ class PromiseBase {
 
   PromiseBase(PromiseBase &&future_base) = delete;
 
-  auto operator=(const PromiseBase &future_base) -> const PromiseBase & =
-                                                        delete;
+  auto operator=(const PromiseBase &future_base) -> const PromiseBase & = delete;
 
   auto operator=(PromiseBase &&future_base) -> const PromiseBase & = delete;
 
@@ -90,16 +89,11 @@ class FutureBase {
 
 class FinalAwaitable {
  public:
-  FinalAwaitable(Handle<void> waiting_coroutine)
-      : waiting_(waiting_coroutine) {}
+  FinalAwaitable(Handle<void> waiting_coroutine) : waiting_(waiting_coroutine) {}
 
-  [[nodiscard]] auto await_ready() const noexcept -> bool {
-    return waiting_ == nullptr;
-  }
+  [[nodiscard]] auto await_ready() const noexcept -> bool { return waiting_ == nullptr; }
 
-  auto await_suspend([[maybe_unused]] Handle<void> waiting_coroutine) noexcept {
-    return waiting_;
-  }
+  auto await_suspend([[maybe_unused]] Handle<void> waiting_coroutine) noexcept { return waiting_; }
 
   auto await_resume() noexcept -> void {}
 
@@ -120,8 +114,7 @@ class Awaitable {
     future_->waiting_ = waiting_coroutine;
     Handle<PromiseBase>::from_address(waiting_coroutine.address())
         .promise()
-        .set_waited(
-            Handle<PromiseBase>::from_address(future_->self_.address()));
+        .set_waited(Handle<PromiseBase>::from_address(future_->self_.address()));
 
     // async function's return type
     if (future_->self_) {
@@ -142,9 +135,7 @@ class Awaitable {
 
   auto await_resume() -> Output {
     if (future_->waiting_) {
-      Handle<PromiseBase>::from_address(future_->waiting_.address())
-          .promise()
-          .set_waited(nullptr);
+      Handle<PromiseBase>::from_address(future_->waiting_.address()).promise().set_waited(nullptr);
     }
 
     // rethrow-and-catch to traceback unhandled exception(`CancelException`
@@ -203,32 +194,23 @@ class Future : public FutureBase {
       return Future(Handle<promise_type>::from_promise(*this));
     }
 
-    auto final_suspend() noexcept -> FinalAwaitable {
-      return {future_->waiting_};
-    }
+    auto final_suspend() noexcept -> FinalAwaitable { return {future_->waiting_}; }
 
-    auto unhandled_exception() -> void {
-      future_->exception_ptr_ = std::current_exception();
-    }
+    auto unhandled_exception() -> void { future_->exception_ptr_ = std::current_exception(); }
 
-    auto return_value(Output &&value) -> void {
-      future_->return_ = std::forward<Output>(value);
-    }
+    auto return_value(Output &&value) -> void { future_->return_ = std::forward<Output>(value); }
 
     auto future() -> FutureBase * override { return future_; }
 
    private:
-    auto set_waited(Handle<PromiseBase> future) -> void override {
-      future_->waited_ = future;
-    }
+    auto set_waited(Handle<PromiseBase> future) -> void override { future_->waited_ = future; }
 
     Future<Output> *future_{};
   };
 
   auto operator co_await() -> Awaitable<Output> { return Awaitable(this); }
 
-  [[nodiscard]] virtual auto poll([[maybe_unused]] Handle<void> self)
-      -> Poll<Output> {
+  [[nodiscard]] virtual auto poll([[maybe_unused]] Handle<void> self) -> Poll<Output> {
     return Pending();
   }
 
@@ -247,9 +229,8 @@ class Future : public FutureBase {
   }
 
   auto get_handle() -> Handle<PromiseBase> override {
-    return self_ == nullptr
-               ? Handle<PromiseBase>::from_address(waiting_.address())
-               : Handle<PromiseBase>::from_address(self_.address());
+    return self_ == nullptr ? Handle<PromiseBase>::from_address(waiting_.address())
+                            : Handle<PromiseBase>::from_address(self_.address());
   }
 
   auto cancel() -> void override {
@@ -339,9 +320,8 @@ class Future<void> : public FutureBase {
   [[nodiscard]] auto poll_wrapper() -> bool override;
 
   auto get_handle() -> Handle<PromiseBase> override {
-    return self_ == nullptr
-               ? Handle<PromiseBase>::from_address(waiting_.address())
-               : Handle<PromiseBase>::from_address(self_.address());
+    return self_ == nullptr ? Handle<PromiseBase>::from_address(waiting_.address())
+                            : Handle<PromiseBase>::from_address(self_.address());
   }
 
   auto cancel() -> void override;

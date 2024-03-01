@@ -32,8 +32,7 @@ TEST(OneshotTest, sender_close) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
     {
-      auto tmp_sender =
-          std::move(sender);  // Destructed early to mock sender closed.
+      auto tmp_sender = std::move(sender);  // Destructed early to mock sender closed.
     }
     auto value = (co_await receiver.receive());
 
@@ -45,8 +44,7 @@ TEST(OneshotTest, receiver_close) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     auto [sender, receiver] = xyco::sync::oneshot::channel<int>();
     {
-      auto tmp_receiver =
-          std::move(receiver);  // Destructed early to mock receiver closed.
+      auto tmp_receiver = std::move(receiver);  // Destructed early to mock receiver closed.
     }
     auto send_result = co_await sender.send(1);
 

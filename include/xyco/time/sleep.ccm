@@ -12,8 +12,7 @@ import :clock;
 
 export namespace xyco::time {
 template <typename Rep, typename Ratio>
-auto sleep(std::chrono::duration<Rep, Ratio> duration)
-    -> runtime::Future<void> {
+auto sleep(std::chrono::duration<Rep, Ratio> duration) -> runtime::Future<void> {
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
   class Future : public runtime::Future<void> {
    public:
@@ -23,8 +22,7 @@ auto sleep(std::chrono::duration<Rep, Ratio> duration)
           event_(std::make_shared<runtime::Event>(
               runtime::Event{.extra_ = std::make_unique<TimeExtra>()})) {}
 
-    auto poll([[maybe_unused]] runtime::Handle<void> self)
-        -> runtime::Poll<void> override {
+    auto poll([[maybe_unused]] runtime::Handle<void> self) -> runtime::Poll<void> override {
       if (!ready_) {
         ready_ = true;
         auto *extra = dynamic_cast<TimeExtra *>(event_->extra_.get());

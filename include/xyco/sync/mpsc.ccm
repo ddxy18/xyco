@@ -43,8 +43,7 @@ class Shared {
 
 template <typename Value, size_t Size>
 class Sender {
-  friend auto channel<Value, Size>()
-      -> std::pair<Sender<Value, Size>, Receiver<Value, Size>>;
+  friend auto channel<Value, Size>() -> std::pair<Sender<Value, Size>, Receiver<Value, Size>>;
 
  public:
   auto send(Value value) -> runtime::Future<std::expected<void, Value>> {
@@ -61,22 +60,18 @@ class Sender {
       auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {
         if (self_->shared_->state_ == Shared<Value, Size>::receiver_closed) {
-          return runtime::Ready<FutureReturn>{
-              std::unexpected(std::forward<Value>(value_))};
+          return runtime::Ready<FutureReturn>{std::unexpected(std::forward<Value>(value_))};
         }
 
         {
-          std::scoped_lock<std::mutex> queue_guard(
-              self_->shared_->queue_mutex_);
+          std::scoped_lock<std::mutex> queue_guard(self_->shared_->queue_mutex_);
           if (self_->shared_->queue_.size() < Size) {
             self_->shared_->queue_.push(std::forward<Value>(value_));
 
             {
-              std::scoped_lock<std::mutex> receiver_guard(
-                  self_->shared_->receiver_mutex_);
+              std::scoped_lock<std::mutex> receiver_guard(self_->shared_->receiver_mutex_);
               if (self_->shared_->receiver_ != nullptr) {
-                runtime::RuntimeCtx::get_ctx()->register_future(
-                    self_->shared_->receiver_);
+                runtime::RuntimeCtx::get_ctx()->register_future(self_->shared_->receiver_);
               }
             }
             return runtime::Ready<FutureReturn>{{}};
@@ -84,8 +79,7 @@ class Sender {
         }
 
         {
-          std::scoped_lock<std::mutex> senders_guard(
-              self_->shared_->senders_mutex_);
+          std::scoped_lock<std::mutex> senders_guard(self_->shared_->senders_mutex_);
           self_->shared_->senders_.push(this);
         }
         return runtime::Pending();
@@ -103,11 +97,9 @@ class Sender {
 
   Sender(Sender<Value, Size> &&sender) noexcept = default;
 
-  auto operator=(const Sender<Value, Size> &sender) -> Sender<Value, Size> & =
-                                                           default;
+  auto operator=(const Sender<Value, Size> &sender) -> Sender<Value, Size> & = default;
 
-  auto operator=(Sender<Value, Size> &&sender) noexcept
-      -> Sender<Value, Size> & = default;
+  auto operator=(Sender<Value, Size> &&sender) noexcept -> Sender<Value, Size> & = default;
 
   ~Sender() { close(); }
 
@@ -124,16 +116,14 @@ class Sender {
     }
   }
 
-  Sender(std::shared_ptr<Shared<Value, Size>> shared)
-      : shared_(std::move(shared)) {}
+  Sender(std::shared_ptr<Shared<Value, Size>> shared) : shared_(std::move(shared)) {}
 
   std::shared_ptr<Shared<Value, Size>> shared_;
 };
 
 template <typename Value, size_t Size>
 class Receiver {
-  friend auto channel<Value, Size>()
-      -> std::pair<Sender<Value, Size>, Receiver<Value, Size>>;
+  friend auto channel<Value, Size>() -> std::pair<Sender<Value, Size>, Receiver<Value, Size>>;
 
  public:
   auto receive() -> runtime::Future<std::optional<Value>> {
@@ -143,7 +133,8 @@ class Receiver {
     class Future : public runtime::Future<FutureReturn> {
      public:
       explicit Future(Receiver<Value, Size> *self)
-          : runtime::Future<FutureReturn>(nullptr), self_(self) {}
+          : runtime::Future<FutureReturn>(nullptr),
+            self_(self) {}
 
       auto poll([[maybe_unused]] runtime::Handle<void> self)
           -> runtime::Poll<FutureReturn> override {
@@ -154,8 +145,7 @@ class Receiver {
           queue_guard.unlock();
 
           {
-            std::scoped_lock<std::mutex> senders_guard(
-                self_->shared_->senders_mutex_);
+            std::scoped_lock<std::mutex> senders_guard(self_->shared_->senders_mutex_);
             if (!self_->shared_->senders_.empty()) {
               auto sender = self_->shared_->senders_.front();
               self_->shared_->senders_.pop();
@@ -170,8 +160,7 @@ class Receiver {
         }
 
         {
-          std::scoped_lock<std::mutex> receiver_guard(
-              self_->shared_->receiver_mutex_);
+          std::scoped_lock<std::mutex> receiver_guard(self_->shared_->receiver_mutex_);
           self_->shared_->receiver_ = this;
         }
         return runtime::Pending();
@@ -188,11 +177,9 @@ class Receiver {
 
   Receiver(Receiver<Value, Size> &&sender) noexcept = default;
 
-  auto operator=(const Receiver<Value, Size> &sender)
-      -> Receiver<Value, Size> & = default;
+  auto operator=(const Receiver<Value, Size> &sender) -> Receiver<Value, Size> & = default;
 
-  auto operator=(Receiver<Value, Size> &&sender) noexcept
-      -> Receiver<Value, Size> & = default;
+  auto operator=(Receiver<Value, Size> &&sender) noexcept -> Receiver<Value, Size> & = default;
 
   ~Receiver() { close(); }
 
@@ -203,8 +190,7 @@ class Receiver {
     }
   }
 
-  Receiver(std::shared_ptr<Shared<Value, Size>> shared)
-      : shared_(std::move(shared)) {}
+  Receiver(std::shared_ptr<Shared<Value, Size>> shared) : shared_(std::move(shared)) {}
 
   std::shared_ptr<Shared<Value, Size>> shared_;
 };

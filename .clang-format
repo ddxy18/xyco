@@ -1,3 +1,9 @@
 ---
 Language:        Cpp
 BasedOnStyle:  Google
+ColumnLimit: 100
+BinPackArguments: false
+BinPackParameters: false
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+PackConstructorInitializers: CurrentLine

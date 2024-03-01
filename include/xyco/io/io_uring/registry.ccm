@@ -81,8 +81,7 @@ class IoExtra : public runtime::Extra {
 
 class IoRegistryImpl : public runtime::Registry {
  public:
-  constexpr static std::chrono::milliseconds MAX_TIMEOUT =
-      std::chrono::milliseconds(1);
+  constexpr static std::chrono::milliseconds MAX_TIMEOUT = std::chrono::milliseconds(1);
   static const int MAX_EVENTS = 10000;
 
   [[nodiscard]] auto Register(std::shared_ptr<runtime::Event> event)
@@ -95,19 +94,16 @@ class IoRegistryImpl : public runtime::Registry {
       -> utils::Result<void> override;
 
   [[nodiscard]] auto select(runtime::Events &events,
-                            std::chrono::milliseconds timeout)
-      -> utils::Result<void> override {
+                            std::chrono::milliseconds timeout) -> utils::Result<void> override {
     io_uring_cqe *cqe_ptr = nullptr;
     int return_value = 0;
     __kernel_timespec timespec{};
-    timespec.tv_sec =
-        std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
-    timespec.tv_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                           timeout % std::chrono::seconds(1))
-                           .count();
+    timespec.tv_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
+    timespec.tv_nsec =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(timeout % std::chrono::seconds(1))
+            .count();
     return_value = io_uring_wait_cqe_timeout(&io_uring_, &cqe_ptr, &timespec);
-    if (return_value < 0 &&
-        (-return_value == ETIME || -return_value == EBUSY)) {
+    if (return_value < 0 && (-return_value == ETIME || -return_value == EBUSY)) {
       return {};
     }
     if (return_value < 0) {
@@ -122,18 +118,19 @@ class IoRegistryImpl : public runtime::Registry {
         if (io_uring_cqe_get_data(cqe_ptr) == nullptr) {
           continue;
         }
-        auto *data =
-            static_cast<runtime::Event *>(io_uring_cqe_get_data(cqe_ptr));
+        auto *data = static_cast<runtime::Event *>(io_uring_cqe_get_data(cqe_ptr));
         auto *extra = dynamic_cast<uring::IoExtra *>(data->extra_.get());
-        logging::trace("res:{},flags:{},user_data:{},fd:{}", cqe_ptr->res,
-                       cqe_ptr->flags, static_cast<void *>(data), extra->fd_);
+        logging::trace("res:{},flags:{},user_data:{},fd:{}",
+                       cqe_ptr->res,
+                       cqe_ptr->flags,
+                       static_cast<void *>(data),
+                       extra->fd_);
 
         extra->return_ = cqe_ptr->res;
         auto ready_event =
-            std::find_if(registered_events_.begin(), registered_events_.end(),
-                         [&](auto &registered_event) {
-                           return data == registered_event.get();
-                         });
+            std::find_if(registered_events_.begin(),
+                         registered_events_.end(),
+                         [&](auto &registered_event) { return data == registered_event.get(); });
         events.push_back(*ready_event);
         extra->state_.set_field<io::uring::IoExtra::State::Completed>();
         registered_events_.erase(ready_event);
@@ -166,44 +163,39 @@ using IoRegistry = runtime::ThreadLocalRegistry<IoRegistryImpl>;
 }  // namespace xyco::io::uring
 
 template <>
-struct std::formatter<xyco::io::uring::IoExtra>
-    : public std::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra> : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra &extra,
               FormatContext &ctx) const -> decltype(ctx.out()) {
     return std::format_to(
-        ctx.out(), "IoExtra{{args_={}, fd_={}, return_={}}}",
-        std::visit(overloaded{[](auto arg) { return std::format("{}", arg); }},
-                   extra.args_),
-        extra.fd_, extra.return_);
+        ctx.out(),
+        "IoExtra{{args_={}, fd_={}, return_={}}}",
+        std::visit(overloaded{[](auto arg) { return std::format("{}", arg); }}, extra.args_),
+        extra.fd_,
+        extra.return_);
   }
 };
 
 template <>
-struct std::formatter<xyco::io::uring::IoExtra::Read>
-    : public std::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Read> : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Read &args,
               FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "Read{{len_={}, offset_={}}}", args.len_,
-                          args.offset_);
+    return std::format_to(ctx.out(), "Read{{len_={}, offset_={}}}", args.len_, args.offset_);
   }
 };
 
 template <>
-struct std::formatter<xyco::io::uring::IoExtra::Write>
-    : public std::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Write> : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Write &args,
               FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "Write{{len_={}, offset_={}}}", args.len_,
-                          args.offset_);
+    return std::format_to(ctx.out(), "Write{{len_={}, offset_={}}}", args.len_, args.offset_);
   }
 };
 
 template <>
-struct std::formatter<xyco::io::uring::IoExtra::Close>
-    : public std::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Close> : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format([[maybe_unused]] const xyco::io::uring::IoExtra::Close &args,
               FormatContext &ctx) const -> decltype(ctx.out()) {
@@ -212,45 +204,42 @@ struct std::formatter<xyco::io::uring::IoExtra::Close>
 };
 
 template <>
-struct std::formatter<xyco::io::uring::IoExtra::Accept>
-    : public std::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Accept> : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Accept &args,
               FormatContext &ctx) const -> decltype(ctx.out()) {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     auto *addr = reinterpret_cast<xyco::libc::sockaddr_in *>(args.addr_);
     std::string ip_addr(xyco::libc::K_INET_ADDRSTRLEN, 0);
-    ip_addr = xyco::libc::inet_ntop(addr->sin_family, &addr->sin_addr,
-                                    ip_addr.data(), ip_addr.size());
-    return std::format_to(ctx.out(), "Accept{{addr_={{{}:{}}}, flags_={}}}",
-                          ip_addr, addr->sin_port, args.flags_);
+    ip_addr =
+        xyco::libc::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(), ip_addr.size());
+    return std::format_to(ctx.out(),
+                          "Accept{{addr_={{{}:{}}}, flags_={}}}",
+                          ip_addr,
+                          addr->sin_port,
+                          args.flags_);
   }
 };
 
 template <>
-struct std::formatter<xyco::io::uring::IoExtra::Connect>
-    : public std::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Connect> : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Connect &args,
               FormatContext &ctx) const -> decltype(ctx.out()) {
-    const auto *addr =
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        reinterpret_cast<const xyco::libc::sockaddr_in *>(args.addr_);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    const auto *addr = reinterpret_cast<const xyco::libc::sockaddr_in *>(args.addr_);
     std::string ip_addr(xyco::libc::K_INET_ADDRSTRLEN, 0);
-    ip_addr = xyco::libc::inet_ntop(addr->sin_family, &addr->sin_addr,
-                                    ip_addr.data(), ip_addr.size());
-    return std::format_to(ctx.out(), "Connect{{addr_={{{}:{}}}}}", ip_addr,
-                          addr->sin_port);
+    ip_addr =
+        xyco::libc::inet_ntop(addr->sin_family, &addr->sin_addr, ip_addr.data(), ip_addr.size());
+    return std::format_to(ctx.out(), "Connect{{addr_={{{}:{}}}}}", ip_addr, addr->sin_port);
   }
 };
 
 template <>
-struct std::formatter<xyco::io::uring::IoExtra::Shutdown>
-    : public std::formatter<std::string> {
+struct std::formatter<xyco::io::uring::IoExtra::Shutdown> : public std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const xyco::io::uring::IoExtra::Shutdown &args,
               FormatContext &ctx) const -> decltype(ctx.out()) {
-    return std::format_to(ctx.out(), "Shutdown{{shutdown_={}}}",
-                          args.shutdown_);
+    return std::format_to(ctx.out(), "Shutdown{{shutdown_={}}}", args.shutdown_);
   }
 };

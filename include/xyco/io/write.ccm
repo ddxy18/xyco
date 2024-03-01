@@ -14,34 +14,31 @@ import :utils;
 export namespace xyco::io {
 template <typename Writer, typename Iterator>
 concept Writable = requires(Writer writer, Iterator begin, Iterator end) {
-  {
-    writer.write(begin, end)
-  } -> std::same_as<runtime::Future<utils::Result<uintptr_t>>>;
+  { writer.write(begin, end) } -> std::same_as<runtime::Future<utils::Result<uintptr_t>>>;
 
   { writer.flush() } -> std::same_as<runtime::Future<utils::Result<void>>>;
 
-  {
-    writer.shutdown(io::Shutdown::All)
-  } -> std::same_as<runtime::Future<utils::Result<void>>>;
+  { writer.shutdown(io::Shutdown::All) } -> std::same_as<runtime::Future<utils::Result<void>>>;
 };
 
 class WriteExt {
  public:
   template <typename Writer, typename B>
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
-  static auto write(Writer &writer, const B &buffer)
-      -> runtime::Future<utils::Result<uintptr_t>>
+  static auto write(Writer &writer, const B &buffer) -> runtime::Future<utils::Result<uintptr_t>>
     requires(Writable<Writer, decltype(std::begin(buffer))> && Buffer<B>)
   {
     co_return co_await writer.write(std::begin(buffer), std::end(buffer));
   }
 
   template <typename Writer, typename V, std::size_t N>
-  // NOLINTNEXTLINE(modernize-avoid-c-arrays,cppcoreguidelines-avoid-reference-coroutine-parameters)
-  static auto write(Writer &writer, const V (&buffer)[N])
-      -> runtime::Future<utils::Result<uintptr_t>>
-    requires(Writable<Writer, decltype(std::begin(buffer))> &&
-             Buffer<decltype(buffer)>)
+  // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+  static auto write(
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
+      Writer &writer,
+      // NOLINTNEXTLINE(modernize-avoid-c-arrays,cppcoreguidelines-avoid-reference-coroutine-parameters)
+      const V (&buffer)[N]) -> runtime::Future<utils::Result<uintptr_t>>
+    requires(Writable<Writer, decltype(std::begin(buffer))> && Buffer<decltype(buffer)>)
   {
     auto span = std::span(buffer);
     co_return co_await write(writer, span);
@@ -61,15 +58,13 @@ class WriteExt {
     auto end = std::end(buffer);
 
     while (total_write != buf_size) {
-      auto write_result =
-          (co_await writer.write(begin, end)).transform([&](auto nbytes) {
-            total_write += nbytes;
-            begin += nbytes;
-          });
+      auto write_result = (co_await writer.write(begin, end)).transform([&](auto nbytes) {
+        total_write += nbytes;
+        begin += nbytes;
+      });
       if (!write_result) {
         auto error = write_result.error();
-        if (error.errno_ != EAGAIN && error.errno_ != EWOULDBLOCK &&
-            error.errno_ != EINTR) {
+        if (error.errno_ != EAGAIN && error.errno_ != EWOULDBLOCK && error.errno_ != EINTR) {
           co_return std::unexpected(error);
         }
       }
@@ -78,11 +73,13 @@ class WriteExt {
   }
 
   template <typename Writer, typename V, std::size_t N>
-  // NOLINTNEXTLINE(modernize-avoid-c-arrays,cppcoreguidelines-avoid-reference-coroutine-parameters)
-  static auto write_all(Writer &writer, const V (&buffer)[N])
-      -> runtime::Future<utils::Result<void>>
-    requires(Writable<Writer, decltype(std::begin(buffer))> &&
-             Buffer<decltype(buffer)>)
+  // NOLINTNEXTLINE(modernize-avoid-c-arrays)
+  static auto write_all(
+      // NOLINTNEXTLINE(cppcoreguidelines-avoid-reference-coroutine-parameters)
+      Writer &writer,
+      // NOLINTNEXTLINE(modernize-avoid-c-arrays,cppcoreguidelines-avoid-reference-coroutine-parameters)
+      const V (&buffer)[N]) -> runtime::Future<utils::Result<void>>
+    requires(Writable<Writer, decltype(std::begin(buffer))> && Buffer<decltype(buffer)>)
   {
     auto span = std::span(buffer);
     co_return co_await write_all(writer, span);

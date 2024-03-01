@@ -19,15 +19,13 @@ TEST(TcpTest, reuseaddr) {
     {
       auto tcp_socket1 = *xyco::net::TcpSocket::new_v4();
       *tcp_socket1.set_reuseaddr(true);
-      auto result1 =
-          co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4({}, port));
+      auto result1 = co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4({}, port));
       CO_ASSERT_EQ(result1.has_value(), true);
     }
     {
       auto tcp_socket2 = *xyco::net::TcpSocket::new_v4();
       *tcp_socket2.set_reuseport(true);
-      auto result2 =
-          co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4({}, port));
+      auto result2 = co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4({}, port));
       CO_ASSERT_EQ(result2.has_value(), true);
     }
   }());
@@ -39,13 +37,11 @@ TEST(TcpTest, reuseport) {
 
     auto tcp_socket1 = *xyco::net::TcpSocket::new_v4();
     *tcp_socket1.set_reuseport(true);
-    auto result1 =
-        co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4({}, port));
+    auto result1 = co_await tcp_socket1.bind(xyco::net::SocketAddr::new_v4({}, port));
 
     auto tcp_socket2 = *xyco::net::TcpSocket::new_v4();
     *tcp_socket2.set_reuseport(true);
-    auto result2 =
-        co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4({}, port));
+    auto result2 = co_await tcp_socket2.bind(xyco::net::SocketAddr::new_v4({}, port));
 
     CO_ASSERT_EQ(result1.has_value(), true);
     CO_ASSERT_EQ(result2.has_value(), true);
@@ -56,11 +52,9 @@ TEST(TcpTest, bind_same_addr) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     const uint16_t port = 8083;
 
-    auto result1 = co_await xyco::net::TcpListener::bind(
-        xyco::net::SocketAddr::new_v4({}, port));
+    auto result1 = co_await xyco::net::TcpListener::bind(xyco::net::SocketAddr::new_v4({}, port));
 
-    auto result2 = co_await xyco::net::TcpListener::bind(
-        xyco::net::SocketAddr::new_v4({}, port));
+    auto result2 = co_await xyco::net::TcpListener::bind(xyco::net::SocketAddr::new_v4({}, port));
 
     CO_ASSERT_EQ(result1.has_value(), true);
     CO_ASSERT_EQ(result2.has_value(), false);
@@ -84,8 +78,7 @@ TEST(TcpTest, TcpListener_bind) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
     const uint16_t port = 8086;
 
-    auto result = co_await xyco::net::TcpListener::bind(
-        xyco::net::SocketAddr::new_v4({}, port));
+    auto result = co_await xyco::net::TcpListener::bind(xyco::net::SocketAddr::new_v4({}, port));
 
     CO_ASSERT_EQ(result.has_value(), true);
   }());
@@ -96,8 +89,8 @@ TEST(TcpTest, connect_to_closed_server) {
     const char *server_ip = "127.0.0.1";
     const uint16_t port = 9000;
 
-    auto client = co_await xyco::net::TcpStream::connect(
-        xyco::net::SocketAddr::new_v4(server_ip, port));
+    auto client =
+        co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(server_ip, port));
 
     CO_ASSERT_EQ(client.error().errno_, ECONNREFUSED);
   }());
@@ -134,8 +127,8 @@ const uint16_t WithServerTest::port_ = 8080;
 
 TEST_F(WithServerTest, TcpSocket_connect) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
-    auto client = co_await xyco::net::TcpSocket::new_v4()->connect(
-        xyco::net::SocketAddr::new_v4(ip_, port_));
+    auto client =
+        co_await xyco::net::TcpSocket::new_v4()->connect(xyco::net::SocketAddr::new_v4(ip_, port_));
 
     *co_await listener_->accept();
 
@@ -160,8 +153,7 @@ TEST_F(WithServerTest, TcpSocket_new_v6) {
 
 TEST_F(WithServerTest, TcpStream_connect) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
-    auto client = co_await xyco::net::TcpStream::connect(
-        xyco::net::SocketAddr::new_v4(ip_, port_));
+    auto client = co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(ip_, port_));
 
     *co_await listener_->accept();
 
@@ -171,8 +163,8 @@ TEST_F(WithServerTest, TcpStream_connect) {
 
 TEST_F(WithServerTest, TcpStream_rw) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
-    auto client = *co_await xyco::net::TcpStream::connect(
-        xyco::net::SocketAddr::new_v4(ip_, port_));
+    auto client =
+        *co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(ip_, port_));
     auto [server_stream, addr] = *co_await listener_->accept();
 
     std::string_view w_buf = "a";
@@ -206,8 +198,8 @@ TEST_F(WithServerTest, TcpStream_rw_loop) {
   xyco::logging::LoggerCtx::get_logger()->set_level(spdlog::level::off);
 #endif
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
-    auto client = *co_await xyco::net::TcpStream::connect(
-        xyco::net::SocketAddr::new_v4(ip_, port_));
+    auto client =
+        *co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(ip_, port_));
     auto [server_stream, addr] = *co_await listener_->accept();
 
     for (int i = 0; i < ITERATION_TIMES; i++) {
@@ -227,8 +219,8 @@ TEST_F(WithServerTest, TcpStream_rw_loop) {
 
 TEST_F(WithServerTest, TcpStream_rw_twice) {
   TestRuntimeCtx::runtime()->block_on([]() -> xyco::runtime::Future<void> {
-    auto client = *co_await xyco::net::TcpStream::connect(
-        xyco::net::SocketAddr::new_v4(ip_, port_));
+    auto client =
+        *co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(ip_, port_));
     auto [server_stream, addr] = *co_await listener_->accept();
 
     std::string_view w_buf = "a";

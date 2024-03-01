@@ -17,8 +17,7 @@ auto start_server() -> Future<void> {
   auto tcp_socket = *xyco::net::TcpSocket::new_v4();
   *tcp_socket.set_reuseaddr(true);
 
-  auto bind_result = (co_await tcp_socket.bind(
-      xyco::net::SocketAddr::new_v4({}, SERVER_PORT)));
+  auto bind_result = (co_await tcp_socket.bind(xyco::net::SocketAddr::new_v4({}, SERVER_PORT)));
   if (!bind_result) {
     auto err = bind_result.error();
     xyco::logging::error("bind error:{}", err);
@@ -39,15 +38,12 @@ auto start_client() -> Future<void> {
   constexpr int max_buf_size = 10;
 
   auto start = std::chrono::system_clock::now();
-  auto connect_result =
-      (co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
-          xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
-  while (!connect_result &&
-         std::chrono::system_clock::now() - start <= std::chrono::seconds(2)) {
+  auto connect_result = (co_await xyco::net::TcpStream::connect(
+      xyco::net::SocketAddr::new_v4(xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
+  while (!connect_result && std::chrono::system_clock::now() - start <= std::chrono::seconds(2)) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    connect_result =
-        (co_await xyco::net::TcpStream::connect(xyco::net::SocketAddr::new_v4(
-            xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
+    connect_result = (co_await xyco::net::TcpStream::connect(
+        xyco::net::SocketAddr::new_v4(xyco::net::Ipv4Addr(SERVER_IP.c_str()), SERVER_PORT)));
   }
   auto connection = *std::move(connect_result);
   auto buf = std::string(max_buf_size, 0);

@@ -94,9 +94,8 @@ class RuntimeCore {
 
   auto wake_local(Events &events) -> void;
 
-  RuntimeCore(
-      std::vector<std::function<void(Driver *)>> &&registry_initializers,
-      uint16_t worker_num);
+  RuntimeCore(std::vector<std::function<void(Driver *)>> &&registry_initializers,
+              uint16_t worker_num);
 
   RuntimeCore(const RuntimeCore &) = delete;
 
