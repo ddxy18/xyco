@@ -6,12 +6,12 @@ runs:
       shell: bash
       run: |
         nix build .#unittest
-        LLVM_PROFILE_FILE="result/xyco_test_epoll.profraw" SPDLOG_LEVEL=info result/xyco_test_epoll --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
-        llvm-profdata-$llvm_version merge -sparse result/xyco_test_epoll.profraw -o result/xyco_test_epoll.profdata
-        llvm-cov-$llvm_version show result/xyco_test_epoll -ignore-filename-regex=build -instr-profile=result/xyco_test_epoll.profdata > coverage_epoll.txt
-        LLVM_PROFILE_FILE="result/xyco_test_uring.profraw" SPDLOG_LEVEL=info result/xyco_test_uring --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
-        llvm-profdata-$llvm_version merge -sparse result/xyco_test_uring.profraw -o result/xyco_test_uring.profdata
-        llvm-cov-$llvm_version show result/xyco_test_uring -ignore-filename-regex=build -instr-profile=result/xyco_test_uring.profdata > coverage_uring.txt
+        LLVM_PROFILE_FILE="xyco_test_epoll.profraw" SPDLOG_LEVEL=info result/xyco_test_epoll --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
+        llvm-profdata-$llvm_version merge -sparse xyco_test_epoll.profraw -o xyco_test_epoll.profdata
+        llvm-cov-$llvm_version show result/xyco_test_epoll -ignore-filename-regex=build -instr-profile=xyco_test_epoll.profdata > coverage_epoll.txt
+        LLVM_PROFILE_FILE="xyco_test_uring.profraw" SPDLOG_LEVEL=info result/xyco_test_uring --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
+        llvm-profdata-$llvm_version merge -sparse xyco_test_uring.profraw -o xyco_test_uring.profdata
+        llvm-cov-$llvm_version show result/xyco_test_uring -ignore-filename-regex=build -instr-profile=xyco_test_uring.profdata > coverage_uring.txt
     - name: upload epoll coverage report
       uses: codecov/codecov-action@v3
       with:
