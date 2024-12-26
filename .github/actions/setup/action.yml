@@ -7,5 +7,5 @@ runs:
       run: |
         sudo apt-get install -y lcov libboost-all-dev liburing-dev
         sudo bash scripts/install_build_toolchain.sh $llvm_version
-        ln -s $(which lld-$llvm_version) /usr/bin/lld
-        ln -s $(which clang++-$llvm_version) /usr/bin/clang++
+        ln -s $(which lld-$llvm_version) /usr/local/bin/lld
+        ln -s $(which clang++-$llvm_version) /usr/local/bin/clang++
