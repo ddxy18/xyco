@@ -13,7 +13,7 @@
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true,
-                "CMAKE_CXX_COMPILER": "clang-$env{LLVM_VERSION}",
+                "CMAKE_CXX_COMPILER": "clang++",
                 "XYCO_ENABLE_LOGGING": "$env{XYCO_ENABLE_LOGGING}",
                 "XYCO_ENABLE_LINTING": "$env{XYCO_ENABLE_LINTING}"
             }
