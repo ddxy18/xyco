@@ -39,3 +39,5 @@ jobs:
       - uses: ./.github/actions/setup
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: ./.github/actions/unit_test
+        with:
+          codecov_token: ${{ secrets.CODECOV_TOKEN }}
