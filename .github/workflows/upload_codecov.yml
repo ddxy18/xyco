@@ -6,15 +6,11 @@ on:
       - "main"
       - "release/*"
 
-env:
-  llvm_version: 18
-
 jobs:
   test-codecov:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup
       - uses: DeterminateSystems/nix-installer-action@v16
       - uses: ./.github/actions/unit_test
         with:

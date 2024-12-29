@@ -1,13 +1,8 @@
 { lib, pkgs, fetchurl, llvmPackages }:
 
-# stdenv.mkDerivation now accepts a list of named parameters that describe
-# the package itself.
-
 llvmPackages.libcxxStdenv.mkDerivation rec {
   name = "xyco";
 
-  # good source filtering is important for caching of builds.
-  # It's easier when subprojects have their own distinct subfolders.
   src = lib.sourceByRegex ./. [
     "^benchmark.*"
     "^examples.*"
@@ -16,6 +11,7 @@ llvmPackages.libcxxStdenv.mkDerivation rec {
     "^tests.*"
     "CMakeLists.txt"
     "CMakePresets.json"
+    "README.md" # some uts depend on it
   ];
 
   depAsio = fetchurl
@@ -43,17 +39,13 @@ llvmPackages.libcxxStdenv.mkDerivation rec {
       sha256 = "Tczy0Q9BDB4v6v+Jlmv8SaGrsp728IJGM1sRDgAeCak=";
     };
 
-  HTTP_PROXY = "http://127.0.0.1:7890";
-  HTTPS_PROXY = "http://127.0.0.1:7890";
-
-  # We now list the dependencies similar to the devShell before.
-  # Distinguishing between `nativeBuildInputs` (runnable on the host
-  # at compile time) and normal `buildInputs` (runnable on target
-  # platform at run time) is an important preparation for cross-compilation.
   nativeBuildInputs = with pkgs; [ autoPatchelfHook cmake ninja llvmPackages.clang-tools llvmPackages.lld ];
+  nativeCheckInputs = [ llvmPackages.llvm ];
   buildInputs = with pkgs; [ boost liburing ];
 
   configurePhase = ''
+    runHook preConfigure
+
     DEP_DIR_PATTERN="build/enable_logging/_deps/{}-subbuild/{}-populate-prefix/src"
     ASIO_DIR=$(echo $DEP_DIR_PATTERN | sed -e "s/{}/asio/g")
     GOOGLETEST_DIR=$(echo $DEP_DIR_PATTERN | sed -e "s/{}/googletest/g")
@@ -65,10 +57,46 @@ llvmPackages.libcxxStdenv.mkDerivation rec {
     cp -r ${depGSL} $GSL_DIR/v4.0.0.tar.gz
     cp -r ${depSpdlog} $SPDLOG_DIR/v1.12.0.tar.gz
     cmake --preset enable_logging
+
+    runHook postConfigure
   '';
-  buildPhase = ''cmake --build --preset ci_test'';
+  buildPhase = ''
+    runHook preBuild
+
+    cmake --build --preset ci_test
+
+    runHook postBuild
+  '';
+  doCheck = true;
+  checkPhase =
+    let
+      libPath = lib.makeLibraryPath [
+        llvmPackages.libcxx
+        pkgs.liburing
+      ];
+    in
+    ''
+      runHook preCheck
+
+      patchelf --set-rpath ${libPath} build/enable_logging/tests/xyco_test_epoll
+      patchelf --set-rpath ${libPath} build/enable_logging/tests/xyco_test_uring
+
+      LLVM_PROFILE_FILE="xyco_test_epoll.profraw" SPDLOG_LEVEL=info build/enable_logging/tests/xyco_test_epoll --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
+      llvm-profdata merge -sparse xyco_test_epoll.profraw -o xyco_test_epoll.profdata
+      llvm-cov show build/enable_logging/tests/xyco_test_epoll -ignore-filename-regex=_deps -instr-profile=xyco_test_epoll.profdata > coverage_epoll.txt
+      LLVM_PROFILE_FILE="xyco_test_uring.profraw" SPDLOG_LEVEL=info build/enable_logging/tests/xyco_test_uring --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
+      llvm-profdata merge -sparse xyco_test_uring.profraw -o xyco_test_uring.profdata
+      llvm-cov show build/enable_logging/tests/xyco_test_uring -ignore-filename-regex=_deps -instr-profile=xyco_test_uring.profdata > coverage_uring.txt
+
+      runHook postCheck
+    '';
   installPhase = ''
+    runHook preInstall
+
     mkdir $out
     cp build/enable_logging/tests/xyco_test_* $out/
+    cp coverage_*.txt $out/
+
+    runHook postInstall
   '';
 }
