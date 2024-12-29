@@ -7,20 +7,13 @@ runs:
   steps:
     - name: run unit test
       shell: bash
-      run: |
-        nix build .#unittest
-        LLVM_PROFILE_FILE="xyco_test_epoll.profraw" SPDLOG_LEVEL=info result/xyco_test_epoll --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
-        llvm-profdata-$llvm_version merge -sparse xyco_test_epoll.profraw -o xyco_test_epoll.profdata
-        llvm-cov-$llvm_version show result/xyco_test_epoll -ignore-filename-regex=build -instr-profile=xyco_test_epoll.profdata > coverage_epoll.txt
-        LLVM_PROFILE_FILE="xyco_test_uring.profraw" SPDLOG_LEVEL=info result/xyco_test_uring --gtest_repeat=1 --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
-        llvm-profdata-$llvm_version merge -sparse xyco_test_uring.profraw -o xyco_test_uring.profdata
-        llvm-cov-$llvm_version show result/xyco_test_uring -ignore-filename-regex=build -instr-profile=xyco_test_uring.profdata > coverage_uring.txt
+      run: nix build --print-build-logs .#unittest
     - name: upload epoll coverage report
       uses: codecov/codecov-action@v3
       with:
         token: ${{ inputs.codecov_token }}
         flags: epoll
-        files: coverage_epoll.txt
+        files: result/coverage_epoll.txt
         fail_ci_if_error: true
         verbose: true
     - name: upload uring coverage report
@@ -28,7 +21,7 @@ runs:
       with:
         token: ${{ inputs.codecov_token }}
         flags: uring
-        files: coverage_uring.txt
+        files: result/coverage_uring.txt
         fail_ci_if_error: true
         verbose: true
     - name: upload tests coverage report
@@ -36,6 +29,6 @@ runs:
       with:
         token: ${{ inputs.codecov_token }}
         flags: tests
-        files: coverage_epoll.txt,coverage_uring.txt
+        files: result/coverage_epoll.txt,result/coverage_uring.txt
         fail_ci_if_error: true
         verbose: true
