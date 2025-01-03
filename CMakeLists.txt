@@ -8,8 +8,9 @@ project(
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_compile_options(-std=c++2b -stdlib=libc++)
-add_link_options(-fuse-ld=lld -lc++ -lm -rdynamic)
+# Add these options to avoid clang-diagnostic-module-file-config-mismatch error
+add_compile_options(-fstack-protector-all -fwrapv)
+add_link_options(-fuse-ld=lld -rdynamic -stdlib=libc++)
 cmake_policy(SET CMP0135 NEW)
 
 include(FetchContent)
@@ -47,7 +48,7 @@ endif()
 if(XYCO_ENABLE_LINTING)
   add_compile_options(-Wall -Wextra -Wdeprecated -Werror)
   set(CMAKE_CXX_CLANG_TIDY
-      clang-tidy-$ENV{LLVM_VERSION}
+      clang-tidy
       # All BMI locations should be added manually here as the
       # explanation(https://discourse.llvm.org/t/clang-tidy-doesnt-find-standard-c-modules-despite-providing-compilation-database-and-prebuilt-modules-path/71326/2)
       # instructs in the solution (2).

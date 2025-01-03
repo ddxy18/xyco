@@ -39,7 +39,7 @@ llvmPackages.libcxxStdenv.mkDerivation rec {
       sha256 = "Tczy0Q9BDB4v6v+Jlmv8SaGrsp728IJGM1sRDgAeCak=";
     };
 
-  nativeBuildInputs = with pkgs; [ autoPatchelfHook cmake ninja llvmPackages.clang-tools llvmPackages.lld ];
+  nativeBuildInputs = with pkgs; [ autoPatchelfHook cmake ninja (llvmPackages.clang-tools.override { enableLibcxx = true; }) llvmPackages.lld ];
   nativeCheckInputs = [ llvmPackages.llvm ];
   buildInputs = with pkgs; [ boost liburing ];
 
