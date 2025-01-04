@@ -13,6 +13,8 @@
         pkgs = import nixpkgs { inherit system; };
       in
       {
-        packages.unittest = pkgs.callPackage ./package.nix { };
+        packages.unit-test = pkgs.callPackage ./unit-test.nix { llvmPackages = pkgs.llvmPackages_18; };
+        packages.lint-epoll = pkgs.callPackage ./lint.nix { llvmPackages = pkgs.llvmPackages_18; IOAPI = "epoll"; };
+        packages.lint-uring = pkgs.callPackage ./lint.nix { llvmPackages = pkgs.llvmPackages_18; IOAPI = "uring"; };
       });
 }

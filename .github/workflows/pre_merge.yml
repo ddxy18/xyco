@@ -6,31 +6,22 @@ on:
       - "main"
       - "release/*"
 
-env:
-  llvm_version: 18
-
 jobs:
   cpp-check-epoll:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup
+      - uses: DeterminateSystems/nix-installer-action@v16
       - name: build
-        run: |
-          find . -type f \( -name \*.cc -or -name \*.h -or -name \*.ccm \) | xargs clang-format-$llvm_version --Werror --fcolor-diagnostics --dry-run --verbose
-          LLVM_VERSION=$llvm_version /usr/bin/cmake --workflow --preset epoll_ci_linting_logging_off
-          LLVM_VERSION=$llvm_version /usr/bin/cmake --workflow --preset epoll_ci_linting_logging_on
+        run: nix build --print-build-logs .#lint-epoll
 
   cpp-check-uring:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup
+      - uses: DeterminateSystems/nix-installer-action@v16
       - name: build
-        run: |
-          find . -type f \( -name \*.cc -or -name \*.h -or -name \*.ccm \) | xargs clang-format-$llvm_version --Werror --fcolor-diagnostics --dry-run --verbose
-          LLVM_VERSION=$llvm_version /usr/bin/cmake --workflow --preset uring_ci_linting_logging_off
-          LLVM_VERSION=$llvm_version /usr/bin/cmake --workflow --preset uring_ci_linting_logging_on
+        run: nix build --print-build-logs .#lint-uring
 
   unit-test:
     runs-on: ubuntu-22.04

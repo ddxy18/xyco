@@ -7,7 +7,7 @@ runs:
   steps:
     - name: run unit test
       shell: bash
-      run: nix build --print-build-logs .#unittest
+      run: nix build --print-build-logs .#unit-test
     - name: upload epoll coverage report
       uses: codecov/codecov-action@v3
       with:
