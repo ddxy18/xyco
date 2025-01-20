@@ -52,31 +52,31 @@ if(XYCO_ENABLE_LINTING)
       # All BMI locations should be added manually here as the
       # explanation(https://discourse.llvm.org/t/clang-tidy-doesnt-find-standard-c-modules-despite-providing-compilation-database-and-prebuilt-modules-path/71326/2)
       # instructs in the solution (2).
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/error.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/future.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/overload.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/panic.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/logging.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/runtime_core.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/runtime_ctx.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/runtime.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/task.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/time.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/sync.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/io_all.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/io_epoll.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/io_uring.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/io_common.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/net_all.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/net_epoll.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/net_uring.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/net_common.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/fs_all.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/fs_epoll.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/fs_uring.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/fs_common.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/libc.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/tests/CMakeFiles/common_utils.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_error.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_future.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_overload.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_panic.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_logging.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_runtime_core.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_runtime_ctx.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_runtime.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_task.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_time.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_sync.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_io_all.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_io_epoll.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_io_uring.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_io_common.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_net_all.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_net_epoll.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_net_uring.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_net_common.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_fs_all.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_fs_epoll.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_fs_uring.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_fs_common.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_libc.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/tests/CMakeFiles/xyco_test_common_utils.dir/
   )
 endif(XYCO_ENABLE_LINTING)
 
