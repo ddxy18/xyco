@@ -3,18 +3,21 @@ include(GoogleTest)
 set(CMAKE_CXX_FLAGS "-fprofile-instr-generate -fcoverage-mapping"
                     ${CMAKE_CXX_FLAGS})
 
-add_library(common_utils)
-target_sources(common_utils PUBLIC FILE_SET common_utils_module TYPE
-                                   CXX_MODULES FILES common/utils.ccm)
-target_include_directories(common_utils PUBLIC common)
-target_link_libraries(common_utils PUBLIC runtime task time sync gtest)
+add_library(xyco_test_common_utils)
+target_sources(xyco_test_common_utils PUBLIC FILE_SET common_utils_module TYPE
+                                             CXX_MODULES FILES common/utils.ccm)
+target_include_directories(xyco_test_common_utils PUBLIC common)
+target_link_libraries(xyco_test_common_utils PUBLIC xyco::runtime xyco::task
+                                                    xyco::time xyco::sync gtest)
 
-add_library(epoll_utils common/utils.cc)
-target_link_libraries(epoll_utils PUBLIC common_utils io_epoll fs_epoll
-                                         net_epoll)
-add_library(uring_utils common/utils.cc)
-target_link_libraries(uring_utils PUBLIC common_utils io_uring fs_uring
-                                         net_uring)
+add_library(xyco_test_epoll_utils common/utils.cc)
+target_link_libraries(
+  xyco_test_epoll_utils PUBLIC xyco_test_common_utils xyco::io_epoll
+                               xyco::fs_epoll xyco::net_epoll)
+add_library(xyco_test_uring_utils common/utils.cc)
+target_link_libraries(
+  xyco_test_uring_utils PUBLIC xyco_test_common_utils xyco::io_uring
+                               xyco::fs_uring xyco::net_uring)
 
 add_executable(
   xyco_test_epoll
@@ -35,7 +38,7 @@ add_executable(
   time/timeout.cc
   utils/epoll/fmt_test.cc
   utils/fmt_test.cc)
-target_link_libraries(xyco_test_epoll PRIVATE epoll_utils)
+target_link_libraries(xyco_test_epoll PRIVATE xyco_test_epoll_utils)
 add_executable(
   xyco_test_uring
   main.cc
@@ -55,4 +58,4 @@ add_executable(
   time/timeout.cc
   utils/io_uring/fmt_test.cc
   utils/fmt_test.cc)
-target_link_libraries(xyco_test_uring PRIVATE uring_utils)
+target_link_libraries(xyco_test_uring PRIVATE xyco_test_uring_utils)
