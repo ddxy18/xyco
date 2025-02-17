@@ -13,36 +13,7 @@ add_compile_options(-fstack-protector-all -fwrapv)
 add_link_options(-fuse-ld=lld -rdynamic -stdlib=libc++)
 cmake_policy(SET CMP0135 NEW)
 
-include(FetchContent)
-FetchContent_Declare(
-  GSL
-  URL "https://github.com/microsoft/GSL/archive/refs/tags/v4.0.0.tar.gz"
-  URL_HASH
-    SHA256=f0e32cb10654fea91ad56bde89170d78cfbf4363ee0b01d8f097de2ba49f6ce9)
-FetchContent_MakeAvailable(GSL)
-
-set(SPDLOG_USE_STD_FORMAT ON)
-FetchContent_Declare(
-  spdlog
-  URL "https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.tar.gz"
-  URL_HASH
-    SHA256=4dccf2d10f410c1e2feaff89966bfc49a1abb29ef6f08246335b110e001e09a9)
-FetchContent_MakeAvailable(spdlog)
-
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  FetchContent_Declare(
-    googletest
-    URL "https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz"
-    URL_HASH
-      SHA256=81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2)
-  FetchContent_MakeAvailable(googletest)
-  FetchContent_Declare(
-    asio
-    URL "https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-28-0.tar.gz"
-    URL_HASH
-      SHA256=226438b0798099ad2a202563a83571ce06dd13b570d8fded4840dbc1f97fa328)
-  FetchContent_MakeAvailable(asio)
-endif()
+add_compile_definitions(SPDLOG_USE_STD_FORMAT ON)
 
 # External dependencies ought to be declared ahead to skip linting for them
 if(XYCO_ENABLE_LINTING)
@@ -107,8 +78,7 @@ add_library(xyco_future src/runtime/future.cc)
 add_library(xyco::future ALIAS xyco_future)
 target_sources(xyco_future PUBLIC FILE_SET future_module TYPE CXX_MODULES FILES
                                   include/xyco/runtime/future.ccm)
-target_link_libraries(xyco_future PUBLIC GSL
-                                         ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
+target_link_libraries(xyco_future PUBLIC ${Boost_STACKTRACE_ADDR2LINE_LIBRARY})
 
 add_library(xyco_panic src/utils/panic.cc)
 add_library(xyco::panic ALIAS xyco_panic)

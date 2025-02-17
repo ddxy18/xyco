@@ -1,6 +1,6 @@
-{ lib, pkgs, fetchurl, llvmPackages, IOAPI }:
+{ lib, pkgs, llvmPackages, asio, gtest, microsoft-gsl, spdlog, IOAPI }:
 
-llvmPackages.libcxxStdenv.mkDerivation rec {
+llvmPackages.libcxxStdenv.mkDerivation {
   name = "xyco";
 
   src = lib.sourceByRegex ./. [
@@ -15,59 +15,25 @@ llvmPackages.libcxxStdenv.mkDerivation rec {
     ".clang-tidy"
   ];
 
-  depAsio = fetchurl
-    {
-      name = "asio";
-      url = "https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-28-0.tar.gz";
-      sha256 = "ImQ4sHmAma0qICVjqDVxzgbdE7Vw2P3tSEDbwfl/oyg=";
-    };
-  depGoogletest = fetchurl
-    {
-      name = "googletest";
-      url = "https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz";
-      sha256 = "gZZP5XjpvXyU39sJyOTW5nWeGZZ+OX2+pI0cEORdDfI=";
-    };
-  depGSL = fetchurl
-    {
-      name = "GSL";
-      url = "https://github.com/microsoft/GSL/archive/refs/tags/v4.0.0.tar.gz";
-      sha256 = "8OMssQZU/qka1WveiRcNeM+/Q2PuCwHY8JfeK6SfbOk=";
-    };
-  depSpdlog = fetchurl
-    {
-      name = "spdlog";
-      url = "https://github.com/gabime/spdlog/archive/refs/tags/v1.12.0.tar.gz";
-      sha256 = "Tczy0Q9BDB4v6v+Jlmv8SaGrsp728IJGM1sRDgAeCak=";
-    };
-
-  nativeBuildInputs = with pkgs; [ autoPatchelfHook cmake ninja (llvmPackages.clang-tools.override { enableLibcxx = true; }) llvmPackages.lld ];
-  buildInputs = with pkgs; [ boost liburing ];
+  nativeBuildInputs = with pkgs; [
+    autoPatchelfHook
+    cmake
+    ninja
+    (llvmPackages.clang-tools.override { enableLibcxx = true; })
+    llvmPackages.lld
+  ];
+  buildInputs = [
+    pkgs.boost
+    pkgs.liburing
+    microsoft-gsl
+    asio
+    spdlog
+    gtest
+  ];
 
   configurePhase = ''
     runHook preConfigure
 
-    LOGGING_OFF_DEP_DIR_PATTERN="build/ci_linting_logging_off/_deps/{}-subbuild/{}-populate-prefix/src"
-    ASIO_DIR=$(echo $LOGGING_OFF_DEP_DIR_PATTERN | sed -e "s/{}/asio/g")
-    GOOGLETEST_DIR=$(echo $LOGGING_OFF_DEP_DIR_PATTERN | sed -e "s/{}/googletest/g")
-    GSL_DIR=$(echo $LOGGING_OFF_DEP_DIR_PATTERN | sed -e "s/{}/gsl/g")
-    SPDLOG_DIR=$(echo $LOGGING_OFF_DEP_DIR_PATTERN | sed -e "s/{}/spdlog/g")
-    mkdir -p $ASIO_DIR $GOOGLETEST_DIR $GSL_DIR $SPDLOG_DIR
-    cp -r ${depAsio} $ASIO_DIR/asio-1-28-0.tar.gz
-    cp -r ${depGoogletest} $GOOGLETEST_DIR/release-1.12.1.tar.gz
-    cp -r ${depGSL} $GSL_DIR/v4.0.0.tar.gz
-    cp -r ${depSpdlog} $SPDLOG_DIR/v1.12.0.tar.gz
-
-    LOGGING_ON_DEP_DIR_PATTERN="build/ci_linting_logging_on/_deps/{}-subbuild/{}-populate-prefix/src"
-    ASIO_DIR=$(echo $LOGGING_ON_DEP_DIR_PATTERN | sed -e "s/{}/asio/g")
-    GOOGLETEST_DIR=$(echo $LOGGING_ON_DEP_DIR_PATTERN | sed -e "s/{}/googletest/g")
-    GSL_DIR=$(echo $LOGGING_ON_DEP_DIR_PATTERN | sed -e "s/{}/gsl/g")
-    SPDLOG_DIR=$(echo $LOGGING_ON_DEP_DIR_PATTERN | sed -e "s/{}/spdlog/g")
-    mkdir -p $ASIO_DIR $GOOGLETEST_DIR $GSL_DIR $SPDLOG_DIR
-    cp -r ${depAsio} $ASIO_DIR/asio-1-28-0.tar.gz
-    cp -r ${depGoogletest} $GOOGLETEST_DIR/release-1.12.1.tar.gz
-    cp -r ${depGSL} $GSL_DIR/v4.0.0.tar.gz
-    cp -r ${depSpdlog} $SPDLOG_DIR/v1.12.0.tar.gz
-    
     cmake --preset ci_linting_logging_off
     cmake --preset ci_linting_logging_on
 
