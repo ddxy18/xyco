@@ -11,10 +11,40 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+        llvmPackages = pkgs.llvmPackages_18;
+        microsoft-gsl = pkgs.microsoft-gsl;
+        asio = pkgs.asio;
+        spdlog = pkgs.spdlog.overrideAttrs {
+          cmakeFlags = [ "-DSPDLOG_USE_STD_FORMAT=ON" ];
+        };
+        gtest = pkgs.gtest.override {
+          stdenv = llvmPackages.libcxxStdenv;
+          static = true;
+        };
       in
       {
-        packages.unit-test = pkgs.callPackage ./unit-test.nix { llvmPackages = pkgs.llvmPackages_18; };
-        packages.lint-epoll = pkgs.callPackage ./lint.nix { llvmPackages = pkgs.llvmPackages_18; IOAPI = "epoll"; };
-        packages.lint-uring = pkgs.callPackage ./lint.nix { llvmPackages = pkgs.llvmPackages_18; IOAPI = "uring"; };
+        packages.unit-test = pkgs.callPackage ./unit-test.nix {
+          llvmPackages = llvmPackages;
+          asio = asio;
+          gtest = gtest;
+          microsoft-gsl = microsoft-gsl;
+          spdlog = spdlog;
+        };
+        packages.lint-epoll = pkgs.callPackage ./lint.nix {
+          llvmPackages = llvmPackages;
+          asio = asio;
+          gtest = gtest;
+          microsoft-gsl = microsoft-gsl;
+          spdlog = spdlog;
+          IOAPI = "epoll";
+        };
+        packages.lint-uring = pkgs.callPackage ./lint.nix {
+          llvmPackages = llvmPackages;
+          asio = asio;
+          gtest = gtest;
+          microsoft-gsl = microsoft-gsl;
+          spdlog = spdlog;
+          IOAPI = "uring";
+        };
       });
 }

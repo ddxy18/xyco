@@ -9,9 +9,8 @@ target_link_libraries(
                                  xyco::runtime)
 
 add_executable(asio_echo_server asio_echo_server.cc)
-target_include_directories(
-  asio_echo_server PUBLIC ${CMAKE_BINARY_DIR}/_deps/asio-src/asio/include)
-target_link_libraries(asio_echo_server GSL)
+target_compile_definitions(asio_echo_server PUBLIC ASIO_HAS_CO_AWAIT=1
+                                                   ASIO_HAS_STD_COROUTINE=1)
 
 if(XYCO_ENABLE_LINTING)
   target_compile_options(
