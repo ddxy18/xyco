@@ -9,9 +9,9 @@ runs:
       shell: bash
       run: |
         nix build --print-build-logs .#unit-test-epoll
-        cp result/coverage_epoll.txt coverage_epoll.txt
+        cp result/coverage.txt coverage_epoll.txt
         nix build --print-build-logs .#unit-test-uring
-        cp result/coverage_io_uring.txt coverage_io_uring.txt
+        cp result/coverage.txt coverage_io_uring.txt
     - name: upload epoll coverage report
       uses: codecov/codecov-action@v3
       with:

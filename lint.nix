@@ -1,4 +1,4 @@
-{ lib, pkgs, llvmPackages, asio, gtest, microsoft-gsl, spdlog, IOAPI }:
+{ lib, pkgs, llvmPackages, asio, gtest, microsoft-gsl, spdlog, logging, IOAPI }:
 
 llvmPackages.libcxxStdenv.mkDerivation {
   name = "xyco";
@@ -25,60 +25,28 @@ llvmPackages.libcxxStdenv.mkDerivation {
   buildInputs = [
     pkgs.boost
     pkgs.liburing
-    microsoft-gsl
     asio
-    spdlog
     gtest
+    microsoft-gsl
+    spdlog
   ];
 
-  configurePhase = ''
-    runHook preConfigure
+  cmakeFlags = [
+    "-DXYCO_ENABLE_BENCHMARK=ON"
+    "-DXYCO_ENABLE_EXAMPLES=ON"
+    "-DXYCO_ENABLE_TESTS=ON"
+    "-DXYCO_ENABLE_LINTING=ON"
+    "-DXYCO_ENABLE_LOGGING=${if logging then "ON" else "OFF"}"
+    "-DXYCO_IO_API=${IOAPI}"
+  ];
 
-    cmake --preset ${IOAPI}_ci_linting_logging_off
-    cmake --preset ${IOAPI}_ci_linting_logging_on
-
-    runHook postConfigure
-  '';
-  buildPhase = ''
-    runHook preBuild
-
-    cmake --build --preset ${IOAPI}_ci_linting_logging_off
-    cmake --build --preset ${IOAPI}_ci_linting_logging_on
-
-    runHook postBuild
-  '';
   doCheck = true;
   checkPhase = ''
     runHook preCheck
 
+    cd ..
     find . -type f \( -not -path "./build/*" -and \( -name \*.cc -or -name \*.h -or -name \*.ccm \) \) | xargs clang-format --Werror --fcolor-diagnostics --dry-run --verbose
 
     runHook postCheck
-  '';
-  installPhase = ''
-    runHook preInstall
-
-    MAIN_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/xyco_main
-    UT_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/tests/xyco_test
-    EXAMPLE_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/examples/xyco_http_server
-    BENCHMARK_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/benchmark/xyco_echo_server
-    BENCHMARK_ASIO_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/benchmark/asio_echo_server
-
-    mkdir -p $out/logging_off $out/logging_on
-    MAIN_BIN=$(echo $MAIN_BIN_PATTERN | sed -e "s/{}/logging_off/g")
-    UT_BIN=$(echo $UT_BIN_PATTERN | sed -e "s/{}/logging_off/g")
-    EXAMPLE_BIN=$(echo $EXAMPLE_BIN_PATTERN | sed -e "s/{}/logging_off/g")
-    BENCHMARK_BIN=$(echo $BENCHMARK_BIN_PATTERN | sed -e "s/{}/logging_off/g")
-    BENCHMARK_ASIO_BIN=$(echo $BENCHMARK_ASIO_BIN_PATTERN | sed -e "s/{}/logging_off/g")
-    cp $MAIN_BIN $UT_BIN $EXAMPLE_BIN $BENCHMARK_BIN $BENCHMARK_ASIO_BIN $out/logging_off
-
-    MAIN_BIN=$(echo $MAIN_BIN_PATTERN | sed -e "s/{}/logging_off/g")
-    UT_BIN=$(echo $UT_BIN_PATTERN | sed -e "s/{}/logging_on/g")
-    EXAMPLE_BIN=$(echo $EXAMPLE_BIN_PATTERN | sed -e "s/{}/logging_on/g")
-    BENCHMARK_BIN=$(echo $BENCHMARK_BIN_PATTERN | sed -e "s/{}/logging_on/g")
-    BENCHMARK_ASIO_BIN=$(echo $BENCHMARK_ASIO_BIN_PATTERN | sed -e "s/{}/logging_on/g")
-    cp $MAIN_BIN $UT_BIN $EXAMPLE_BIN $BENCHMARK_BIN $BENCHMARK_ASIO_BIN $out/logging_on
-
-    runHook postInstall
   '';
 }
