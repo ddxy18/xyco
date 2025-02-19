@@ -1,4 +1,4 @@
-{ lib, pkgs, llvmPackages, asio, gtest, microsoft-gsl, spdlog }:
+{ lib, pkgs, llvmPackages, asio, gtest, microsoft-gsl, spdlog, IOAPI }:
 
 llvmPackages.libcxxStdenv.mkDerivation {
   name = "xyco";
@@ -34,14 +34,14 @@ llvmPackages.libcxxStdenv.mkDerivation {
   configurePhase = ''
     runHook preConfigure
 
-    cmake --preset enable_logging
+    cmake --preset ${IOAPI}_ci_test
 
     runHook postConfigure
   '';
   buildPhase = ''
     runHook preBuild
 
-    cmake --build --preset ci_test
+    cmake --build --preset ${IOAPI}_ci_test
 
     runHook postBuild
   '';
@@ -56,15 +56,11 @@ llvmPackages.libcxxStdenv.mkDerivation {
     ''
       runHook preCheck
 
-      patchelf --set-rpath ${libPath} build/enable_logging/tests/xyco_test_epoll
-      patchelf --set-rpath ${libPath} build/enable_logging/tests/xyco_test_uring
+      patchelf --set-rpath ${libPath} build/${IOAPI}_ci_test/tests/xyco_test
 
-      LLVM_PROFILE_FILE="xyco_test_epoll.profraw" SPDLOG_LEVEL=info build/enable_logging/tests/xyco_test_epoll --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
-      llvm-profdata merge -sparse xyco_test_epoll.profraw -o xyco_test_epoll.profdata
-      llvm-cov show build/enable_logging/tests/xyco_test_epoll -ignore-filename-regex=_deps -instr-profile=xyco_test_epoll.profdata > coverage_epoll.txt
-      LLVM_PROFILE_FILE="xyco_test_uring.profraw" SPDLOG_LEVEL=info build/enable_logging/tests/xyco_test_uring --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
-      llvm-profdata merge -sparse xyco_test_uring.profraw -o xyco_test_uring.profdata
-      llvm-cov show build/enable_logging/tests/xyco_test_uring -ignore-filename-regex=_deps -instr-profile=xyco_test_uring.profdata > coverage_uring.txt
+      LLVM_PROFILE_FILE="xyco_test.profraw" SPDLOG_LEVEL=info build/${IOAPI}_ci_test/tests/xyco_test --gtest_break_on_failure --gtest_shuffle --gtest_death_test_style=threadsafe
+      llvm-profdata merge -sparse xyco_test.profraw -o xyco_test.profdata
+      llvm-cov show build/${IOAPI}_ci_test/tests/xyco_test -ignore-filename-regex=_deps -instr-profile=xyco_test.profdata > coverage_${IOAPI}.txt
 
       runHook postCheck
     '';
@@ -72,8 +68,8 @@ llvmPackages.libcxxStdenv.mkDerivation {
     runHook preInstall
 
     mkdir $out
-    cp build/enable_logging/tests/xyco_test_* $out/
-    cp coverage_*.txt $out/
+    cp build/${IOAPI}_ci_test/tests/xyco_test $out/
+    cp coverage_${IOAPI}.txt $out/
 
     runHook postInstall
   '';

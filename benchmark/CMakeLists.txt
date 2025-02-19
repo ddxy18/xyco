@@ -1,12 +1,6 @@
-add_executable(xyco_epoll_echo_server echo_server.cc)
-target_link_libraries(
-  xyco_epoll_echo_server PRIVATE xyco::io_epoll xyco::net_epoll xyco::task
-                                 xyco::runtime)
-
-add_executable(xyco_uring_echo_server echo_server.cc)
-target_link_libraries(
-  xyco_uring_echo_server PRIVATE xyco::io_uring xyco::net_uring xyco::task
-                                 xyco::runtime)
+add_executable(xyco_echo_server echo_server.cc)
+target_link_libraries(xyco_echo_server PRIVATE xyco::io xyco::net xyco::task
+                                               xyco::runtime)
 
 add_executable(asio_echo_server asio_echo_server.cc)
 target_compile_definitions(asio_echo_server PUBLIC ASIO_HAS_CO_AWAIT=1

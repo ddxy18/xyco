@@ -15,7 +15,8 @@
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true,
                 "CMAKE_CXX_COMPILER": "clang++",
                 "XYCO_ENABLE_LOGGING": "$env{XYCO_ENABLE_LOGGING}",
-                "XYCO_ENABLE_LINTING": "$env{XYCO_ENABLE_LINTING}"
+                "XYCO_ENABLE_LINTING": "$env{XYCO_ENABLE_LINTING}",
+                "XYCO_IO_API": "$env{XYCO_IO_API}"
             }
         },
         {
@@ -29,6 +30,26 @@
             }
         },
         {
+            "name": "io_api_epoll",
+            "displayName": "Epoll IO API Config",
+            "inherits": [
+                "root"
+            ],
+            "environment": {
+                "XYCO_IO_API": "epoll"
+            }
+        },
+        {
+            "name": "io_api_uring",
+            "displayName": "Uring IO API Config",
+            "inherits": [
+                "root"
+            ],
+            "environment": {
+                "XYCO_IO_API": "io_uring"
+            }
+        },
+        {
             "name": "enable_linting",
             "displayName": "Enable Linting Config",
             "inherits": [
@@ -39,18 +60,53 @@
             }
         },
         {
-            "name": "ci_linting_logging_off",
-            "displayName": "CI Linting with Logging Off Config",
+            "name": "epoll_ci_linting_logging_off",
+            "displayName": "CI Linting Config of Epoll targets with Logging Off",
             "inherits": [
-                "enable_linting"
+                "enable_linting",
+                "io_api_epoll"
             ]
         },
         {
-            "name": "ci_linting_logging_on",
-            "displayName": "CI Linting with Logging On Config",
+            "name": "epoll_ci_linting_logging_on",
+            "displayName": "CI Linting Config of Epoll targets with Logging On",
             "inherits": [
                 "enable_linting",
-                "enable_logging"
+                "enable_logging",
+                "io_api_epoll"
+            ]
+        },
+        {
+            "name": "io_uring_ci_linting_logging_off",
+            "displayName": "CI Linting Config of Uring targets with Logging Off",
+            "inherits": [
+                "enable_linting",
+                "io_api_uring"
+            ]
+        },
+        {
+            "name": "io_uring_ci_linting_logging_on",
+            "displayName": "CI Linting Config of Uring targets with Logging On",
+            "inherits": [
+                "enable_linting",
+                "enable_logging",
+                "io_api_uring"
+            ]
+        },
+        {
+            "name": "epoll_ci_test",
+            "displayName": "CI Test Config of Uring targets",
+            "inherits": [
+                "enable_logging",
+                "io_api_epoll"
+            ]
+        },
+        {
+            "name": "io_uring_ci_test",
+            "displayName": "CI Test Config of Uring targets",
+            "inherits": [
+                "enable_logging",
+                "io_api_uring"
             ]
         }
     ],
@@ -61,24 +117,13 @@
             "configuration": "Release"
         },
         {
-            "name": "epoll_targets",
+            "name": "all_targets",
             "hidden": true,
             "targets": [
-                "xyco_epoll_echo_server",
-                "xyco_epoll_http_server",
-                "xyco_epoll_main",
-                "xyco_test_epoll",
-                "asio_echo_server"
-            ]
-        },
-        {
-            "name": "uring_targets",
-            "hidden": true,
-            "targets": [
-                "xyco_uring_echo_server",
-                "xyco_uring_http_server",
-                "xyco_uring_main",
-                "xyco_test_uring",
+                "xyco_echo_server",
+                "xyco_http_server",
+                "xyco_main",
+                "xyco_test",
                 "asio_echo_server"
             ]
         },
@@ -86,8 +131,7 @@
             "name": "test_targets",
             "hidden": true,
             "targets": [
-                "xyco_test_epoll",
-                "xyco_test_uring"
+                "xyco_test"
             ]
         },
         {
@@ -95,41 +139,50 @@
             "displayName": "CI Linting Build of Epoll targets with Logging Off",
             "inherits": [
                 "release_mode",
-                "epoll_targets"
+                "all_targets"
             ],
-            "configurePreset": "ci_linting_logging_off"
+            "configurePreset": "epoll_ci_linting_logging_off"
         },
         {
             "name": "epoll_ci_linting_logging_on",
             "displayName": "CI Linting Build of Epoll targets with Logging On",
             "inherits": [
                 "release_mode",
-                "epoll_targets"
+                "all_targets"
             ],
-            "configurePreset": "ci_linting_logging_on"
+            "configurePreset": "epoll_ci_linting_logging_on"
         },
         {
-            "name": "uring_ci_linting_logging_off",
+            "name": "io_uring_ci_linting_logging_off",
             "displayName": "CI Linting Build of Uring targets with Logging Off",
             "inherits": [
                 "release_mode",
-                "uring_targets"
+                "all_targets"
             ],
-            "configurePreset": "ci_linting_logging_off"
+            "configurePreset": "io_uring_ci_linting_logging_off"
         },
         {
-            "name": "uring_ci_linting_logging_on",
+            "name": "io_uring_ci_linting_logging_on",
             "displayName": "CI Linting Build of Uring targets with Logging On",
             "inherits": [
                 "release_mode",
-                "uring_targets"
+                "all_targets"
             ],
-            "configurePreset": "ci_linting_logging_on"
+            "configurePreset": "io_uring_ci_linting_logging_on"
         },
         {
-            "name": "ci_test",
-            "displayName": "CI Test Build",
-            "configurePreset": "enable_logging",
+            "name": "epoll_ci_test",
+            "displayName": "CI Test Build of Epoll targets",
+            "configurePreset": "epoll_ci_test",
+            "inherits": [
+                "release_mode",
+                "test_targets"
+            ]
+        },
+        {
+            "name": "io_uring_ci_test",
+            "displayName": "CI Test Build of Uring targets",
+            "configurePreset": "io_uring_ci_test",
             "inherits": [
                 "release_mode",
                 "test_targets"
@@ -143,7 +196,7 @@
             "steps": [
                 {
                     "type": "configure",
-                    "name": "ci_linting_logging_off"
+                    "name": "epoll_ci_linting_logging_off"
                 },
                 {
                     "type": "build",
@@ -152,16 +205,16 @@
             ]
         },
         {
-            "name": "uring_ci_linting_logging_off",
+            "name": "io_uring_ci_linting_logging_off",
             "displayName": "CI Linting Workflow of Uring targets with Logging Off",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "ci_linting_logging_off"
+                    "name": "io_uring_ci_linting_logging_off"
                 },
                 {
                     "type": "build",
-                    "name": "uring_ci_linting_logging_off"
+                    "name": "io_uring_ci_linting_logging_off"
                 }
             ]
         },
@@ -171,7 +224,7 @@
             "steps": [
                 {
                     "type": "configure",
-                    "name": "ci_linting_logging_on"
+                    "name": "epoll_ci_linting_logging_on"
                 },
                 {
                     "type": "build",
@@ -180,30 +233,44 @@
             ]
         },
         {
-            "name": "uring_ci_linting_logging_on",
+            "name": "io_uring_ci_linting_logging_on",
             "displayName": "CI Linting Workflow of Uring targets with Logging On",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "ci_linting_logging_on"
+                    "name": "io_uring_ci_linting_logging_on"
                 },
                 {
                     "type": "build",
-                    "name": "uring_ci_linting_logging_on"
+                    "name": "io_uring_ci_linting_logging_on"
                 }
             ]
         },
         {
-            "name": "ci_test",
-            "displayName": "CI Test Workflow",
+            "name": "epoll_ci_test",
+            "displayName": "CI Test Workflow of Epoll targets",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "enable_logging"
+                    "name": "epoll_ci_test"
                 },
                 {
                     "type": "build",
-                    "name": "ci_test"
+                    "name": "epoll_ci_test"
+                }
+            ]
+        },
+        {
+            "name": "io_uring_ci_test",
+            "displayName": "CI Test Workflow of Uring targets",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "io_uring_ci_test"
+                },
+                {
+                    "type": "build",
+                    "name": "io_uring_ci_test"
                 }
             ]
         }

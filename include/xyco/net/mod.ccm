@@ -1,5 +1,0 @@
-export module xyco.net;
-
-export import xyco.net.epoll;
-export import xyco.net.uring;
-export import xyco.net.common;

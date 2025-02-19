@@ -23,12 +23,21 @@
         };
       in
       {
-        packages.unit-test = pkgs.callPackage ./unit-test.nix {
+        packages.unit-test-epoll = pkgs.callPackage ./unit-test.nix {
           llvmPackages = llvmPackages;
           asio = asio;
           gtest = gtest;
           microsoft-gsl = microsoft-gsl;
           spdlog = spdlog;
+          IOAPI = "epoll";
+        };
+        packages.unit-test-uring = pkgs.callPackage ./unit-test.nix {
+          llvmPackages = llvmPackages;
+          asio = asio;
+          gtest = gtest;
+          microsoft-gsl = microsoft-gsl;
+          spdlog = spdlog;
+          IOAPI = "io_uring";
         };
         packages.lint-epoll = pkgs.callPackage ./lint.nix {
           llvmPackages = llvmPackages;
@@ -44,7 +53,7 @@
           gtest = gtest;
           microsoft-gsl = microsoft-gsl;
           spdlog = spdlog;
-          IOAPI = "uring";
+          IOAPI = "io_uring";
         };
       });
 }
