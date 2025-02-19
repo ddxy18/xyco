@@ -34,20 +34,14 @@ if(XYCO_ENABLE_LINTING)
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_task.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_time.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_sync.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_io_all.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_io_epoll.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_io_uring.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_io.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_io_common.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_net_all.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_net_epoll.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_net_uring.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_net.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_net_common.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_fs_all.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_fs_epoll.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_fs_uring.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_fs.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_fs_common.dir/
       --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/CMakeFiles/xyco_libc.dir/
-      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/tests/CMakeFiles/xyco_test_common_utils.dir/
+      --extra-arg=-fprebuilt-module-path=${CMAKE_BINARY_DIR}/tests/CMakeFiles/xyco_test_utils.dir/
   )
 endif(XYCO_ENABLE_LINTING)
 
@@ -59,13 +53,8 @@ endif()
 
 find_package(Boost REQUIRED)
 
-add_executable(xyco_epoll_main src/main.cc)
-target_link_libraries(xyco_epoll_main xyco::io_epoll xyco::net_epoll
-                      xyco::runtime)
-
-add_executable(xyco_uring_main src/main.cc)
-target_link_libraries(xyco_uring_main xyco::io_uring xyco::net_uring
-                      xyco::runtime)
+add_executable(xyco_main src/main.cc)
+target_link_libraries(xyco_main xyco::io xyco::net xyco::runtime)
 
 # Reusable library
 
@@ -194,52 +183,39 @@ target_link_libraries(
   xyco_io_common
   PUBLIC xyco::future
   PRIVATE xyco::runtime_ctx xyco::libc)
-add_library(xyco_io_epoll src/io/epoll/registry.cc)
-add_library(xyco::io_epoll ALIAS xyco_io_epoll)
-target_sources(
-  xyco_io_epoll
-  PUBLIC FILE_SET
-         io_epoll_module
-         TYPE
-         CXX_MODULES
-         FILES
-         include/xyco/io/epoll/mod.ccm
-         include/xyco/io/epoll/registry.ccm)
-target_link_libraries(
-  xyco_io_epoll
-  PUBLIC xyco_io_common
-  PRIVATE xyco::runtime_ctx xyco::libc)
-add_library(xyco_io_uring src/io/io_uring/registry.cc)
-add_library(xyco::io_uring ALIAS xyco_io_uring)
-target_sources(
-  xyco_io_uring
-  PUBLIC FILE_SET
-         io_uring_module
-         TYPE
-         CXX_MODULES
-         FILES
-         include/xyco/io/io_uring/mod.ccm
-         include/xyco/io/io_uring/registry.ccm)
-target_link_libraries(
-  xyco_io_uring
-  PUBLIC xyco_io_common
-  PRIVATE xyco::runtime_ctx uring xyco::libc)
-add_library(xyco_io_all src/io/epoll/registry.cc src/io/io_uring/registry.cc)
-add_library(xyco::io_all ALIAS xyco_io_all)
-target_sources(
-  xyco_io_all
-  PUBLIC FILE_SET
-         io_all_module
-         TYPE
-         CXX_MODULES
-         FILES
-         include/xyco/io/mod.ccm
-         include/xyco/io/epoll/registry.ccm
-         include/xyco/io/io_uring/registry.ccm)
-target_link_libraries(
-  xyco_io_all
-  PUBLIC xyco_io_common
-  PRIVATE xyco::runtime_ctx uring xyco::libc)
+if(XYCO_IO_API STREQUAL "epoll")
+  add_library(xyco_io src/io/epoll/registry.cc)
+  add_library(xyco::io ALIAS xyco_io)
+  target_sources(
+    xyco_io
+    PUBLIC FILE_SET
+           io_module
+           TYPE
+           CXX_MODULES
+           FILES
+           include/xyco/io/epoll/mod.ccm
+           include/xyco/io/epoll/registry.ccm)
+  target_link_libraries(
+    xyco_io
+    PUBLIC xyco_io_common
+    PRIVATE xyco::runtime_ctx xyco::libc)
+elseif(XYCO_IO_API STREQUAL "io_uring")
+  add_library(xyco_io src/io/io_uring/registry.cc)
+  add_library(xyco::io ALIAS xyco_io)
+  target_sources(
+    xyco_io
+    PUBLIC FILE_SET
+           io_module
+           TYPE
+           CXX_MODULES
+           FILES
+           include/xyco/io/io_uring/mod.ccm
+           include/xyco/io/io_uring/registry.ccm)
+  target_link_libraries(
+    xyco_io
+    PUBLIC xyco_io_common
+    PRIVATE xyco::runtime_ctx uring xyco::libc)
+endif()
 
 add_library(xyco_net_common src/net/socket.cc)
 target_sources(
@@ -255,52 +231,39 @@ target_link_libraries(
   xyco_net_common
   INTERFACE xyco::future
   PRIVATE xyco::runtime_ctx xyco::libc)
-add_library(xyco_net_epoll src/net/epoll/listener.cc)
-add_library(xyco::net_epoll ALIAS xyco_net_epoll)
-target_sources(
-  xyco_net_epoll
-  PUBLIC FILE_SET
-         net_epoll_module
-         TYPE
-         CXX_MODULES
-         FILES
-         include/xyco/net/epoll/mod.ccm
-         include/xyco/net/epoll/listener.ccm)
-target_link_libraries(
-  xyco_net_epoll
-  PUBLIC xyco_net_common
-  PRIVATE xyco::io_epoll xyco::task xyco::runtime_ctx xyco::libc)
-add_library(xyco_net_uring src/net/io_uring/listener.cc)
-add_library(xyco::net_uring ALIAS xyco_net_uring)
-target_sources(
-  xyco_net_uring
-  PUBLIC FILE_SET
-         net_uring_module
-         TYPE
-         CXX_MODULES
-         FILES
-         include/xyco/net/io_uring/mod.ccm
-         include/xyco/net/io_uring/listener.ccm)
-target_link_libraries(
-  xyco_net_uring
-  PUBLIC xyco_net_common
-  PRIVATE xyco::io_uring xyco::task xyco::runtime_ctx xyco::libc)
-add_library(xyco_net_all src/net/epoll/listener.cc src/net/io_uring/listener.cc)
-add_library(xyco::net_all ALIAS xyco_net_all)
-target_sources(
-  xyco_net_all
-  PUBLIC FILE_SET
-         net_all_module
-         TYPE
-         CXX_MODULES
-         FILES
-         include/xyco/net/mod.ccm
-         include/xyco/net/epoll/listener.ccm
-         include/xyco/net/io_uring/listener.ccm)
-target_link_libraries(
-  xyco_net_all
-  PUBLIC xyco_net_common
-  PRIVATE xyco::io_all xyco::task xyco::runtime_ctx xyco::libc)
+if(XYCO_IO_API STREQUAL "epoll")
+  add_library(xyco_net src/net/epoll/listener.cc)
+  add_library(xyco::net ALIAS xyco_net)
+  target_sources(
+    xyco_net
+    PUBLIC FILE_SET
+           net_module
+           TYPE
+           CXX_MODULES
+           FILES
+           include/xyco/net/epoll/mod.ccm
+           include/xyco/net/epoll/listener.ccm)
+  target_link_libraries(
+    xyco_net
+    PUBLIC xyco_net_common
+    PRIVATE xyco::io xyco::task xyco::runtime_ctx xyco::libc)
+elseif(XYCO_IO_API STREQUAL "io_uring")
+  add_library(xyco_net src/net/io_uring/listener.cc)
+  add_library(xyco::net ALIAS xyco_net)
+  target_sources(
+    xyco_net
+    PUBLIC FILE_SET
+           net_module
+           TYPE
+           CXX_MODULES
+           FILES
+           include/xyco/net/io_uring/mod.ccm
+           include/xyco/net/io_uring/listener.ccm)
+  target_link_libraries(
+    xyco_net
+    PUBLIC xyco_net_common
+    PRIVATE xyco::io xyco::task xyco::runtime_ctx xyco::libc)
+endif()
 
 add_library(xyco_fs_common src/fs/utils.cc)
 target_sources(
@@ -317,52 +280,39 @@ target_link_libraries(
   xyco_fs_common
   PUBLIC xyco::future
   PRIVATE xyco::task xyco::runtime_ctx xyco::libc)
-add_library(xyco_fs_epoll src/fs/epoll/file.cc)
-add_library(xyco::fs_epoll ALIAS xyco_fs_epoll)
-target_sources(
-  xyco_fs_epoll
-  PUBLIC FILE_SET
-         fs_epoll_module
-         TYPE
-         CXX_MODULES
-         FILES
-         include/xyco/fs/epoll/mod.ccm
-         include/xyco/fs/epoll/file.ccm)
-target_link_libraries(
-  xyco_fs_epoll
-  PUBLIC xyco_fs_common
-  PRIVATE xyco::io_epoll xyco::task xyco::runtime_ctx xyco::libc)
-add_library(xyco_fs_uring src/fs/io_uring/file.cc)
-add_library(xyco::fs_uring ALIAS xyco_fs_uring)
-target_sources(
-  xyco_fs_uring
-  PUBLIC FILE_SET
-         fs_uring_module
-         TYPE
-         CXX_MODULES
-         FILES
-         include/xyco/fs/io_uring/mod.ccm
-         include/xyco/fs/io_uring/file.ccm)
-target_link_libraries(
-  xyco_fs_uring
-  PUBLIC xyco_fs_common
-  PRIVATE xyco::io_uring xyco::task xyco::runtime_ctx xyco::libc)
-add_library(xyco_fs_all src/fs/epoll/file.cc src/fs/io_uring/file.cc)
-add_library(xyco::fs_all ALIAS xyco_fs_all)
-target_sources(
-  xyco_fs_all
-  PUBLIC FILE_SET
-         fs_all_module
-         TYPE
-         CXX_MODULES
-         FILES
-         include/xyco/fs/mod.ccm
-         include/xyco/fs/epoll/file.ccm
-         include/xyco/fs/io_uring/file.ccm)
-target_link_libraries(
-  xyco_fs_all
-  PUBLIC xyco_fs_common
-  PRIVATE xyco::io_all xyco::task xyco::runtime_ctx xyco::libc)
+if(XYCO_IO_API STREQUAL "epoll")
+  add_library(xyco_fs src/fs/epoll/file.cc)
+  add_library(xyco::fs ALIAS xyco_fs)
+  target_sources(
+    xyco_fs
+    PUBLIC FILE_SET
+           fs_module
+           TYPE
+           CXX_MODULES
+           FILES
+           include/xyco/fs/epoll/mod.ccm
+           include/xyco/fs/epoll/file.ccm)
+  target_link_libraries(
+    xyco_fs
+    PUBLIC xyco_fs_common
+    PRIVATE xyco::io xyco::task xyco::runtime_ctx xyco::libc)
+elseif(XYCO_IO_API STREQUAL "io_uring")
+  add_library(xyco_fs src/fs/io_uring/file.cc)
+  add_library(xyco::fs ALIAS xyco_fs)
+  target_sources(
+    xyco_fs
+    PUBLIC FILE_SET
+           fs_module
+           TYPE
+           CXX_MODULES
+           FILES
+           include/xyco/fs/io_uring/mod.ccm
+           include/xyco/fs/io_uring/file.ccm)
+  target_link_libraries(
+    xyco_fs
+    PUBLIC xyco_fs_common
+    PRIVATE xyco::io xyco::task xyco::runtime_ctx xyco::libc)
+endif()
 
 add_library(xyco_time src/time/registry.cc src/time/wheel.cc src/time/clock.cc)
 add_library(xyco::time ALIAS xyco_time)

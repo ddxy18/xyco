@@ -7,13 +7,17 @@ runs:
   steps:
     - name: run unit test
       shell: bash
-      run: nix build --print-build-logs .#unit-test
+      run: |
+        nix build --print-build-logs .#unit-test-epoll
+        cp result/coverage_epoll.txt coverage_epoll.txt
+        nix build --print-build-logs .#unit-test-uring
+        cp result/coverage_io_uring.txt coverage_io_uring.txt
     - name: upload epoll coverage report
       uses: codecov/codecov-action@v3
       with:
         token: ${{ inputs.codecov_token }}
         flags: epoll
-        files: result/coverage_epoll.txt
+        files: coverage_epoll.txt
         fail_ci_if_error: true
         verbose: true
     - name: upload uring coverage report
@@ -21,7 +25,7 @@ runs:
       with:
         token: ${{ inputs.codecov_token }}
         flags: uring
-        files: result/coverage_uring.txt
+        files: coverage_io_uring.txt
         fail_ci_if_error: true
         verbose: true
     - name: upload tests coverage report
@@ -29,6 +33,6 @@ runs:
       with:
         token: ${{ inputs.codecov_token }}
         flags: tests
-        files: result/coverage_epoll.txt,result/coverage_uring.txt
+        files: coverage_epoll.txt,coverage_io_uring.txt
         fail_ci_if_error: true
         verbose: true

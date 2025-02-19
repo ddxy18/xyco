@@ -34,8 +34,8 @@ llvmPackages.libcxxStdenv.mkDerivation {
   configurePhase = ''
     runHook preConfigure
 
-    cmake --preset ci_linting_logging_off
-    cmake --preset ci_linting_logging_on
+    cmake --preset ${IOAPI}_ci_linting_logging_off
+    cmake --preset ${IOAPI}_ci_linting_logging_on
 
     runHook postConfigure
   '';
@@ -58,11 +58,11 @@ llvmPackages.libcxxStdenv.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    MAIN_BIN_PATTERN=build/ci_linting_{}/xyco_${IOAPI}_main
-    UT_BIN_PATTERN=build/ci_linting_{}/tests/xyco_test_${IOAPI}
-    EXAMPLE_BIN_PATTERN=build/ci_linting_{}/examples/xyco_${IOAPI}_http_server
-    BENCHMARK_BIN_PATTERN=build/ci_linting_{}/benchmark/xyco_${IOAPI}_echo_server
-    BENCHMARK_ASIO_BIN_PATTERN=build/ci_linting_{}/benchmark/asio_echo_server
+    MAIN_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/xyco_main
+    UT_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/tests/xyco_test
+    EXAMPLE_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/examples/xyco_http_server
+    BENCHMARK_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/benchmark/xyco_echo_server
+    BENCHMARK_ASIO_BIN_PATTERN=build/${IOAPI}_ci_linting_{}/benchmark/asio_echo_server
 
     mkdir -p $out/logging_off $out/logging_on
     MAIN_BIN=$(echo $MAIN_BIN_PATTERN | sed -e "s/{}/logging_off/g")
