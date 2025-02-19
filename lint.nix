@@ -46,6 +46,7 @@ llvmPackages.libcxxStdenv.mkDerivation {
 
     cd ..
     find . -type f \( -not -path "./build/*" -and \( -name \*.cc -or -name \*.h -or -name \*.ccm \) \) | xargs clang-format --Werror --fcolor-diagnostics --dry-run --verbose
+    cd build
 
     runHook postCheck
   '';
