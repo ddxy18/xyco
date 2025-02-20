@@ -45,10 +45,14 @@ if(XYCO_ENABLE_LINTING)
   )
 endif(XYCO_ENABLE_LINTING)
 
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  add_subdirectory(tests)
+if(XYCO_ENABLE_BENCHMARK)
   add_subdirectory(benchmark)
+endif()
+if(XYCO_ENABLE_EXAMPLES)
   add_subdirectory(examples)
+endif()
+if(XYCO_ENABLE_TESTS)
+  add_subdirectory(tests)
 endif()
 
 find_package(Boost REQUIRED)
@@ -352,3 +356,15 @@ target_link_libraries(
   PRIVATE xyco::runtime_ctx)
 
 option(XYCO_ENABLE_LOGGING "OFF")
+
+install(
+  TARGETS xyco_runtime
+          xyco_sync
+          xyco_task
+          xyco_time
+          xyco_fs
+          xyco_net
+          xyco_io
+          xyco_future
+          xyco_logging
+  DESTINATION lib)

@@ -25,7 +25,6 @@
       {
         packages.unit-test-epoll = pkgs.callPackage ./unit-test.nix {
           llvmPackages = llvmPackages;
-          asio = asio;
           gtest = gtest;
           microsoft-gsl = microsoft-gsl;
           spdlog = spdlog;
@@ -33,26 +32,45 @@
         };
         packages.unit-test-uring = pkgs.callPackage ./unit-test.nix {
           llvmPackages = llvmPackages;
-          asio = asio;
           gtest = gtest;
           microsoft-gsl = microsoft-gsl;
           spdlog = spdlog;
           IOAPI = "io_uring";
         };
-        packages.lint-epoll = pkgs.callPackage ./lint.nix {
+        packages.lint-logging-off-epoll = pkgs.callPackage ./lint.nix {
           llvmPackages = llvmPackages;
           asio = asio;
           gtest = gtest;
           microsoft-gsl = microsoft-gsl;
           spdlog = spdlog;
+          logging = false;
           IOAPI = "epoll";
         };
-        packages.lint-uring = pkgs.callPackage ./lint.nix {
+        packages.lint-logging-on-epoll = pkgs.callPackage ./lint.nix {
           llvmPackages = llvmPackages;
           asio = asio;
           gtest = gtest;
           microsoft-gsl = microsoft-gsl;
           spdlog = spdlog;
+          logging = true;
+          IOAPI = "epoll";
+        };
+        packages.lint-logging-off-uring = pkgs.callPackage ./lint.nix {
+          llvmPackages = llvmPackages;
+          asio = asio;
+          gtest = gtest;
+          microsoft-gsl = microsoft-gsl;
+          spdlog = spdlog;
+          logging = false;
+          IOAPI = "io_uring";
+        };
+        packages.lint-logging-on-uring = pkgs.callPackage ./lint.nix {
+          llvmPackages = llvmPackages;
+          asio = asio;
+          gtest = gtest;
+          microsoft-gsl = microsoft-gsl;
+          spdlog = spdlog;
+          logging = true;
           IOAPI = "io_uring";
         };
       });
