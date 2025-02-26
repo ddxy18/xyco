@@ -23,6 +23,18 @@
         };
       in
       {
+        packages.lib-epoll = pkgs.callPackage ./lib.nix {
+          llvmPackages = llvmPackages;
+          microsoft-gsl = microsoft-gsl;
+          spdlog = spdlog;
+          IOAPI = "epoll";
+        };
+        packages.lib-uring = pkgs.callPackage ./lib.nix {
+          llvmPackages = llvmPackages;
+          microsoft-gsl = microsoft-gsl;
+          spdlog = spdlog;
+          IOAPI = "io_uring";
+        };
         packages.unit-test-epoll = pkgs.callPackage ./unit-test.nix {
           llvmPackages = llvmPackages;
           gtest = gtest;
