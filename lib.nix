@@ -1,6 +1,6 @@
-{ lib, pkgs, llvmPackages, microsoft-gsl, spdlog, IOAPI }:
+{ lib, pkgs, microsoft-gsl, spdlog, IOAPI }:
 
-llvmPackages.libcxxStdenv.mkDerivation {
+pkgs.stdenv.mkDerivation rec {
   name = "xyco";
 
   src = lib.sourceByRegex ./. [
@@ -9,18 +9,6 @@ llvmPackages.libcxxStdenv.mkDerivation {
     "CMakeLists.txt"
   ];
 
-  nativeBuildInputs = with pkgs; [
-    cmake
-    ninja
-    (llvmPackages.clang-tools.override { enableLibcxx = true; })
-    llvmPackages.lld
-  ];
-  buildInputs = [
-    pkgs.boost
-    pkgs.liburing
-    microsoft-gsl
-    spdlog
-  ];
   # Since CMake hasn't supported link against precompiled C++20 modules, all dependents need to
   # depend on the source code directly. These libraries are propogated to hide internal details from
   # dependents.
@@ -31,5 +19,15 @@ llvmPackages.libcxxStdenv.mkDerivation {
     spdlog
   ];
 
+  # It is used to propagate the configure flags to the dependencies. But unlike
+  # `propagatedBuildInputs`, it needs to be concatenated manually.
   cmakeFlags = [ "-DXYCO_IO_API=${IOAPI}" ];
+  preInstall = "mkdir $out";
+  installPhase = ''
+    runHook preInstall
+
+    cp -r ${src}/* $out/
+
+    runHook postInstall
+  '';
 }
